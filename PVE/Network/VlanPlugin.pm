@@ -77,13 +77,17 @@ sub generate_network_config {
     die "interface $iface already exist in main configuration" if ($interfaces->{iface}->{$iface});
     
     my $config = "\n";
+    $config .= "auto $iface\n";
+    $config .= "iface $iface inet manual\n";
+    $config .= "        vlan-protocol $vlanprotocol\n" if $vlanprotocol;
+    $config .= "        mtu $mtu\n" if $mtu;
+    $config .= "\n";
     $config .= "auto $vnetid\n";
     $config .= "iface $vnetid inet manual\n";
     $config .= "        bridge_ports $iface\n";
     $config .= "        bridge_stp off\n";
     $config .= "        bridge_fd 0\n";
     $config .= "        vlan-aware 1 \n" if $vlanaware;
-    $config .= "        vlan-protocol $vlanprotocol \n" if $vlanprotocol;
     $config .= "        mtu $mtu\n" if $mtu;
 
     return $config;
