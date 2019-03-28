@@ -1,15 +1,14 @@
-VERSION=0.1
-PKGREL=1
-
 PACKAGE=libpve-network-perl
+PKGVER != dpkg-parsechangelog -Sversion | cut -d- -f1
+PKGREL != dpkg-parsechangelog -Sversion | cut -d- -f2
 
 ARCH=all
 
-BUILDDIR ?= ${PACKAGE}-${VERSION}
+BUILDDIR ?= ${PACKAGE}-${PKGVER}
 
-DEB=${PACKAGE}_${VERSION}-${PKGREL}_${ARCH}.deb
-DSC=${PACKAGE}_${VERSION}-${PKGREL}.dsc
-TARGZ=${PACKAGE}_${VERSION}-${PKGREL}.tar.gz
+DEB=${PACKAGE}_${PKGVER}-${PKGREL}_${ARCH}.deb
+DSC=${PACKAGE}_${PKGVER}-${PKGREL}.dsc
+TARGZ=${PACKAGE}_${PKGVER}-${PKGREL}.tar.gz
 
 all:
 	${MAKE} -C PVE
