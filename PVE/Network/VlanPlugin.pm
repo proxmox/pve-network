@@ -52,7 +52,7 @@ sub options {
 
 # Plugin implementation
 sub generate_network_config {
-    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $interfaces, $uplinks) = @_;
+    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $uplinks) = @_;
 
     my $tag = $vnet->{tag};
     my $mtu = $vnet->{mtu};
@@ -74,8 +74,6 @@ sub generate_network_config {
     my $iface = $uplinks->{$uplink};
     $iface .= ".$tag";
 
-    die "interface $iface already exist in main configuration" if ($interfaces->{iface}->{$iface});
-    
     my $config = "\n";
     $config .= "auto $iface\n";
     $config .= "iface $iface inet manual\n";

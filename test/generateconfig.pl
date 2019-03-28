@@ -51,7 +51,7 @@ sub generate_network_config {
 	     my $plugin_config = $transport_cfg->{ids}->{$zone};
 	     die "zone $zone don't exist" if !defined($plugin_config);
              my $plugin = PVE::Network::Plugin->lookup($plugin_config->{type});
-             $rawconfig .= $plugin->generate_network_config($plugin_config, $zone, $id, $vnet, $interfaces_config, $uplinks);
+             $rawconfig .= $plugin->generate_network_config($plugin_config, $zone, $id, $vnet, $uplinks);
         }
 
 return $rawconfig;

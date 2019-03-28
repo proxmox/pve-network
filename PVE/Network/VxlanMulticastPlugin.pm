@@ -44,7 +44,7 @@ sub options {
 
 # Plugin implementation
 sub generate_network_config {
-    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $interfaces, $uplinks) = @_;
+    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $uplinks) = @_;
 
     my $tag = $vnet->{tag};
     my $mtu = $vnet->{mtu};
