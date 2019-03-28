@@ -14,9 +14,9 @@ PVE::Network::Plugin->init();
 
 
 my $rawconfig = generate_network_config();
+print $rawconfig;
 verify_merged_config($rawconfig);
 write_final_config($rawconfig);
-print $rawconfig;
 
 sub generate_network_config {
 
