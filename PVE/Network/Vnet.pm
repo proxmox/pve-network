@@ -2,93 +2,70 @@ package PVE::Network::Vnet;
 
 use strict;
 use warnings;
-
-use PVE::JSONSchema qw(get_standard_option);
-use PVE::SectionConfig;
-
-use base qw(PVE::SectionConfig);
-
-PVE::Cluster::cfs_register_file('network/vnet.cfg',
-                                 sub { __PACKAGE__->parse_config(@_); },
-                                 sub { __PACKAGE__->write_config(@_); });
+use Data::Dumper;
+use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 
 
-sub options {
-    return {
-        transportzone => { fixed => 1 },
-        tag => { fixed => 1 },
-        name => { optional => 1 },
-        ipv4 => { optional => 1 },
-        ipv6 => { optional => 1 },
-        name => { optional => 1 },
-        mtu => { optional => 1 },
-    };
+sub vnet_config {
+    my ($cfg, $vnetid, $noerr) = @_;
+
+    die "no vnet ID specified\n" if !$vnetid;
+
+    my $scfg = $cfg->{ids}->{$vnetid};
+    die "vnet '$vnetid' does not exists\n" if (!$noerr && !$scfg);
+
+    return $scfg;
 }
 
-my $defaultData = {
-    propertyList => {
-	transportzone => {
-            type => 'string',
-            description => "transportzone id",
-	    optional => 1,
-	},
-	tag => {
-            type => 'integer',
-            description => "vlan or vxlan id",
-	    optional => 1,
-	},
-        name => {
-            type => 'string',
-            description => "name of the network",
-	    optional => 1,
-        },
-        mtu => {
-            type => 'integer',
-            description => "mtu",
-	    optional => 1,
-        },
-        ipv4 => {
-            description => "Anycast router ipv4 address.",
-            type => 'string', format => 'ipv4',
-            optional => 1,
-        },
-	ipv6 => {
-	    description => "Anycast router ipv6 address.",
-	    type => 'string', format => 'ipv6',
-	    optional => 1,
-	},
-        mac => {
-            type => 'boolean',
-            description => "Anycast router mac address",
-	    optional => 1,
-        }
-    },
-};
+sub config {
 
-sub type {
-    return 'vnet';
+    return cfs_read_file("network/vnet.cfg");
 }
 
-sub private {
-    return $defaultData;
+sub write_config {
+    my ($cfg) = @_;
+    cfs_write_file("network/vnet.cfg", $cfg);
 }
 
+sub lock_vnet_config {
+    my ($code, $errmsg) = @_;
 
-sub parse_section_header {
-    my ($class, $line) = @_;
-
-    if ($line =~ m/^(vnet(\d+)):$/) {
-        my $type = 'vnet';
-        my $errmsg = undef; # set if you want to skip whole section
-        eval { PVE::JSONSchema::pve_verify_configid($type); };
-        $errmsg = $@ if $@;
-        my $config = {}; # to return additional attributes
-        return ($type, $1, $errmsg, $config);
+    cfs_lock_file("network/vnet.cfg", undef, $code);
+    my $err = $@;
+    if ($err) {
+        $errmsg ? die "$errmsg: $err" : die $err;
     }
-    return undef;
 }
 
-__PACKAGE__->register();
-__PACKAGE__->init();
+sub vnets_ids {
+    my ($cfg) = @_;
+
+    return keys %{$cfg->{ids}};
+}
+
+sub complete_vnet {
+    my ($cmdname, $pname, $cvalue) = @_;
+
+    my $cfg = PVE::Network::Vnet::config();
+
+    return  $cmdname eq 'add' ? [] : [ PVE::Network::Vnet::vnets_ids($cfg) ];
+}
+
+
+my $format_config_line = sub {
+    my ($schema, $key, $value) = @_;
+
+    my $ct = $schema->{type};
+
+    die "property '$key' contains a line feed\n"
+        if ($key =~ m/[\n\r]/) || ($value =~ m/[\n\r]/);
+
+    if ($ct eq 'boolean') {
+        return "\t$key " . ($value ? 1 : 0) . "\n"
+            if defined($value);
+    } else {
+        return "\t$key $value\n" if "$value" ne '';
+    }
+};
 
 1;

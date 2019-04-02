@@ -1,4 +1,4 @@
-SOURCES=Transport.pm
+SOURCES=Transport.pm Vnet.pm
 
 
 PERL5DIR=${DESTDIR}/usr/share/perl5
