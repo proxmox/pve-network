@@ -85,7 +85,7 @@ sub generate_network_config {
     $config .= "        bridge_ports $iface\n";
     $config .= "        bridge_stp off\n";
     $config .= "        bridge_fd 0\n";
-    $config .= "        vlan-aware 1 \n" if $vlanaware;
+    $config .= "        bridge-vlan-aware yes \n" if $vlanaware;
     $config .= "        mtu $mtu\n" if $mtu;
 
     return $config;
