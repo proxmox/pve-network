@@ -36,7 +36,7 @@ sub properties {
 sub options {
 
     return {
-	'uplink-id' => { fixed => 1 },
+	'uplink-id' => { optional => 1 },
         'multicast-address' => { fixed => 1 },
         'vxlan-allowed' => { optional => 1 },
     };

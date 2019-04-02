@@ -21,6 +21,11 @@ sub pve_verify_network_vlanrange {
 
 sub properties {
     return {
+	'uplink-id' => {
+	    type => 'integer',
+	    minimum => 1, maximum => 4096,
+	    description => 'Uplink interface',
+	},
 	'vlan-allowed' => {
 	    type => 'string', format => 'pve-network-vlanrange',
 	    description => "Allowed vlan range",
@@ -42,7 +47,7 @@ sub properties {
 sub options {
 
     return {
-	'uplink-id' => { fixed => 1 },
+	'uplink-id' => { optional => 1 },
         'vlan-allowed' => { optional => 1 },
 	'vlan-protocol' => { optional => 1 },
 	'vlan-aware' => { optional => 1 },

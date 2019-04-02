@@ -8,7 +8,7 @@ use PVE::JSONSchema;
 use PVE::Cluster;
 
 use Data::Dumper;
-
+use PVE::JSONSchema qw(get_standard_option);
 use base qw(PVE::SectionConfig);
 
 PVE::Cluster::cfs_register_file('network/transports.cfg',
@@ -23,11 +23,8 @@ my $defaultData = {
 	    type => 'string', format => 'pve-configid',
 	    type => 'string',
 	},
-	'uplink-id' => {
-	    type => 'integer',
-	    minimum => 1, maximum => 4096,
-	    description => 'Uplink interface',
-	},
+        transport => get_standard_option('pve-transport-id',
+            { completion => \&PVE::Network::Transport::complete_transport }),
     },
 };
 
