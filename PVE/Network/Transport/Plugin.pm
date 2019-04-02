@@ -1,4 +1,4 @@
-package PVE::Network::Plugin;
+package PVE::Network::Transport::Plugin;
 
 use strict;
 use warnings;

@@ -7,9 +7,9 @@ use PVE::SafeSyslog;
 use PVE::Tools qw(extract_param);
 use PVE::Cluster qw(cfs_read_file cfs_write_file);
 use PVE::Network::Transport;
-use PVE::Network::Plugin;
-use PVE::Network::VlanPlugin;
-use PVE::Network::VxlanMulticastPlugin;
+use PVE::Network::Transport::Plugin;
+use PVE::Network::Transport::VlanPlugin;
+use PVE::Network::Transport::VxlanMulticastPlugin;
 use Storable qw(dclone);
 use PVE::JSONSchema qw(get_standard_option);
 use PVE::RPCEnvironment;
@@ -18,7 +18,7 @@ use PVE::RESTHandler;
 
 use base qw(PVE::RESTHandler);
 
-my $transport_type_enum = PVE::Network::Plugin->lookup_types();
+my $transport_type_enum = PVE::Network::Transport::Plugin->lookup_types();
 
 my $api_transport_config = sub {
     my ($cfg, $transportid) = @_;
@@ -36,7 +36,7 @@ __PACKAGE__->register_method ({
     method => 'GET',
     description => "Transport index.",
     permissions => { 
-	description => "Only list entries where you have 'NetworkTransport.Audit' or 'NetworkTransport.Allocate' permissions on '/networktransports/<transport>'",
+	description => "Only list entries where you have 'NetworkTransport.Audit' or 'NetworkTransport.Allocate' permissions on '/cluster/network/transport/<transport>'",
 	user => 'all',
     },
     parameters => {
@@ -71,7 +71,7 @@ __PACKAGE__->register_method ({
 	my $res = [];
 	foreach my $transportid (@sids) {
 #	    my $privs = [ 'NetworkTransport.Audit', 'NetworkTransport.Allocate' ];
-#	    next if !$rpcenv->check_any($authuser, "/network/transports/$transportid", $privs, 1);
+#	    next if !$rpcenv->check_any($authuser, "/cluster/network/transport/$transportid", $privs, 1);
 
 	    my $scfg = &$api_transport_config($cfg, $transportid);
 	    next if $param->{type} && $param->{type} ne $scfg->{type};
@@ -87,7 +87,7 @@ __PACKAGE__->register_method ({
     method => 'GET',
     description => "Read transport configuration.",
 #    permissions => { 
-#	check => ['perm', '/network/transports/{transport}', ['NetworkTransport.Allocate']],
+#	check => ['perm', '/cluster/network/transport/{transport}', ['NetworkTransport.Allocate']],
 #   },
 
     parameters => {
@@ -112,9 +112,9 @@ __PACKAGE__->register_method ({
     method => 'POST',
     description => "Create a new network transport.",
 #    permissions => { 
-#	check => ['perm', '/network/transports', ['NetworkTransport.Allocate']],
+#	check => ['perm', '/cluster/network/transport', ['NetworkTransport.Allocate']],
 #    },
-    parameters => PVE::Network::Plugin->createSchema(),
+    parameters => PVE::Network::Transport::Plugin->createSchema(),
     returns => { type => 'null' },
     code => sub {
 	my ($param) = @_;
@@ -122,7 +122,7 @@ __PACKAGE__->register_method ({
 	my $type = extract_param($param, 'type');
 	my $transportid = extract_param($param, 'transport');
 
-	my $plugin = PVE::Network::Plugin->lookup($type);
+	my $plugin = PVE::Network::Transport::Plugin->lookup($type);
 	my $opts = $plugin->check_config($transportid, $param, 1, 1);
 
         PVE::Network::Transport::lock_transport_config(
@@ -153,9 +153,9 @@ __PACKAGE__->register_method ({
     method => 'PUT',
     description => "Update network transport configuration.",
 #    permissions => { 
-#	check => ['perm', '/network/transports', ['NetworkTransport.Allocate']],
+#	check => ['perm', '/cluster/network/transport', ['NetworkTransport.Allocate']],
 #    },
-    parameters => PVE::Network::Plugin->updateSchema(),
+    parameters => PVE::Network::Transport::Plugin->updateSchema(),
     returns => { type => 'null' },
     code => sub {
 	my ($param) = @_;
@@ -172,7 +172,7 @@ __PACKAGE__->register_method ({
 
 	    my $scfg = PVE::Network::Transport::transport_config($cfg, $transportid);
 
-	    my $plugin = PVE::Network::Plugin->lookup($scfg->{type});
+	    my $plugin = PVE::Network::Transport::Plugin->lookup($scfg->{type});
 	    my $opts = $plugin->check_config($transportid, $param, 0, 1);
 
 	    foreach my $k (%$opts) {
@@ -191,11 +191,11 @@ __PACKAGE__->register_method ({
 __PACKAGE__->register_method ({
     name => 'delete',
     protected => 1,
-    path => '{transport}', # /network/transports/{transport}
+    path => '{transport}', # /cluster/network/transport/{transport}
     method => 'DELETE',
     description => "Delete network transport configuration.",
 #    permissions => { 
-#	check => ['perm', '/network/transports', ['NetworkTransport.Allocate']],
+#	check => ['perm', '/cluster/network/transport', ['NetworkTransport.Allocate']],
 #    },
     parameters => {
     	additionalProperties => 0,
@@ -218,7 +218,7 @@ __PACKAGE__->register_method ({
 
 		my $scfg = PVE::Network::Transport::transport_config($cfg, $transportid);
 
-#		my $plugin = PVE::Network::Plugin->lookup($scfg->{type});
+#		my $plugin = PVE::Network::Transport::Plugin->lookup($scfg->{type});
 #		$plugin->on_delete_hook($transportid, $scfg);
 
 		delete $cfg->{ids}->{$transportid};

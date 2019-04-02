@@ -1,10 +1,10 @@
-package PVE::Network::VlanPlugin;
+package PVE::Network::Transport::VlanPlugin;
 
 use strict;
 use warnings;
-use PVE::Network::Plugin;
+use PVE::Network::Transport::Plugin;
 
-use base('PVE::Network::Plugin');
+use base('PVE::Network::Transport::Plugin');
 
 sub type {
     return 'vlan';
@@ -14,7 +14,7 @@ PVE::JSONSchema::register_format('pve-network-vlanrange', \&pve_verify_network_v
 sub pve_verify_network_vlanrange {
    my ($vlanstr) = @_;
 
-   PVE::Network::Plugin::parse_tag_number_or_range($vlanstr, '4096');
+   PVE::Network::Transport::Plugin::parse_tag_number_or_range($vlanstr, '4096');
 
    return $vlanstr;
 }
@@ -70,7 +70,7 @@ sub generate_network_config {
     die "uplink $uplink is not defined" if !$uplinks->{$uplink};
 
     eval {
-	PVE::Network::Plugin::parse_tag_number_or_range($vlanallowed, '4096', $tag) if $vlanallowed;
+	PVE::Network::Transport::Plugin::parse_tag_number_or_range($vlanallowed, '4096', $tag) if $vlanallowed;
     };
     if($@) {
 	die "vlan $tag is not allowed in transport $zoneid";

@@ -4,13 +4,13 @@ use strict;
 use warnings;
 use Data::Dumper;
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
-use PVE::Network::Plugin;
-use PVE::Network::VlanPlugin;
-use PVE::Network::VxlanMulticastPlugin;
+use PVE::Network::Transport::Plugin;
+use PVE::Network::Transport::VlanPlugin;
+use PVE::Network::Transport::VxlanMulticastPlugin;
 
-PVE::Network::VlanPlugin->register();
-PVE::Network::VxlanMulticastPlugin->register();
-PVE::Network::Plugin->init();
+PVE::Network::Transport::VlanPlugin->register();
+PVE::Network::Transport::VxlanMulticastPlugin->register();
+PVE::Network::Transport::Plugin->init();
 
 
 sub transport_config {
