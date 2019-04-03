@@ -3,14 +3,15 @@ use warnings;
 use File::Copy;
 use PVE::Cluster qw(cfs_read_file);
 
-use PVE::Network::Vnet;
-use PVE::Network::Plugin;
-use PVE::Network::VlanPlugin;
-use PVE::Network::VxlanMulticastPlugin;
+use PVE::Network::Network::Plugin;
+use PVE::Network::Network::VnetPlugin;
+use PVE::Network::Network::VlanPlugin;
+use PVE::Network::Network::VxlanMulticastPlugin;
 
-PVE::Network::VlanPlugin->register();
-PVE::Network::VxlanMulticastPlugin->register();
-PVE::Network::Plugin->init();
+PVE::Network::Network::VnetPlugin->register();
+PVE::Network::Network::VlanPlugin->register();
+PVE::Network::Network::VxlanMulticastPlugin->register();
+PVE::Network::Network::Plugin->init();
 
 
 my $rawconfig = generate_network_config();
@@ -39,8 +40,17 @@ sub generate_network_config {
 	}
      }
 
-      my $vnet_cfg = PVE::Cluster::cfs_read_file('network/vnet.cfg');
-      my $transport_cfg = PVE::Cluster::cfs_read_file('network/transports.cfg');
+    my $network_cfg = PVE::Cluster::cfs_read_file('networks.cfg');
+    my $vnet_cfg = undef;
+    my $transport_cfg = undef;
+
+    foreach my $id (keys %{$network_cfg->{ids}}) {
+	if ($network_cfg->{ids}->{$id}->{type} eq 'vnet') {
+	    $vnet_cfg->{ids}->{$id} = $network_cfg->{ids}->{$id};
+	} else {
+	    $transport_cfg->{ids}->{$id} = $network_cfg->{ids}->{$id};
+	}
+    }
 
        #generate configuration
        my $rawconfig = "";
@@ -48,9 +58,10 @@ sub generate_network_config {
 	     my $vnet = $vnet_cfg->{ids}->{$id};
 	     my $zone = $vnet->{transportzone};
 
+	     die "zone $zone don't exist" if !$zone;
 	     my $plugin_config = $transport_cfg->{ids}->{$zone};
 	     die "zone $zone don't exist" if !defined($plugin_config);
-             my $plugin = PVE::Network::Plugin->lookup($plugin_config->{type});
+             my $plugin = PVE::Network::Network::Plugin->lookup($plugin_config->{type});
              $rawconfig .= $plugin->generate_network_config($plugin_config, $zone, $id, $vnet, $uplinks);
         }
 
