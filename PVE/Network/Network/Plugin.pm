@@ -1,4 +1,4 @@
-package PVE::Network::Transport::Plugin;
+package PVE::Network::Network::Plugin;
 
 use strict;
 use warnings;
@@ -11,7 +11,7 @@ use Data::Dumper;
 use PVE::JSONSchema qw(get_standard_option);
 use base qw(PVE::SectionConfig);
 
-PVE::Cluster::cfs_register_file('network/transports.cfg',
+PVE::Cluster::cfs_register_file('networks.cfg',
 				 sub { __PACKAGE__->parse_config(@_); },
 				 sub { __PACKAGE__->write_config(@_); });
 
@@ -23,8 +23,8 @@ my $defaultData = {
 	    type => 'string', format => 'pve-configid',
 	    type => 'string',
 	},
-        transport => get_standard_option('pve-transport-id',
-            { completion => \&PVE::Network::Transport::complete_transport }),
+        network => get_standard_option('pve-network-id',
+            { completion => \&PVE::Network::Network::complete_network }),
     },
 };
 
@@ -36,12 +36,12 @@ sub parse_section_header {
     my ($class, $line) = @_;
 
     if ($line =~ m/^(\S+):\s*(\S+)\s*$/) {
-        my ($type, $transportid) = (lc($1), $2);
+        my ($type, $networkid) = (lc($1), $2);
 	my $errmsg = undef; # set if you want to skip whole section
 	eval { PVE::JSONSchema::pve_verify_configid($type); };
 	$errmsg = $@ if $@;
 	my $config = {}; # to return additional attributes
-	return ($type, $transportid, $errmsg, $config);
+	return ($type, $networkid, $errmsg, $config);
     }
     return undef;
 }
