@@ -131,7 +131,8 @@ __PACKAGE__->register_method ({
 
 		my $cfg = PVE::Network::Network::config();
 
-		if (my $scfg = PVE::Network::Network::network_config($cfg, $networkid, 1)) {
+		my $scfg = undef;
+		if ($scfg = PVE::Network::Network::network_config($cfg, $networkid, 1)) {
 		    die "network object ID '$networkid' already defined\n";
 		}
 

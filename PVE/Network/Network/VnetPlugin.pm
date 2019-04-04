@@ -6,6 +6,12 @@ use PVE::Network::Network::Plugin;
 
 use base('PVE::Network::Network::Plugin');
 
+use PVE::Cluster;
+use PVE::LXC;
+use PVE::LXC::Config;
+use PVE::QemuServer;
+use PVE::QemuConfig;
+
 sub type {
     return 'vnet';
 }
@@ -65,6 +71,26 @@ sub on_delete_hook {
     my ($class, $networkid, $scfg) = @_;
 
     # verify than no vm or ct have interfaces in this bridge
+    my $vmdata = read_local_vm_config();
+
+    foreach my $vmid (sort keys %{$vmdata->{qemu}}) {
+	my $conf = $vmdata->{qemu}->{$vmid};
+	foreach my $netid (sort keys %$conf) {
+	    next if $netid !~ m/^net(\d+)$/;
+	    my $net = PVE::QemuServer::parse_net($conf->{$netid});
+	    die "vnet $networkid is used by vm $vmid" if $net->{bridge} eq $networkid;
+	}
+    }
+
+    foreach my $vmid (sort keys %{$vmdata->{lxc}}) {
+	my $conf = $vmdata->{lxc}->{$vmid};
+	foreach my $netid (sort keys %$conf) {
+	    next if $netid !~ m/^net(\d+)$/;
+	    my $net = PVE::LXC::Config->parse_lxc_network($conf->{$netid});
+	    die "vnet $networkid is used by ct $vmid" if $net->{bridge} eq $networkid;
+	}
+    }
+
 }
 
 sub on_update_hook {
@@ -73,5 +99,37 @@ sub on_update_hook {
     # verify that tag is not already defined in another vnet
 
 }
+
+sub read_local_vm_config {
+
+    my $qemu = {};
+    my $lxc = {};
+
+    my $vmdata = { qemu => $qemu, lxc => $lxc };
+
+    my $vmlist = PVE::Cluster::get_vmlist();
+    return $vmdata if !$vmlist || !$vmlist->{ids};
+    my $ids = $vmlist->{ids};
+
+    foreach my $vmid (keys %$ids) {
+	next if !$vmid;
+	my $d = $ids->{$vmid};
+	next if !$d->{node};
+	next if !$d->{type};
+	if ($d->{type} eq 'qemu') {
+	    my $cfspath = PVE::QemuConfig->cfs_config_path($vmid);
+	    if (my $conf = PVE::Cluster::cfs_read_file($cfspath)) {
+		$qemu->{$vmid} = $conf;
+	    }
+	} elsif ($d->{type} eq 'lxc') {
+	    my $cfspath = PVE::LXC::Config->cfs_config_path($vmid);
+	    if (my $conf = PVE::Cluster::cfs_read_file($cfspath)) {
+		$lxc->{$vmid} = $conf;
+	    }
+	}
+    }
+
+    return $vmdata;
+};
 
 1;
