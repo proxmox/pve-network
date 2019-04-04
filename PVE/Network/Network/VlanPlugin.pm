@@ -47,7 +47,7 @@ sub properties {
 sub options {
 
     return {
-	'uplink-id' => { optional => 1 },
+	'uplink-id' => { optional => 0 },
         'vlan-allowed' => { optional => 1 },
 	'vlan-protocol' => { optional => 1 },
 	'vlan-aware' => { optional => 1 },
