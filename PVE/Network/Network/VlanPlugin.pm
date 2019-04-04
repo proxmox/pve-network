@@ -96,6 +96,12 @@ sub generate_network_config {
     return $config;
 }
 
+sub on_delete_hook {
+    my ($class, $networkid, $scfg) = @_;
+
+    # verify that no vnet are associated to this transport  
+}
+
 1;
 
 

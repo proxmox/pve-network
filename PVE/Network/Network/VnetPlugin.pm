@@ -61,5 +61,11 @@ sub options {
     };
 }
 
+sub on_delete_hook {
+    my ($class, $networkid, $scfg) = @_;
+
+    # verify than no vm or ct have interfaces in this bridge
+}
+
 
 1;

@@ -52,6 +52,12 @@ sub generate_network_config {
     die "please implement inside plugin";
 }
 
+sub on_delete_hook {
+    my ($class, $networkid, $scfg) = @_;
+
+    # do nothing by default
+}
+
 #helpers
 sub parse_tag_number_or_range {
     my ($str, $max, $tag) = @_;

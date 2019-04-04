@@ -219,12 +219,10 @@ __PACKAGE__->register_method ({
 
 		my $scfg = PVE::Network::Network::network_config($cfg, $networkid);
 
-#		my $plugin = PVE::Network::Network::Plugin->lookup($scfg->{type});
-#		$plugin->on_delete_hook($networkid, $scfg);
+		my $plugin = PVE::Network::Network::Plugin->lookup($scfg->{type});
+		$plugin->on_delete_hook($networkid, $scfg);
 
 		delete $cfg->{ids}->{$networkid};
-		#improveme:
- 		#check that vnet don't use this transport
 		PVE::Network::Network::write_config($cfg);
 
 	    }, "delete network object failed");
