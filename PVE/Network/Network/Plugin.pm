@@ -58,6 +58,12 @@ sub on_delete_hook {
     # do nothing by default
 }
 
+sub on_update_hook {
+    my ($class, $networkid, $scfg) = @_;
+
+    # do nothing by default
+}
+
 #helpers
 sub parse_tag_number_or_range {
     my ($str, $max, $tag) = @_;

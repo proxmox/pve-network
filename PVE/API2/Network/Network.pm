@@ -136,9 +136,7 @@ __PACKAGE__->register_method ({
 		}
 
 		$cfg->{ids}->{$networkid} = $opts;
-
-		#improveme:
-		#check local configuration of all nodes for conflict
+		$plugin->on_update_hook($networkid, $scfg);
 
 		PVE::Network::Network::write_config($cfg);
 	    
@@ -179,9 +177,9 @@ __PACKAGE__->register_method ({
 	    foreach my $k (%$opts) {
 		$scfg->{$k} = $opts->{$k};
 	    }
-	    #improveme:
-            #add vlan/vxlan check on existingvnets
-	    #check local configuration of all nodes for conflict
+
+	    $plugin->on_update_hook($networkid, $scfg);
+
 	    PVE::Network::Network::write_config($cfg);
 
 	    }, "update network object failed");

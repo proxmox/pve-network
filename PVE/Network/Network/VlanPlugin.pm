@@ -102,6 +102,14 @@ sub on_delete_hook {
     # verify that no vnet are associated to this transport  
 }
 
+sub on_update_hook {
+    my ($class, $networkid, $scfg) = @_;
+
+    # verify that vlan-allowed don't conflict with another vlan-allowed transport
+
+    # verify that vlan-allowed is matching currently vnet tag in this transport
+}
+
 1;
 
 

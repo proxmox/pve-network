@@ -86,6 +86,15 @@ sub on_delete_hook {
     # verify that no vnet are associated to this transport
 }
 
+sub on_update_hook {
+    my ($class, $networkid, $scfg) = @_;
+
+    # verify that vxlan-allowed don't conflict with another vxlan-allowed transport
+
+    # verify that vxlan-allowed is matching currently vnet tag in this transport  
+
+}
+
 1;
 
 

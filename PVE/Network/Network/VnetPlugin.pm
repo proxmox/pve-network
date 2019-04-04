@@ -67,5 +67,11 @@ sub on_delete_hook {
     # verify than no vm or ct have interfaces in this bridge
 }
 
+sub on_update_hook {
+    my ($class, $networkid, $scfg) = @_;
+
+    # verify that tag is not already defined in another vnet
+
+}
 
 1;
