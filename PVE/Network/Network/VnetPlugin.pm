@@ -22,9 +22,9 @@ sub properties {
             type => 'integer',
             description => "vlan or vxlan id",
 	},
-        name => {
+        alias => {
             type => 'string',
-            description => "name of the vnet",
+            description => "alias name of the vnet",
 	    optional => 1,
         },
         mtu => {
@@ -54,7 +54,7 @@ sub options {
     return {
         transportzone => { optional => 0},
         tag => { optional => 0},
-        name => { optional => 1 },
+        alias => { optional => 1 },
         ipv4 => { optional => 1 },
         ipv6 => { optional => 1 },
         mtu => { optional => 1 },

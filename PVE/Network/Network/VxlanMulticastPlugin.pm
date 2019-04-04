@@ -48,6 +48,7 @@ sub generate_network_config {
 
     my $tag = $vnet->{tag};
     my $mtu = $vnet->{mtu};
+    my $alias = $vnet->{alias};
     my $multicastaddress = $plugin_config->{'multicast-address'};
     my $uplink = $plugin_config->{'uplink-id'};
     my $vxlanallowed = $plugin_config->{'vxlan-allowed'};
@@ -76,6 +77,7 @@ sub generate_network_config {
     $config .= "        bridge_stp off\n";
     $config .= "        bridge_fd 0\n";
     $config .= "        mtu $mtu\n" if $mtu;
+    $config .= "        alias $alias\n" if $alias;
 
     return $config;
 }

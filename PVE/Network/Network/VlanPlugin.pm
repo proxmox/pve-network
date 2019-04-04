@@ -61,6 +61,7 @@ sub generate_network_config {
 
     my $tag = $vnet->{tag};
     my $mtu = $vnet->{mtu};
+    my $alias = $vnet->{alias};
     my $vlanaware = $plugin_config->{'vlan-aware'};
     my $vlanprotocol = $plugin_config->{'vlan-protocol'};
     my $uplink = $plugin_config->{'uplink-id'};
@@ -92,6 +93,7 @@ sub generate_network_config {
     $config .= "        bridge_fd 0\n";
     $config .= "        bridge-vlan-aware yes \n" if $vlanaware;
     $config .= "        mtu $mtu\n" if $mtu;
+    $config .= "        alias $alias\n" if $alias;
 
     return $config;
 }
