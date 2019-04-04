@@ -17,16 +17,14 @@ sub properties {
 	transportzone => {
             type => 'string',
             description => "transportzone id",
-	    optional => 1,
 	},
 	tag => {
             type => 'integer',
             description => "vlan or vxlan id",
-	    optional => 1,
 	},
         name => {
             type => 'string',
-            description => "name of the network",
+            description => "name of the vnet",
 	    optional => 1,
         },
         mtu => {
@@ -54,12 +52,11 @@ sub properties {
 
 sub options {
     return {
-        transportzone => { optional => 1 },
-        tag => { optional => 1 },
+        transportzone => { optional => 0},
+        tag => { optional => 0},
         name => { optional => 1 },
         ipv4 => { optional => 1 },
         ipv6 => { optional => 1 },
-        name => { optional => 1 },
         mtu => { optional => 1 },
     };
 }
