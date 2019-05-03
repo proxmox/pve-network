@@ -70,6 +70,7 @@ sub generate_network_config {
     $config .= "       vxlan-id $tag\n" if $tag;
     $config .= "       vxlan-svcnodeip $multicastaddress\n" if $multicastaddress;
     $config .= "       vxlan-physdev $iface\n" if $iface;
+    $config .= "       mtu $mtu\n" if $mtu;
     $config .= "\n";
     $config .= "auto $vnetid\n";
     $config .= "iface $vnetid inet manual\n";
