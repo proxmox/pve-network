@@ -138,6 +138,14 @@ __PACKAGE__->register_method ({
 
 		$cfg->{ids}->{$networkid} = $opts;
 		$plugin->on_update_hook($networkid, $cfg);
+		#also verify transport associated to vnet
+		if($scfg->{type} eq 'vnet') {
+		    my $transportid = $scfg->{transportzone};
+		    die "missing transportzone" if !$transportid;
+		    my $transport_cfg = $cfg->{ids}->{$transportid};
+		    my $transport_plugin = PVE::Network::Network::Plugin->lookup($transport_cfg->{type});
+		    $transport_plugin->on_update_hook($transportid, $cfg);
+		}
 
 		PVE::Network::Network::write_config($cfg);
 	    
@@ -180,7 +188,14 @@ __PACKAGE__->register_method ({
 	    }
 
 	    $plugin->on_update_hook($networkid, $cfg);
-
+	    #also verify transport associated to vnet
+            if($scfg->{type} eq 'vnet') {
+                my $transportid = $scfg->{transportzone};
+                die "missing transportzone" if !$transportid;
+                my $transport_cfg = $cfg->{ids}->{$transportid};
+                my $transport_plugin = PVE::Network::Network::Plugin->lookup($transport_cfg->{type});
+                $transport_plugin->on_update_hook($transportid, $cfg);
+            }
 	    PVE::Network::Network::write_config($cfg);
 
 	    }, "update network object failed");
