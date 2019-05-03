@@ -105,11 +105,30 @@ sub on_delete_hook {
 }
 
 sub on_update_hook {
-    my ($class, $networkid, $scfg) = @_;
+    my ($class, $transportid, $network_cfg) = @_;
+
+    my $transport = $network_cfg->{ids}->{$transportid};
 
     # verify that vlan-allowed don't conflict with another vlan-allowed transport
 
     # verify that vlan-allowed is matching currently vnet tag in this transport
+    my $vlanallowed = $transport->{'vlan-allowed'};
+    if ($vlanallowed) {
+	foreach my $id (keys %{$network_cfg->{ids}}) {
+	    my $network = $network_cfg->{ids}->{$id};
+	    if ($network->{type} eq 'vnet' && defined($network->{tag})) {
+		if(defined($network->{transportzone}) && $network->{transportzone} eq $transportid) {
+		    my $tag = $network->{tag};
+		    eval {
+			PVE::Network::Network::Plugin::parse_tag_number_or_range($vlanallowed, '4096', $tag);
+		    };
+		    if($@) {
+			die "vlan $tag is not allowed in transport $transportid";
+		    }
+		}
+	    }
+	}
+    }
 }
 
 1;
