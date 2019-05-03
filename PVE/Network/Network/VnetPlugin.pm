@@ -107,10 +107,18 @@ sub on_delete_hook {
 }
 
 sub on_update_hook {
-    my ($class, $networkid, $scfg) = @_;
-
+    my ($class, $networkid, $network_cfg) = @_;
     # verify that tag is not already defined in another vnet
-
+    if (defined($network_cfg->{ids}->{$networkid}->{tag})) {
+	my $tag = $network_cfg->{ids}->{$networkid}->{tag};
+	foreach my $id (keys %{$network_cfg->{ids}}) {
+	    next if $id eq $networkid;
+	    my $network = $network_cfg->{ids}->{$id};
+	    if ($network->{type} eq 'vnet' && defined($network->{tag})) {
+		die "tag $tag already exist in vnet $id" if $tag eq $network->{tag};
+	    }
+	}
+    }
 }
 
 sub read_cluster_vm_config {

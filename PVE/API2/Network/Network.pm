@@ -137,7 +137,7 @@ __PACKAGE__->register_method ({
 		}
 
 		$cfg->{ids}->{$networkid} = $opts;
-		$plugin->on_update_hook($networkid, $scfg);
+		$plugin->on_update_hook($networkid, $cfg);
 
 		PVE::Network::Network::write_config($cfg);
 	    
@@ -179,7 +179,7 @@ __PACKAGE__->register_method ({
 		$scfg->{$k} = $opts->{$k};
 	    }
 
-	    $plugin->on_update_hook($networkid, $scfg);
+	    $plugin->on_update_hook($networkid, $cfg);
 
 	    PVE::Network::Network::write_config($cfg);
 
