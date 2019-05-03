@@ -84,7 +84,7 @@ sub on_delete_hook {
     my ($class, $networkid, $scfg) = @_;
 
     # verify than no vm or ct have interfaces in this bridge
-    my $vmdata = read_local_vm_config();
+    my $vmdata = read_cluster_vm_config();
 
     foreach my $vmid (sort keys %{$vmdata->{qemu}}) {
 	my $conf = $vmdata->{qemu}->{$vmid};
@@ -113,7 +113,7 @@ sub on_update_hook {
 
 }
 
-sub read_local_vm_config {
+sub read_cluster_vm_config {
 
     my $qemu = {};
     my $lxc = {};
@@ -127,7 +127,6 @@ sub read_local_vm_config {
     foreach my $vmid (keys %$ids) {
 	next if !$vmid;
 	my $d = $ids->{$vmid};
-	next if !$d->{node};
 	next if !$d->{type};
 	if ($d->{type} eq 'qemu' && $have_qemu_server) {
 	    my $cfspath = PVE::QemuConfig->cfs_config_path($vmid);
