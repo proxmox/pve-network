@@ -90,12 +90,30 @@ sub on_delete_hook {
 }
 
 sub on_update_hook {
-    my ($class, $networkid, $scfg) = @_;
+    my ($class, $transportid, $network_cfg) = @_;
+
+    my $transport = $network_cfg->{ids}->{$transportid};
 
     # verify that vxlan-allowed don't conflict with another vxlan-allowed transport
 
     # verify that vxlan-allowed is matching currently vnet tag in this transport  
-
+    my $vxlanallowed = $transport->{'vxlan-allowed'};
+    if ($vxlanallowed) {
+	foreach my $id (keys %{$network_cfg->{ids}}) {
+	    my $network = $network_cfg->{ids}->{$id};
+	    if ($network->{type} eq 'vnet' && defined($network->{tag})) {
+		if(defined($network->{transportzone}) && $network->{transportzone} eq $transportid) {
+		    my $tag = $network->{tag};
+		    eval {
+			PVE::Network::Network::Plugin::parse_tag_number_or_range($vxlanallowed, '16777216', $tag);
+		    };
+		    if($@) {
+			die "vnet $id - vlan $tag is not allowed in transport $transportid";
+		    }
+		}
+	    }
+	}
+    }
 }
 
 1;
