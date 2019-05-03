@@ -7,10 +7,23 @@ use PVE::Network::Network::Plugin;
 use base('PVE::Network::Network::Plugin');
 
 use PVE::Cluster;
-use PVE::LXC;
-use PVE::LXC::Config;
-use PVE::QemuServer;
-use PVE::QemuConfig;
+
+# dynamically include PVE::QemuServer and PVE::LXC
+# to avoid dependency problems
+my $have_qemu_server;
+eval {
+    require PVE::QemuServer;
+    require PVE::QemuConfig;
+    $have_qemu_server = 1;
+};
+
+my $have_lxc;
+eval {
+    require PVE::LXC;
+    require PVE::LXC::Config;
+
+    $have_lxc = 1;
+};
 
 sub type {
     return 'vnet';
@@ -116,12 +129,12 @@ sub read_local_vm_config {
 	my $d = $ids->{$vmid};
 	next if !$d->{node};
 	next if !$d->{type};
-	if ($d->{type} eq 'qemu') {
+	if ($d->{type} eq 'qemu' && $have_qemu_server) {
 	    my $cfspath = PVE::QemuConfig->cfs_config_path($vmid);
 	    if (my $conf = PVE::Cluster::cfs_read_file($cfspath)) {
 		$qemu->{$vmid} = $conf;
 	    }
-	} elsif ($d->{type} eq 'lxc') {
+	} elsif ($d->{type} eq 'lxc' && $have_lxc) {
 	    my $cfspath = PVE::LXC::Config->cfs_config_path($vmid);
 	    if (my $conf = PVE::Cluster::cfs_read_file($cfspath)) {
 		$lxc->{$vmid} = $conf;
