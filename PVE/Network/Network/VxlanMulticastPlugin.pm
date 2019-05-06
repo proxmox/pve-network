@@ -84,9 +84,14 @@ sub generate_network_config {
 }
 
 sub on_delete_hook {
-    my ($class, $networkid, $scfg) = @_;
+    my ($class, $transportid, $network_cfg) = @_;
 
     # verify that no vnet are associated to this transport
+    foreach my $id (keys %{$network_cfg->{ids}}) {
+	my $network = $network_cfg->{ids}->{$id};
+	die "transport $transportid is used by vnet $id" 
+	    if ($network->{type} eq 'vnet' && defined($network->{transportzone}) && $network->{transportzone} eq $transportid);
+    }
 }
 
 sub on_update_hook {

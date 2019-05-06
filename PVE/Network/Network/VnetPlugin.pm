@@ -81,7 +81,7 @@ sub options {
 }
 
 sub on_delete_hook {
-    my ($class, $networkid, $scfg) = @_;
+    my ($class, $networkid, $network_cfg) = @_;
 
     # verify than no vm or ct have interfaces in this bridge
     my $vmdata = read_cluster_vm_config();

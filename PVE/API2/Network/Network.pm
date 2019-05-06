@@ -234,7 +234,7 @@ __PACKAGE__->register_method ({
 		my $scfg = PVE::Network::Network::network_config($cfg, $networkid);
 
 		my $plugin = PVE::Network::Network::Plugin->lookup($scfg->{type});
-		$plugin->on_delete_hook($networkid, $scfg);
+		$plugin->on_delete_hook($networkid, $cfg);
 
 		delete $cfg->{ids}->{$networkid};
 		PVE::Network::Network::write_config($cfg);
