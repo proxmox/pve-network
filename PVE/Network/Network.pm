@@ -27,20 +27,21 @@ sub network_config {
 }
 
 sub config {
-
-    return cfs_read_file("networks.cfg");
+    my $config = cfs_read_file("networks.cfg.new");
+    $config = cfs_read_file("networks.cfg") if !keys %{$config->{ids}};
+    return $config;
 }
 
 sub write_config {
     my ($cfg) = @_;
 
-    cfs_write_file("networks.cfg", $cfg);
+    cfs_write_file("networks.cfg.new", $cfg);
 }
 
 sub lock_network_config {
     my ($code, $errmsg) = @_;
 
-    cfs_lock_file("networks.cfg", undef, $code);
+    cfs_lock_file("networks.cfg.new", undef, $code);
     my $err = $@;
     if ($err) {
         $errmsg ? die "$errmsg: $err" : die $err;
