@@ -155,6 +155,46 @@ __PACKAGE__->register_method ({
     }});
 
 __PACKAGE__->register_method ({
+    name => 'apply_configuration',
+    protected => 1,
+    path => '',
+    method => 'PUT',
+    description => "Apply network changes.",
+#    permissions => { 
+#	check => ['perm', '/cluster/network', ['Network.Allocate']],
+#    },
+    returns => { type => 'null' },
+    code => sub {
+	my ($param) = @_;
+
+	die "no network changes to apply" if !-e "/etc/pve/networks.cfg.new";
+	rename("/etc/pve/networks.cfg.new", "/etc/pve/networks.cfg")
+	    || die "applying networks.cfg changes failed - $!\n";
+
+
+	return undef;
+    }});
+
+__PACKAGE__->register_method ({
+    name => 'revert_configuration',
+    protected => 1,
+    path => '',
+    method => 'DELETE',
+    description => "Revert network changes.",
+#    permissions => { 
+#	check => ['perm', '/cluster/network', ['Network.Allocate']],
+#    },
+    returns => { type => 'null' },
+    code => sub {
+	my ($param) = @_;
+
+	die "no network changes to revert" if !-e "/etc/pve/networks.cfg.new";
+	unlink "/etc/pve/networks.cfg.new";
+
+	return undef;
+    }});
+
+__PACKAGE__->register_method ({
     name => 'update',
     protected => 1,
     path => '{network}',
