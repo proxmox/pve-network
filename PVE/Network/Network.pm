@@ -3,6 +3,8 @@ package PVE::Network::Network;
 use strict;
 use warnings;
 use Data::Dumper;
+use JSON;
+use PVE::Tools qw(extract_param dir_glob_regex);
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 use PVE::Network::Network::Plugin;
 use PVE::Network::Network::VnetPlugin;
@@ -60,6 +62,32 @@ sub complete_network {
     my $cfg = PVE::Network::Network::config();
 
     return  $cmdname eq 'add' ? [] : [ PVE::Network::Network::networks_ids($cfg) ];
+}
+
+sub status {
+
+    my $cmd = ['ifquery', '-a', '-c', '-o','json'];
+    my $result;;
+
+    my $code = sub {
+        my $line = shift;
+	$result .= $line;
+    };
+
+    eval {
+	PVE::Tools::run_command($cmd, outfunc => $code, errfunc => $code);
+    };
+
+    my $resultjson = JSON::decode_json($result);
+    my $interfaces = {};
+
+    foreach my $interface (@$resultjson) {
+	$interfaces->{$interface->{'name'}}->{status} = $interface->{'status'};
+	$interfaces->{$interface->{'name'}}->{config} = $interface->{'config'};
+	$interfaces->{$interface->{'name'}}->{config_status} = $interface->{'config_status'};
+    }
+
+    return $interfaces;
 }
 
 1;
