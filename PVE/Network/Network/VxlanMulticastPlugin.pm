@@ -54,8 +54,7 @@ sub generate_network_config {
     my $vxlanallowed = $plugin_config->{'vxlan-allowed'};
 
     die "missing vxlan tag" if !$tag;
-    die "uplink $uplink is not defined" if !$uplinks->{$uplink};
-    my $iface = $uplinks->{$uplink};
+    my $iface = $uplinks->{$uplink} ? $uplinks->{$uplink} : "uplink$uplink";
 
     eval {
 	PVE::Network::Network::Plugin::parse_tag_number_or_range($vxlanallowed, '16777216', $tag) if $vxlanallowed;
