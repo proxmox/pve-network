@@ -2,9 +2,11 @@ package PVE::Network::Network;
 
 use strict;
 use warnings;
+
 use Data::Dumper;
 use JSON;
-use PVE::Tools qw(extract_param dir_glob_regex);
+
+use PVE::Tools qw(extract_param dir_glob_regex run_command);
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 use PVE::Network::Network::Plugin;
 use PVE::Network::Network::VnetPlugin;
@@ -75,7 +77,7 @@ sub status {
     };
 
     eval {
-	PVE::Tools::run_command($cmd, outfunc => $code, errfunc => $code);
+	run_command($cmd, outfunc => $code, errfunc => $code);
     };
 
     my $resultjson = JSON::decode_json($result);
