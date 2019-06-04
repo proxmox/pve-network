@@ -69,13 +69,6 @@ sub generate_network_config {
 
     die "missing vlan tag" if !$tag;
 
-    eval {
-	PVE::Network::Network::Plugin::parse_tag_number_or_range($vlanallowed, '4096', $tag) if $vlanallowed;
-    };
-    if($@) {
-	die "vlan $tag is not allowed in transport $zoneid";
-    }
-
     my $iface = $uplinks->{$uplink} ? $uplinks->{$uplink} : "uplink$uplink";
     $iface .= ".$tag";
 

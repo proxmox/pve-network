@@ -56,13 +56,6 @@ sub generate_network_config {
     die "missing vxlan tag" if !$tag;
     my $iface = $uplinks->{$uplink} ? $uplinks->{$uplink} : "uplink$uplink";
 
-    eval {
-	PVE::Network::Network::Plugin::parse_tag_number_or_range($vxlanallowed, '16777216', $tag) if $vxlanallowed;
-    };
-    if($@) {
-	die "vlan $tag is not allowed in transport $zoneid";
-    }
-
     my $config = "\n";
     $config .= "auto vxlan$tag\n";
     $config .= "iface vxlan$tag inet manual\n";
