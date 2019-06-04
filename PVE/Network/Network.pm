@@ -46,8 +46,7 @@ sub lock_network_config {
     my ($code, $errmsg) = @_;
 
     cfs_lock_file("networks.cfg.new", undef, $code);
-    my $err = $@;
-    if ($err) {
+    if (my $err = $@) {
         $errmsg ? die "$errmsg: $err" : die $err;
     }
 }
@@ -69,15 +68,12 @@ sub complete_network {
 sub status {
 
     my $cmd = ['ifquery', '-a', '-c', '-o','json'];
-    my $result;;
 
-    my $code = sub {
-        my $line = shift;
-	$result .= $line;
-    };
+    my $result = '';
+    my $reader = sub { $result .= shift };
 
     eval {
-	run_command($cmd, outfunc => $code, errfunc => $code);
+	run_command($cmd, outfunc => $reader, errfunc => $reader);
     };
 
     my $resultjson = JSON::decode_json($result);
