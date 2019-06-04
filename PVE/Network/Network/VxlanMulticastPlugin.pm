@@ -65,16 +65,16 @@ sub generate_network_config {
     }
 
     my $config = "\n";
-    $config .= "auto vxlan$vnetid\n";
-    $config .= "iface vxlan$vnetid inet manual\n";
-    $config .= "       vxlan-id $tag\n" if $tag;
+    $config .= "auto vxlan$tag\n";
+    $config .= "iface vxlan$tag inet manual\n";
+    $config .= "       vxlan-id $tag\n";
     $config .= "       vxlan-svcnodeip $multicastaddress\n" if $multicastaddress;
     $config .= "       vxlan-physdev $iface\n" if $iface;
     $config .= "       mtu $mtu\n" if $mtu;
     $config .= "\n";
     $config .= "auto $vnetid\n";
     $config .= "iface $vnetid inet manual\n";
-    $config .= "        bridge_ports vxlan$vnetid\n";
+    $config .= "        bridge_ports vxlan$tag\n";
     $config .= "        bridge_stp off\n";
     $config .= "        bridge_fd 0\n";
     $config .= "        mtu $mtu\n" if $mtu;
