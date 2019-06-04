@@ -16,7 +16,6 @@ PVE::Network::Network::Plugin->init();
 
 my $rawconfig = generate_network_config();
 print $rawconfig;
-verify_merged_config($rawconfig);
 write_final_config($rawconfig);
 
 sub generate_network_config {
@@ -68,26 +67,6 @@ sub generate_network_config {
 return $rawconfig;
 }
 
-#implement reload (split and reuse code from API2/Network.pm for bridge delete verification)
-
-sub verify_merged_config {
-    my ($rawconfig) = @_;
-
-	#merge main network intefaces and vnet file for possible conflict verification
-	my $tmp_merged_network_interfaces = "/var/tmp/pve-merged_network_interfaces";
-	copy("/etc/network/interfaces", $tmp_merged_network_interfaces);
-
-	my $writefh = IO::File->new($tmp_merged_network_interfaces, '>>');
-	print $writefh $rawconfig;
-	$writefh->close();
-
-	my $readfh = IO::File->new($tmp_merged_network_interfaces);
-	my $merged_interfaces_config = PVE::INotify::read_etc_network_interfaces(1,$readfh);
-	$readfh->close();
-	unlink $tmp_merged_network_interfaces;
-	PVE::INotify::__write_etc_network_interfaces($merged_interfaces_config, 1);
-
-}
 
 sub write_final_config {
     my ($rawconfig) = @_;
