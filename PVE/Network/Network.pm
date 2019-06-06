@@ -73,16 +73,19 @@ sub status {
     my $reader = sub { $result .= shift };
 
     eval {
-	run_command($cmd, outfunc => $reader, errfunc => $reader);
+	run_command($cmd, outfunc => $reader);
     };
 
-    my $resultjson = JSON::decode_json($result);
+    my $resultjson = decode_json($result);
     my $interfaces = {};
 
     foreach my $interface (@$resultjson) {
-	$interfaces->{$interface->{'name'}}->{status} = $interface->{'status'};
-	$interfaces->{$interface->{'name'}}->{config} = $interface->{'config'};
-	$interfaces->{$interface->{'name'}}->{config_status} = $interface->{'config_status'};
+	my $name = $interface->{name};
+	$interfaces->{$name} = {
+	    status => $interface->{status},
+	    config => $interface->{config},
+	    config_status => $interface->{config_status},
+	};
     }
 
     return $interfaces;
