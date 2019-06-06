@@ -35,7 +35,8 @@ sub generate_network_config {
         my $interface = $interfaces_config->{ifaces}->{$id};
 	if (my $uplink = $interface->{'uplink-id'}) {
 		die "uplink-id $uplink is already defined on $uplinks->{$uplink}" if $uplinks->{$uplink};
-		$uplinks->{$interface->{'uplink-id'}} = $id;
+		$interface->{name} = $id;
+		$uplinks->{$interface->{'uplink-id'}} = $interface;
 	}
      }
 

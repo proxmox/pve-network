@@ -47,14 +47,17 @@ sub generate_network_config {
     my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $uplinks) = @_;
 
     my $tag = $vnet->{tag};
-    my $mtu = $vnet->{mtu};
     my $alias = $vnet->{alias};
     my $multicastaddress = $plugin_config->{'multicast-address'};
     my $uplink = $plugin_config->{'uplink-id'};
     my $vxlanallowed = $plugin_config->{'vxlan-allowed'};
 
     die "missing vxlan tag" if !$tag;
-    my $iface = $uplinks->{$uplink} ? $uplinks->{$uplink} : "uplink$uplink";
+    my $iface = $uplinks->{$uplink}->{name} ? $uplinks->{$uplink}->{name} : "uplink$uplink";
+
+    my $mtu = 1450;
+    $mtu = $uplinks->{$uplink}->{mtu} - 50 if $uplinks->{$uplink}->{mtu};
+    $mtu = $vnet->{mtu} if $vnet->{mtu};
 
     my $config = "\n";
     $config .= "auto vxlan$tag\n";

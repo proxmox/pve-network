@@ -69,9 +69,8 @@ sub generate_network_config {
 
     die "missing vlan tag" if !$tag;
 
-    my $iface = $uplinks->{$uplink} ? $uplinks->{$uplink} : "uplink$uplink";
+    my $iface = $uplinks->{$uplink}->{name} ? $uplinks->{$uplink}->{name} : "uplink$uplink";
     $iface .= ".$tag";
-
     my $config = "\n";
     $config .= "auto $iface\n";
     $config .= "iface $iface inet manual\n";
