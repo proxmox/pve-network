@@ -8,28 +8,9 @@ use base('PVE::Network::Network::Plugin');
 
 use PVE::Cluster;
 
-# dynamically include PVE::QemuServer and PVE::LXC
-# to avoid dependency problems
-my $have_qemu_server;
-eval {
-    require PVE::QemuServer;
-    require PVE::QemuConfig;
-    $have_qemu_server = 1;
-};
-
-my $have_lxc;
-eval {
-    require PVE::LXC;
-    require PVE::LXC::Config;
-
-    $have_lxc = 1;
-};
-
 sub type {
     return 'vnet';
 }
-
-
 
 sub properties {
     return {
@@ -83,27 +64,7 @@ sub options {
 sub on_delete_hook {
     my ($class, $networkid, $network_cfg) = @_;
 
-    # verify than no vm or ct have interfaces in this bridge
-    my $vmdata = read_cluster_vm_config();
-
-    foreach my $vmid (sort keys %{$vmdata->{qemu}}) {
-	my $conf = $vmdata->{qemu}->{$vmid};
-	foreach my $netid (sort keys %$conf) {
-	    next if $netid !~ m/^net(\d+)$/;
-	    my $net = PVE::QemuServer::parse_net($conf->{$netid});
-	    die "vnet $networkid is used by vm $vmid" if $net->{bridge} eq $networkid;
-	}
-    }
-
-    foreach my $vmid (sort keys %{$vmdata->{lxc}}) {
-	my $conf = $vmdata->{lxc}->{$vmid};
-	foreach my $netid (sort keys %$conf) {
-	    next if $netid !~ m/^net(\d+)$/;
-	    my $net = PVE::LXC::Config->parse_lxc_network($conf->{$netid});
-	    die "vnet $networkid is used by ct $vmid" if $net->{bridge} eq $networkid;
-	}
-    }
-
+    return;
 }
 
 sub on_update_hook {
@@ -120,36 +81,5 @@ sub on_update_hook {
 	}
     }
 }
-
-sub read_cluster_vm_config {
-
-    my $qemu = {};
-    my $lxc = {};
-
-    my $vmdata = { qemu => $qemu, lxc => $lxc };
-
-    my $vmlist = PVE::Cluster::get_vmlist();
-    return $vmdata if !$vmlist || !$vmlist->{ids};
-    my $ids = $vmlist->{ids};
-
-    foreach my $vmid (keys %$ids) {
-	next if !$vmid;
-	my $d = $ids->{$vmid};
-	next if !$d->{type};
-	if ($d->{type} eq 'qemu' && $have_qemu_server) {
-	    my $cfspath = PVE::QemuConfig->cfs_config_path($vmid);
-	    if (my $conf = PVE::Cluster::cfs_read_file($cfspath)) {
-		$qemu->{$vmid} = $conf;
-	    }
-	} elsif ($d->{type} eq 'lxc' && $have_lxc) {
-	    my $cfspath = PVE::LXC::Config->cfs_config_path($vmid);
-	    if (my $conf = PVE::Cluster::cfs_read_file($cfspath)) {
-		$lxc->{$vmid} = $conf;
-	    }
-	}
-    }
-
-    return $vmdata;
-};
 
 1;
