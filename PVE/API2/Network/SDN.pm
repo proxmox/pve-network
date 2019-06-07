@@ -1,4 +1,4 @@
-package PVE::API2::Network::Network;
+package PVE::API2::Network::SDN;
 
 use strict;
 use warnings;
@@ -6,11 +6,11 @@ use warnings;
 use PVE::SafeSyslog;
 use PVE::Tools qw(extract_param);
 use PVE::Cluster qw(cfs_read_file cfs_write_file);
-use PVE::Network::Network;
-use PVE::Network::Network::Plugin;
-use PVE::Network::Network::VlanPlugin;
-use PVE::Network::Network::VxlanMulticastPlugin;
-use PVE::Network::Network::VnetPlugin;
+use PVE::Network::SDN;
+use PVE::Network::SDN::Plugin;
+use PVE::Network::SDN::VlanPlugin;
+use PVE::Network::SDN::VxlanMulticastPlugin;
+use PVE::Network::SDN::VnetPlugin;
 use Storable qw(dclone);
 use PVE::JSONSchema qw(get_standard_option);
 use PVE::RPCEnvironment;
@@ -19,12 +19,12 @@ use PVE::RESTHandler;
 
 use base qw(PVE::RESTHandler);
 
-my $network_type_enum = PVE::Network::Network::Plugin->lookup_types();
+my $network_type_enum = PVE::Network::SDN::Plugin->lookup_types();
 
 my $api_network_config = sub {
     my ($cfg, $networkid) = @_;
 
-    my $scfg = dclone(PVE::Network::Network::network_config($cfg, $networkid));
+    my $scfg = dclone(PVE::Network::SDN::network_config($cfg, $networkid));
     $scfg->{network} = $networkid;
     $scfg->{digest} = $cfg->{digest};
 
@@ -66,9 +66,9 @@ __PACKAGE__->register_method ({
 	my $authuser = $rpcenv->get_user();
 
 
-	my $cfg = PVE::Network::Network::config();
+	my $cfg = PVE::Network::SDN::config();
 
-	my @sids = PVE::Network::Network::networks_ids($cfg);
+	my @sids = PVE::Network::SDN::networks_ids($cfg);
 	my $res = [];
 	foreach my $networkid (@sids) {
 #	    my $privs = [ 'Network.Audit', 'Network.Allocate' ];
@@ -101,7 +101,7 @@ __PACKAGE__->register_method ({
     code => sub {
 	my ($param) = @_;
 
-	my $cfg = PVE::Network::Network::config();
+	my $cfg = PVE::Network::SDN::config();
 
 	return &$api_network_config($cfg, $param->{network});
     }});
@@ -115,7 +115,7 @@ __PACKAGE__->register_method ({
 #    permissions => { 
 #	check => ['perm', '/cluster/network', ['Network.Allocate']],
 #    },
-    parameters => PVE::Network::Network::Plugin->createSchema(),
+    parameters => PVE::Network::SDN::Plugin->createSchema(),
     returns => { type => 'null' },
     code => sub {
 	my ($param) = @_;
@@ -123,16 +123,16 @@ __PACKAGE__->register_method ({
 	my $type = extract_param($param, 'type');
 	my $networkid = extract_param($param, 'network');
 
-	my $plugin = PVE::Network::Network::Plugin->lookup($type);
+	my $plugin = PVE::Network::SDN::Plugin->lookup($type);
 	my $opts = $plugin->check_config($networkid, $param, 1, 1);
 
-        PVE::Network::Network::lock_network_config(
+        PVE::Network::SDN::lock_network_config(
 	    sub {
 
-		my $cfg = PVE::Network::Network::config();
+		my $cfg = PVE::Network::SDN::config();
 
 		my $scfg = undef;
-		if ($scfg = PVE::Network::Network::network_config($cfg, $networkid, 1)) {
+		if ($scfg = PVE::Network::SDN::network_config($cfg, $networkid, 1)) {
 		    die "network object ID '$networkid' already defined\n";
 		}
 
@@ -143,11 +143,11 @@ __PACKAGE__->register_method ({
 		    my $transportid = $scfg->{transportzone};
 		    die "missing transportzone" if !$transportid;
 		    my $transport_cfg = $cfg->{ids}->{$transportid};
-		    my $transport_plugin = PVE::Network::Network::Plugin->lookup($transport_cfg->{type});
+		    my $transport_plugin = PVE::Network::SDN::Plugin->lookup($transport_cfg->{type});
 		    $transport_plugin->on_update_hook($transportid, $cfg);
 		}
 
-		PVE::Network::Network::write_config($cfg);
+		PVE::Network::SDN::write_config($cfg);
 	    
 	    }, "create network object failed");
 
@@ -203,7 +203,7 @@ __PACKAGE__->register_method ({
 #    permissions => { 
 #	check => ['perm', '/cluster/network', ['Network.Allocate']],
 #    },
-    parameters => PVE::Network::Network::Plugin->updateSchema(),
+    parameters => PVE::Network::SDN::Plugin->updateSchema(),
     returns => { type => 'null' },
     code => sub {
 	my ($param) = @_;
@@ -211,16 +211,16 @@ __PACKAGE__->register_method ({
 	my $networkid = extract_param($param, 'network');
 	my $digest = extract_param($param, 'digest');
 
-        PVE::Network::Network::lock_network_config(
+        PVE::Network::SDN::lock_network_config(
 	 sub {
 
-	    my $cfg = PVE::Network::Network::config();
+	    my $cfg = PVE::Network::SDN::config();
 
 	    PVE::SectionConfig::assert_if_modified($cfg, $digest);
 
-	    my $scfg = PVE::Network::Network::network_config($cfg, $networkid);
+	    my $scfg = PVE::Network::SDN::network_config($cfg, $networkid);
 
-	    my $plugin = PVE::Network::Network::Plugin->lookup($scfg->{type});
+	    my $plugin = PVE::Network::SDN::Plugin->lookup($scfg->{type});
 	    my $opts = $plugin->check_config($networkid, $param, 0, 1);
 
 	    foreach my $k (%$opts) {
@@ -233,10 +233,10 @@ __PACKAGE__->register_method ({
                 my $transportid = $scfg->{transportzone};
                 die "missing transportzone" if !$transportid;
                 my $transport_cfg = $cfg->{ids}->{$transportid};
-                my $transport_plugin = PVE::Network::Network::Plugin->lookup($transport_cfg->{type});
+                my $transport_plugin = PVE::Network::SDN::Plugin->lookup($transport_cfg->{type});
                 $transport_plugin->on_update_hook($transportid, $cfg);
             }
-	    PVE::Network::Network::write_config($cfg);
+	    PVE::Network::SDN::write_config($cfg);
 
 	    }, "update network object failed");
 
@@ -256,7 +256,7 @@ __PACKAGE__->register_method ({
     	additionalProperties => 0,
 	properties => { 
 	    network => get_standard_option('pve-network-id', {
-                completion => \&PVE::Network::Network::complete_network,
+                completion => \&PVE::Network::SDN::complete_network,
             }),
 	},
     },
@@ -266,18 +266,18 @@ __PACKAGE__->register_method ({
 
 	my $networkid = extract_param($param, 'network');
 
-        PVE::Network::Network::lock_network_config(
+        PVE::Network::SDN::lock_network_config(
 	    sub {
 
-		my $cfg = PVE::Network::Network::config();
+		my $cfg = PVE::Network::SDN::config();
 
-		my $scfg = PVE::Network::Network::network_config($cfg, $networkid);
+		my $scfg = PVE::Network::SDN::network_config($cfg, $networkid);
 
-		my $plugin = PVE::Network::Network::Plugin->lookup($scfg->{type});
+		my $plugin = PVE::Network::SDN::Plugin->lookup($scfg->{type});
 		$plugin->on_delete_hook($networkid, $cfg);
 
 		delete $cfg->{ids}->{$networkid};
-		PVE::Network::Network::write_config($cfg);
+		PVE::Network::SDN::write_config($cfg);
 
 	    }, "delete network object failed");
 

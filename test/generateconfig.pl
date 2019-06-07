@@ -3,15 +3,15 @@ use warnings;
 use File::Copy;
 use PVE::Cluster qw(cfs_read_file);
 
-use PVE::Network::Network::Plugin;
-use PVE::Network::Network::VnetPlugin;
-use PVE::Network::Network::VlanPlugin;
-use PVE::Network::Network::VxlanMulticastPlugin;
+use PVE::Network::SDN::Plugin;
+use PVE::Network::SDN::VnetPlugin;
+use PVE::Network::SDN::VlanPlugin;
+use PVE::Network::SDN::VxlanMulticastPlugin;
 
-PVE::Network::Network::VnetPlugin->register();
-PVE::Network::Network::VlanPlugin->register();
-PVE::Network::Network::VxlanMulticastPlugin->register();
-PVE::Network::Network::Plugin->init();
+PVE::Network::SDN::VnetPlugin->register();
+PVE::Network::SDN::VlanPlugin->register();
+PVE::Network::SDN::VxlanMulticastPlugin->register();
+PVE::Network::SDN::Plugin->init();
 
 
 my $rawconfig = generate_network_config();
@@ -61,7 +61,7 @@ sub generate_network_config {
 	     die "zone $zone don't exist" if !$zone;
 	     my $plugin_config = $transport_cfg->{ids}->{$zone};
 	     die "zone $zone don't exist" if !defined($plugin_config);
-             my $plugin = PVE::Network::Network::Plugin->lookup($plugin_config->{type});
+             my $plugin = PVE::Network::SDN::Plugin->lookup($plugin_config->{type});
              $rawconfig .= $plugin->generate_network_config($plugin_config, $zone, $id, $vnet, $uplinks);
         }
 

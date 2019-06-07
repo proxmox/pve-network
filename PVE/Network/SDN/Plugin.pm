@@ -1,4 +1,4 @@
-package PVE::Network::Network::Plugin;
+package PVE::Network::SDN::Plugin;
 
 use strict;
 use warnings;
@@ -27,7 +27,7 @@ my $defaultData = {
 	    type => 'string',
 	},
         network => get_standard_option('pve-network-id',
-            { completion => \&PVE::Network::Network::complete_network }),
+            { completion => \&PVE::Network::SDN::complete_network }),
     },
 };
 

@@ -1,4 +1,4 @@
-SOURCES=Network.pm
+SOURCES=SDN.pm
 
 
 PERL5DIR=${DESTDIR}/usr/share/perl5

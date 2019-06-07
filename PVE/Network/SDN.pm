@@ -1,4 +1,4 @@
-package PVE::Network::Network;
+package PVE::Network::SDN;
 
 use strict;
 use warnings;
@@ -8,15 +8,15 @@ use JSON;
 
 use PVE::Tools qw(extract_param dir_glob_regex run_command);
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
-use PVE::Network::Network::Plugin;
-use PVE::Network::Network::VnetPlugin;
-use PVE::Network::Network::VlanPlugin;
-use PVE::Network::Network::VxlanMulticastPlugin;
+use PVE::Network::SDN::Plugin;
+use PVE::Network::SDN::VnetPlugin;
+use PVE::Network::SDN::VlanPlugin;
+use PVE::Network::SDN::VxlanMulticastPlugin;
 
-PVE::Network::Network::VnetPlugin->register();
-PVE::Network::Network::VlanPlugin->register();
-PVE::Network::Network::VxlanMulticastPlugin->register();
-PVE::Network::Network::Plugin->init();
+PVE::Network::SDN::VnetPlugin->register();
+PVE::Network::SDN::VlanPlugin->register();
+PVE::Network::SDN::VxlanMulticastPlugin->register();
+PVE::Network::SDN::Plugin->init();
 
 
 sub network_config {
@@ -60,9 +60,9 @@ sub networks_ids {
 sub complete_network {
     my ($cmdname, $pname, $cvalue) = @_;
 
-    my $cfg = PVE::Network::Network::config();
+    my $cfg = PVE::Network::SDN::config();
 
-    return  $cmdname eq 'add' ? [] : [ PVE::Network::Network::networks_ids($cfg) ];
+    return  $cmdname eq 'add' ? [] : [ PVE::Network::SDN::networks_ids($cfg) ];
 }
 
 sub status {

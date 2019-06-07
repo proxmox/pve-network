@@ -3,15 +3,15 @@ use warnings;
 use File::Copy;
 use PVE::Cluster qw(cfs_read_file);
 
-use PVE::Network::Network;
+use PVE::Network::SDN;
 use Data::Dumper;
-use PVE::Network::Network::Plugin;
-use PVE::Network::Network::VnetPlugin;
-use PVE::Network::Network::VlanPlugin;
-use PVE::Network::Network::VxlanMulticastPlugin;
+use PVE::Network::SDN::Plugin;
+use PVE::Network::SDN::VnetPlugin;
+use PVE::Network::SDN::VlanPlugin;
+use PVE::Network::SDN::VxlanMulticastPlugin;
 
 
-my $status = PVE::Network::Network::status();
+my $status = PVE::Network::SDN::status();
 
 my $network_cfg = PVE::Cluster::cfs_read_file('networks.cfg');
 my $vnet_cfg = undef;

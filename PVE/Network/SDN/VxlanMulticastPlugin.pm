@@ -1,16 +1,16 @@
-package PVE::Network::Network::VxlanMulticastPlugin;
+package PVE::Network::SDN::VxlanMulticastPlugin;
 
 use strict;
 use warnings;
-use PVE::Network::Network::Plugin;
+use PVE::Network::SDN::Plugin;
 
-use base('PVE::Network::Network::Plugin');
+use base('PVE::Network::SDN::Plugin');
 
 PVE::JSONSchema::register_format('pve-network-vxlanrange', \&pve_verify_network_vxlanrange);
 sub pve_verify_network_vxlanrange {
    my ($vxlanstr) = @_;
 
-   PVE::Network::Network::Plugin::parse_tag_number_or_range($vxlanstr, '16777216');
+   PVE::Network::SDN::Plugin::parse_tag_number_or_range($vxlanstr, '16777216');
 
    return $vxlanstr;
 }
@@ -105,7 +105,7 @@ sub on_update_hook {
 		if(defined($network->{transportzone}) && $network->{transportzone} eq $transportid) {
 		    my $tag = $network->{tag};
 		    eval {
-			PVE::Network::Network::Plugin::parse_tag_number_or_range($vxlanallowed, '16777216', $tag);
+			PVE::Network::SDN::Plugin::parse_tag_number_or_range($vxlanallowed, '16777216', $tag);
 		    };
 		    if($@) {
 			die "vnet $id - vlan $tag is not allowed in transport $transportid";

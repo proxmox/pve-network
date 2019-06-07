@@ -1,10 +1,10 @@
-package PVE::Network::Network::VnetPlugin;
+package PVE::Network::SDN::VnetPlugin;
 
 use strict;
 use warnings;
-use PVE::Network::Network::Plugin;
+use PVE::Network::SDN::Plugin;
 
-use base('PVE::Network::Network::Plugin');
+use base('PVE::Network::SDN::Plugin');
 
 use PVE::Cluster;
 

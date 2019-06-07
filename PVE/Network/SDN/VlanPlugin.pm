@@ -1,10 +1,10 @@
-package PVE::Network::Network::VlanPlugin;
+package PVE::Network::SDN::VlanPlugin;
 
 use strict;
 use warnings;
-use PVE::Network::Network::Plugin;
+use PVE::Network::SDN::Plugin;
 
-use base('PVE::Network::Network::Plugin');
+use base('PVE::Network::SDN::Plugin');
 
 sub type {
     return 'vlan';
@@ -14,7 +14,7 @@ PVE::JSONSchema::register_format('pve-network-vlanrange', \&pve_verify_network_v
 sub pve_verify_network_vlanrange {
    my ($vlanstr) = @_;
 
-   PVE::Network::Network::Plugin::parse_tag_number_or_range($vlanstr, '4096');
+   PVE::Network::SDN::Plugin::parse_tag_number_or_range($vlanstr, '4096');
 
    return $vlanstr;
 }
@@ -117,7 +117,7 @@ sub on_update_hook {
 		if(defined($network->{transportzone}) && $network->{transportzone} eq $transportid) {
 		    my $tag = $network->{tag};
 		    eval {
-			PVE::Network::Network::Plugin::parse_tag_number_or_range($vlanallowed, '4096', $tag);
+			PVE::Network::SDN::Plugin::parse_tag_number_or_range($vlanallowed, '4096', $tag);
 		    };
 		    if($@) {
 			die "vlan $tag is not allowed in transport $transportid";
