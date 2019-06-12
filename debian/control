@@ -16,5 +16,6 @@ Breaks: pve-manager (<< 5.2-12)
 Depends: libpve-common-perl (>= 5.0-45),
          perl (>= 5.6.0-16),
          pve-cluster (>= 5.0-32),
+         ${perl:Depends},
 Description: Proxmox VE storage management library
  This package contains the storage management library used by Proxmox VE.
