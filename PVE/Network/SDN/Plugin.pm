@@ -18,6 +18,22 @@ PVE::Cluster::cfs_register_file('networks.cfg.new',
 				 sub { __PACKAGE__->parse_config(@_); },
 				 sub { __PACKAGE__->write_config(@_); });
 
+PVE::JSONSchema::register_standard_option('pve-network-id', {
+    description => "The Network object identifier.",
+    type => 'string', format => 'pve-network-id',
+});
+
+PVE::JSONSchema::register_format('pve-network-id', \&parse_network_id);
+sub parse_network_id {
+    my ($networkid, $noerr) = @_;
+
+    if ($networkid !~ m/^[a-z][a-z0-9\-\_\.]*[a-z0-9]$/i) {
+        return undef if $noerr;
+        die "network object ID '$networkid' contains illegal characters\n";
+    }
+    return $networkid;
+}
+
 my $defaultData = {
 
     propertyList => {
