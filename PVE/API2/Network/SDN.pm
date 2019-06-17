@@ -163,6 +163,9 @@ __PACKAGE__->register_method ({
 #    permissions => { 
 #	check => ['perm', '/cluster/network', ['Network.Allocate']],
 #    },
+    parameters => {
+	additionalProperties => 0,
+    },
     returns => { type => 'null' },
     code => sub {
 	my ($param) = @_;
@@ -184,6 +187,9 @@ __PACKAGE__->register_method ({
 #    permissions => { 
 #	check => ['perm', '/cluster/network', ['Network.Allocate']],
 #    },
+    parameters => {
+	additionalProperties => 0,
+    },
     returns => { type => 'null' },
     code => sub {
 	my ($param) = @_;
