@@ -14,11 +14,11 @@ PVE::Network::SDN::VxlanMulticastPlugin->register();
 PVE::Network::SDN::Plugin->init();
 
 
-my $rawconfig = generate_network_config();
+my $rawconfig = generate_sdn_config();
 print $rawconfig;
 write_final_config($rawconfig);
 
-sub generate_network_config {
+sub generate_sdn_config {
 
      #only support ifupdown2
     die "you need ifupdown2 to reload networking\n" if !-e '/usr/share/ifupdown2';
@@ -40,15 +40,15 @@ sub generate_network_config {
 	}
      }
 
-    my $network_cfg = PVE::Cluster::cfs_read_file('networks.cfg');
+    my $sdn_cfg = PVE::Cluster::cfs_read_file('sdn.cfg');
     my $vnet_cfg = undef;
     my $transport_cfg = undef;
 
-    foreach my $id (keys %{$network_cfg->{ids}}) {
-	if ($network_cfg->{ids}->{$id}->{type} eq 'vnet') {
-	    $vnet_cfg->{ids}->{$id} = $network_cfg->{ids}->{$id};
+    foreach my $id (keys %{$sdn_cfg->{ids}}) {
+	if ($sdn_cfg->{ids}->{$id}->{type} eq 'vnet') {
+	    $vnet_cfg->{ids}->{$id} = $sdn_cfg->{ids}->{$id};
 	} else {
-	    $transport_cfg->{ids}->{$id} = $network_cfg->{ids}->{$id};
+	    $transport_cfg->{ids}->{$id} = $sdn_cfg->{ids}->{$id};
 	}
     }
 
@@ -62,7 +62,7 @@ sub generate_network_config {
 	     my $plugin_config = $transport_cfg->{ids}->{$zone};
 	     die "zone $zone don't exist" if !defined($plugin_config);
              my $plugin = PVE::Network::SDN::Plugin->lookup($plugin_config->{type});
-             $rawconfig .= $plugin->generate_network_config($plugin_config, $zone, $id, $vnet, $uplinks);
+             $rawconfig .= $plugin->generate_sdn_config($plugin_config, $zone, $id, $vnet, $uplinks);
         }
 
 return $rawconfig;

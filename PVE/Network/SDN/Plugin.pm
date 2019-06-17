@@ -11,27 +11,27 @@ use Data::Dumper;
 use PVE::JSONSchema qw(get_standard_option);
 use base qw(PVE::SectionConfig);
 
-PVE::Cluster::cfs_register_file('networks.cfg',
+PVE::Cluster::cfs_register_file('sdn.cfg',
 				 sub { __PACKAGE__->parse_config(@_); });
 
-PVE::Cluster::cfs_register_file('networks.cfg.new',
+PVE::Cluster::cfs_register_file('sdn.cfg.new',
 				 sub { __PACKAGE__->parse_config(@_); },
 				 sub { __PACKAGE__->write_config(@_); });
 
-PVE::JSONSchema::register_standard_option('pve-network-id', {
-    description => "The Network object identifier.",
-    type => 'string', format => 'pve-network-id',
+PVE::JSONSchema::register_standard_option('pve-sdn-id', {
+    description => "The SDN object identifier.",
+    type => 'string', format => 'pve-sdn-id',
 });
 
-PVE::JSONSchema::register_format('pve-network-id', \&parse_network_id);
-sub parse_network_id {
-    my ($networkid, $noerr) = @_;
+PVE::JSONSchema::register_format('pve-sdn-id', \&parse_sdn_id);
+sub parse_sdn_id {
+    my ($sdnid, $noerr) = @_;
 
-    if ($networkid !~ m/^[a-z][a-z0-9\-\_\.]*[a-z0-9]$/i) {
+    if ($sdnid !~ m/^[a-z][a-z0-9\-\_\.]*[a-z0-9]$/i) {
         return undef if $noerr;
-        die "network object ID '$networkid' contains illegal characters\n";
+        die "SDN object ID '$sdnid' contains illegal characters\n";
     }
-    return $networkid;
+    return $sdnid;
 }
 
 my $defaultData = {
@@ -42,8 +42,8 @@ my $defaultData = {
 	    type => 'string', format => 'pve-configid',
 	    type => 'string',
 	},
-        network => get_standard_option('pve-network-id',
-            { completion => \&PVE::Network::SDN::complete_network }),
+        sdn => get_standard_option('pve-sdn-id',
+            { completion => \&PVE::Network::SDN::complete_sdn }),
     },
 };
 
@@ -55,30 +55,30 @@ sub parse_section_header {
     my ($class, $line) = @_;
 
     if ($line =~ m/^(\S+):\s*(\S+)\s*$/) {
-        my ($type, $networkid) = (lc($1), $2);
+        my ($type, $sdnid) = (lc($1), $2);
 	my $errmsg = undef; # set if you want to skip whole section
 	eval { PVE::JSONSchema::pve_verify_configid($type); };
 	$errmsg = $@ if $@;
 	my $config = {}; # to return additional attributes
-	return ($type, $networkid, $errmsg, $config);
+	return ($type, $sdnid, $errmsg, $config);
     }
     return undef;
 }
 
-sub generate_network_config {
+sub generate_sdn_config {
     my ($class, $plugin_config, $node, $data, $ctime) = @_;
 
     die "please implement inside plugin";
 }
 
 sub on_delete_hook {
-    my ($class, $networkid, $scfg) = @_;
+    my ($class, $sndid, $scfg) = @_;
 
     # do nothing by default
 }
 
 sub on_update_hook {
-    my ($class, $networkid, $scfg) = @_;
+    my ($class, $sdnid, $scfg) = @_;
 
     # do nothing by default
 }

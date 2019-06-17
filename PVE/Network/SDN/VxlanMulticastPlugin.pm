@@ -6,8 +6,8 @@ use PVE::Network::SDN::Plugin;
 
 use base('PVE::Network::SDN::Plugin');
 
-PVE::JSONSchema::register_format('pve-network-vxlanrange', \&pve_verify_network_vxlanrange);
-sub pve_verify_network_vxlanrange {
+PVE::JSONSchema::register_format('pve-sdn-vxlanrange', \&pve_verify_sdn_vxlanrange);
+sub pve_verify_sdn_vxlanrange {
    my ($vxlanstr) = @_;
 
    PVE::Network::SDN::Plugin::parse_tag_number_or_range($vxlanstr, '16777216');
@@ -22,7 +22,7 @@ sub type {
 sub properties {
     return {
         'vxlan-allowed' => {
-            type => 'string', format => 'pve-network-vxlanrange',
+            type => 'string', format => 'pve-sdn-vxlanrange',
             description => "Allowed vlan range",
         },
         'multicast-address' => {
@@ -43,7 +43,7 @@ sub options {
 }
 
 # Plugin implementation
-sub generate_network_config {
+sub generate_sdn_config {
     my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $uplinks) = @_;
 
     my $tag = $vnet->{tag};
@@ -79,31 +79,31 @@ sub generate_network_config {
 }
 
 sub on_delete_hook {
-    my ($class, $transportid, $network_cfg) = @_;
+    my ($class, $transportid, $sdn_cfg) = @_;
 
     # verify that no vnet are associated to this transport
-    foreach my $id (keys %{$network_cfg->{ids}}) {
-	my $network = $network_cfg->{ids}->{$id};
+    foreach my $id (keys %{$sdn_cfg->{ids}}) {
+	my $sdn = $sdn_cfg->{ids}->{$id};
 	die "transport $transportid is used by vnet $id" 
-	    if ($network->{type} eq 'vnet' && defined($network->{transportzone}) && $network->{transportzone} eq $transportid);
+	    if ($sdn->{type} eq 'vnet' && defined($sdn->{transportzone}) && $sdn->{transportzone} eq $transportid);
     }
 }
 
 sub on_update_hook {
-    my ($class, $transportid, $network_cfg) = @_;
+    my ($class, $transportid, $sdn_cfg) = @_;
 
-    my $transport = $network_cfg->{ids}->{$transportid};
+    my $transport = $sdn_cfg->{ids}->{$transportid};
 
     # verify that vxlan-allowed don't conflict with another vxlan-allowed transport
 
     # verify that vxlan-allowed is matching currently vnet tag in this transport  
     my $vxlanallowed = $transport->{'vxlan-allowed'};
     if ($vxlanallowed) {
-	foreach my $id (keys %{$network_cfg->{ids}}) {
-	    my $network = $network_cfg->{ids}->{$id};
-	    if ($network->{type} eq 'vnet' && defined($network->{tag})) {
-		if(defined($network->{transportzone}) && $network->{transportzone} eq $transportid) {
-		    my $tag = $network->{tag};
+	foreach my $id (keys %{$sdn_cfg->{ids}}) {
+	    my $sdn = $sdn_cfg->{ids}->{$id};
+	    if ($sdn->{type} eq 'vnet' && defined($sdn->{tag})) {
+		if(defined($sdn->{transportzone}) && $sdn->{transportzone} eq $transportid) {
+		    my $tag = $sdn->{tag};
 		    eval {
 			PVE::Network::SDN::Plugin::parse_tag_number_or_range($vxlanallowed, '16777216', $tag);
 		    };

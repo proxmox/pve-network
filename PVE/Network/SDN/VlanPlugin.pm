@@ -10,8 +10,8 @@ sub type {
     return 'vlan';
 }
 
-PVE::JSONSchema::register_format('pve-network-vlanrange', \&pve_verify_network_vlanrange);
-sub pve_verify_network_vlanrange {
+PVE::JSONSchema::register_format('pve-sdn-vlanrange', \&pve_verify_sdn_vlanrange);
+sub pve_verify_sdn_vlanrange {
    my ($vlanstr) = @_;
 
    PVE::Network::SDN::Plugin::parse_tag_number_or_range($vlanstr, '4096');
@@ -27,7 +27,7 @@ sub properties {
 	    description => 'Uplink interface',
 	},
 	'vlan-allowed' => {
-	    type => 'string', format => 'pve-network-vlanrange',
+	    type => 'string', format => 'pve-sdn-vlanrange',
 	    description => "Allowed vlan range",
 	},
 	'vlan-aware' => {
@@ -56,7 +56,7 @@ sub options {
 }
 
 # Plugin implementation
-sub generate_network_config {
+sub generate_sdn_config {
     my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $uplinks) = @_;
 
     my $tag = $vnet->{tag};
@@ -91,31 +91,31 @@ sub generate_network_config {
 }
 
 sub on_delete_hook {
-    my ($class, $transportid, $network_cfg) = @_;
+    my ($class, $transportid, $sdn_cfg) = @_;
 
     # verify that no vnet are associated to this transport
-    foreach my $id (keys %{$network_cfg->{ids}}) {
-	my $network = $network_cfg->{ids}->{$id};
+    foreach my $id (keys %{$sdn_cfg->{ids}}) {
+	my $sdn = $sdn_cfg->{ids}->{$id};
 	die "transport $transportid is used by vnet $id"
-	    if ($network->{type} eq 'vnet' && defined($network->{transportzone}) && $network->{transportzone} eq $transportid);
+	    if ($sdn->{type} eq 'vnet' && defined($sdn->{transportzone}) && $sdn->{transportzone} eq $transportid);
     }
 }
 
 sub on_update_hook {
-    my ($class, $transportid, $network_cfg) = @_;
+    my ($class, $transportid, $sdn_cfg) = @_;
 
-    my $transport = $network_cfg->{ids}->{$transportid};
+    my $transport = $sdn_cfg->{ids}->{$transportid};
 
     # verify that vlan-allowed don't conflict with another vlan-allowed transport
 
     # verify that vlan-allowed is matching currently vnet tag in this transport
     my $vlanallowed = $transport->{'vlan-allowed'};
     if ($vlanallowed) {
-	foreach my $id (keys %{$network_cfg->{ids}}) {
-	    my $network = $network_cfg->{ids}->{$id};
-	    if ($network->{type} eq 'vnet' && defined($network->{tag})) {
-		if(defined($network->{transportzone}) && $network->{transportzone} eq $transportid) {
-		    my $tag = $network->{tag};
+	foreach my $id (keys %{$sdn_cfg->{ids}}) {
+	    my $sdn = $sdn_cfg->{ids}->{$id};
+	    if ($sdn->{type} eq 'vnet' && defined($sdn->{tag})) {
+		if(defined($sdn->{transportzone}) && $sdn->{transportzone} eq $transportid) {
+		    my $tag = $sdn->{tag};
 		    eval {
 			PVE::Network::SDN::Plugin::parse_tag_number_or_range($vlanallowed, '4096', $tag);
 		    };

@@ -19,50 +19,50 @@ PVE::Network::SDN::VxlanMulticastPlugin->register();
 PVE::Network::SDN::Plugin->init();
 
 
-sub network_config {
-    my ($cfg, $networkid, $noerr) = @_;
+sub sdn_config {
+    my ($cfg, $sdnid, $noerr) = @_;
 
-    die "no network ID specified\n" if !$networkid;
+    die "no sdn ID specified\n" if !$sdnid;
 
-    my $scfg = $cfg->{ids}->{$networkid};
-    die "network '$networkid' does not exists\n" if (!$noerr && !$scfg);
+    my $scfg = $cfg->{ids}->{$sdnid};
+    die "sdn '$sdnid' does not exists\n" if (!$noerr && !$scfg);
 
     return $scfg;
 }
 
 sub config {
-    my $config = cfs_read_file("networks.cfg.new");
-    $config = cfs_read_file("networks.cfg") if !keys %{$config->{ids}};
+    my $config = cfs_read_file("sdn.cfg.new");
+    $config = cfs_read_file("sdn.cfg") if !keys %{$config->{ids}};
     return $config;
 }
 
 sub write_config {
     my ($cfg) = @_;
 
-    cfs_write_file("networks.cfg.new", $cfg);
+    cfs_write_file("sdn.cfg.new", $cfg);
 }
 
-sub lock_network_config {
+sub lock_sdn_config {
     my ($code, $errmsg) = @_;
 
-    cfs_lock_file("networks.cfg.new", undef, $code);
+    cfs_lock_file("sdn.cfg.new", undef, $code);
     if (my $err = $@) {
         $errmsg ? die "$errmsg: $err" : die $err;
     }
 }
 
-sub networks_ids {
+sub sdn_ids {
     my ($cfg) = @_;
 
     return keys %{$cfg->{ids}};
 }
 
-sub complete_network {
+sub complete_sdn {
     my ($cmdname, $pname, $cvalue) = @_;
 
     my $cfg = PVE::Network::SDN::config();
 
-    return  $cmdname eq 'add' ? [] : [ PVE::Network::SDN::networks_ids($cfg) ];
+    return  $cmdname eq 'add' ? [] : [ PVE::Network::SDN::sdn_ids($cfg) ];
 }
 
 sub status {

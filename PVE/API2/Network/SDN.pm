@@ -19,13 +19,13 @@ use PVE::RESTHandler;
 
 use base qw(PVE::RESTHandler);
 
-my $network_type_enum = PVE::Network::SDN::Plugin->lookup_types();
+my $sdn_type_enum = PVE::Network::SDN::Plugin->lookup_types();
 
-my $api_network_config = sub {
-    my ($cfg, $networkid) = @_;
+my $api_sdn_config = sub {
+    my ($cfg, $sdnid) = @_;
 
-    my $scfg = dclone(PVE::Network::SDN::network_config($cfg, $networkid));
-    $scfg->{network} = $networkid;
+    my $scfg = dclone(PVE::Network::SDN::sdn_config($cfg, $sdnid));
+    $scfg->{sdn} = $sdnid;
     $scfg->{digest} = $cfg->{digest};
 
     return $scfg;
@@ -35,18 +35,18 @@ __PACKAGE__->register_method ({
     name => 'index', 
     path => '',
     method => 'GET',
-    description => "Network index.",
+    description => "SDN index.",
     permissions => { 
-	description => "Only list entries where you have 'Network.Audit' or 'Network.Allocate' permissions on '/cluster/network/<network>'",
+	description => "Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/cluster/sdn/<sdn>'",
 	user => 'all',
     },
     parameters => {
     	additionalProperties => 0,
 	properties => {
 	    type => { 
-		description => "Only list network of specific type",
+		description => "Only list sdn of specific type",
 		type => 'string', 
-		enum => $network_type_enum,
+		enum => $sdn_type_enum,
 		optional => 1,
 	    },
 	},
@@ -55,9 +55,9 @@ __PACKAGE__->register_method ({
 	type => 'array',
 	items => {
 	    type => "object",
-	    properties => { network => { type => 'string'} },
+	    properties => { sdn => { type => 'string'} },
 	},
-	links => [ { rel => 'child', href => "{network}" } ],
+	links => [ { rel => 'child', href => "{sdn}" } ],
     },
     code => sub {
 	my ($param) = @_;
@@ -68,13 +68,13 @@ __PACKAGE__->register_method ({
 
 	my $cfg = PVE::Network::SDN::config();
 
-	my @sids = PVE::Network::SDN::networks_ids($cfg);
+	my @sids = PVE::Network::SDN::sdn_ids($cfg);
 	my $res = [];
-	foreach my $networkid (@sids) {
-#	    my $privs = [ 'Network.Audit', 'Network.Allocate' ];
-#	    next if !$rpcenv->check_any($authuser, "/cluster/network/$networkid", $privs, 1);
+	foreach my $sdnid (@sids) {
+#	    my $privs = [ 'SDN.Audit', 'SDN.Allocate' ];
+#	    next if !$rpcenv->check_any($authuser, "/cluster/sdn/$sdnid", $privs, 1);
 
-	    my $scfg = &$api_network_config($cfg, $networkid);
+	    my $scfg = &$api_sdn_config($cfg, $sdnid);
 	    next if $param->{type} && $param->{type} ne $scfg->{type};
 	    push @$res, $scfg;
 	}
@@ -84,17 +84,17 @@ __PACKAGE__->register_method ({
 
 __PACKAGE__->register_method ({
     name => 'read', 
-    path => '{network}',
+    path => '{sdn}',
     method => 'GET',
-    description => "Read network configuration.",
+    description => "Read sdn configuration.",
 #    permissions => { 
-#	check => ['perm', '/cluster/network/{network}', ['Network.Allocate']],
+#	check => ['perm', '/cluster/sdn/{sdn}', ['SDN.Allocate']],
 #   },
 
     parameters => {
     	additionalProperties => 0,
 	properties => {
-	    network => get_standard_option('pve-network-id'),
+	    sdn => get_standard_option('pve-sdn-id'),
 	},
     },
     returns => { type => 'object' },
@@ -103,7 +103,7 @@ __PACKAGE__->register_method ({
 
 	my $cfg = PVE::Network::SDN::config();
 
-	return &$api_network_config($cfg, $param->{network});
+	return &$api_sdn_config($cfg, $param->{sdn});
     }});
 
 __PACKAGE__->register_method ({
@@ -111,9 +111,9 @@ __PACKAGE__->register_method ({
     protected => 1,
     path => '', 
     method => 'POST',
-    description => "Create a new network object.",
+    description => "Create a new sdn object.",
 #    permissions => { 
-#	check => ['perm', '/cluster/network', ['Network.Allocate']],
+#	check => ['perm', '/cluster/sdn', ['SDN.Allocate']],
 #    },
     parameters => PVE::Network::SDN::Plugin->createSchema(),
     returns => { type => 'null' },
@@ -121,23 +121,23 @@ __PACKAGE__->register_method ({
 	my ($param) = @_;
 
 	my $type = extract_param($param, 'type');
-	my $networkid = extract_param($param, 'network');
+	my $sdnid = extract_param($param, 'sdn');
 
 	my $plugin = PVE::Network::SDN::Plugin->lookup($type);
-	my $opts = $plugin->check_config($networkid, $param, 1, 1);
+	my $opts = $plugin->check_config($sdnid, $param, 1, 1);
 
-        PVE::Network::SDN::lock_network_config(
+        PVE::Network::SDN::lock_sdn_config(
 	    sub {
 
 		my $cfg = PVE::Network::SDN::config();
 
 		my $scfg = undef;
-		if ($scfg = PVE::Network::SDN::network_config($cfg, $networkid, 1)) {
-		    die "network object ID '$networkid' already defined\n";
+		if ($scfg = PVE::Network::SDN::sdn_config($cfg, $sdnid, 1)) {
+		    die "sdn object ID '$sdnid' already defined\n";
 		}
 
-		$cfg->{ids}->{$networkid} = $opts;
-		$plugin->on_update_hook($networkid, $cfg);
+		$cfg->{ids}->{$sdnid} = $opts;
+		$plugin->on_update_hook($sdnid, $cfg);
 		#also verify transport associated to vnet
 		if($scfg && $scfg->{type} eq 'vnet') {
 		    my $transportid = $scfg->{transportzone};
@@ -149,7 +149,7 @@ __PACKAGE__->register_method ({
 
 		PVE::Network::SDN::write_config($cfg);
 	    
-	    }, "create network object failed");
+	    }, "create sdn object failed");
 
 	return undef;
     }});
@@ -159,9 +159,9 @@ __PACKAGE__->register_method ({
     protected => 1,
     path => '',
     method => 'PUT',
-    description => "Apply network changes.",
+    description => "Apply sdn changes.",
 #    permissions => { 
-#	check => ['perm', '/cluster/network', ['Network.Allocate']],
+#	check => ['perm', '/cluster/sdn', ['SDN.Allocate']],
 #    },
     parameters => {
 	additionalProperties => 0,
@@ -170,9 +170,9 @@ __PACKAGE__->register_method ({
     code => sub {
 	my ($param) = @_;
 
-	die "no network changes to apply" if !-e "/etc/pve/networks.cfg.new";
-	rename("/etc/pve/networks.cfg.new", "/etc/pve/networks.cfg")
-	    || die "applying networks.cfg changes failed - $!\n";
+	die "no sdn changes to apply" if !-e "/etc/pve/sdn.cfg.new";
+	rename("/etc/pve/sdn.cfg.new", "/etc/pve/sdn.cfg")
+	    || die "applying sdn.cfg changes failed - $!\n";
 
 
 	return undef;
@@ -183,9 +183,9 @@ __PACKAGE__->register_method ({
     protected => 1,
     path => '',
     method => 'DELETE',
-    description => "Revert network changes.",
+    description => "Revert sdn changes.",
 #    permissions => { 
-#	check => ['perm', '/cluster/network', ['Network.Allocate']],
+#	check => ['perm', '/cluster/sdn', ['SDN.Allocate']],
 #    },
     parameters => {
 	additionalProperties => 0,
@@ -194,8 +194,8 @@ __PACKAGE__->register_method ({
     code => sub {
 	my ($param) = @_;
 
-	die "no network changes to revert" if !-e "/etc/pve/networks.cfg.new";
-	unlink "/etc/pve/networks.cfg.new";
+	die "no sdn changes to revert" if !-e "/etc/pve/sdn.cfg.new";
+	unlink "/etc/pve/sdn.cfg.new";
 
 	return undef;
     }});
@@ -203,37 +203,37 @@ __PACKAGE__->register_method ({
 __PACKAGE__->register_method ({
     name => 'update',
     protected => 1,
-    path => '{network}',
+    path => '{sdn}',
     method => 'PUT',
-    description => "Update network object configuration.",
+    description => "Update sdn object configuration.",
 #    permissions => { 
-#	check => ['perm', '/cluster/network', ['Network.Allocate']],
+#	check => ['perm', '/cluster/sdn', ['SDN.Allocate']],
 #    },
     parameters => PVE::Network::SDN::Plugin->updateSchema(),
     returns => { type => 'null' },
     code => sub {
 	my ($param) = @_;
 
-	my $networkid = extract_param($param, 'network');
+	my $sdnid = extract_param($param, 'sdn');
 	my $digest = extract_param($param, 'digest');
 
-        PVE::Network::SDN::lock_network_config(
+        PVE::Network::SDN::lock_sdn_config(
 	 sub {
 
 	    my $cfg = PVE::Network::SDN::config();
 
 	    PVE::SectionConfig::assert_if_modified($cfg, $digest);
 
-	    my $scfg = PVE::Network::SDN::network_config($cfg, $networkid);
+	    my $scfg = PVE::Network::SDN::sdn_config($cfg, $sdnid);
 
 	    my $plugin = PVE::Network::SDN::Plugin->lookup($scfg->{type});
-	    my $opts = $plugin->check_config($networkid, $param, 0, 1);
+	    my $opts = $plugin->check_config($sdnid, $param, 0, 1);
 
 	    foreach my $k (%$opts) {
 		$scfg->{$k} = $opts->{$k};
 	    }
 
-	    $plugin->on_update_hook($networkid, $cfg);
+	    $plugin->on_update_hook($sdnid, $cfg);
 	    #also verify transport associated to vnet
             if($scfg->{type} eq 'vnet') {
                 my $transportid = $scfg->{transportzone};
@@ -244,7 +244,7 @@ __PACKAGE__->register_method ({
             }
 	    PVE::Network::SDN::write_config($cfg);
 
-	    }, "update network object failed");
+	    }, "update sdn object failed");
 
 	return undef;
     }});
@@ -252,17 +252,17 @@ __PACKAGE__->register_method ({
 __PACKAGE__->register_method ({
     name => 'delete',
     protected => 1,
-    path => '{network}', # /cluster/network/{network}
+    path => '{sdn}',
     method => 'DELETE',
-    description => "Delete network object configuration.",
+    description => "Delete sdn object configuration.",
 #    permissions => { 
-#	check => ['perm', '/cluster/network', ['Network.Allocate']],
+#	check => ['perm', '/cluster/sdn', ['SDN.Allocate']],
 #    },
     parameters => {
     	additionalProperties => 0,
 	properties => { 
-	    network => get_standard_option('pve-network-id', {
-                completion => \&PVE::Network::SDN::complete_network,
+	    sdn => get_standard_option('pve-sdn-id', {
+                completion => \&PVE::Network::SDN::complete_sdn,
             }),
 	},
     },
@@ -270,22 +270,22 @@ __PACKAGE__->register_method ({
     code => sub {
 	my ($param) = @_;
 
-	my $networkid = extract_param($param, 'network');
+	my $sdnid = extract_param($param, 'sdn');
 
-        PVE::Network::SDN::lock_network_config(
+        PVE::Network::SDN::lock_sdn_config(
 	    sub {
 
 		my $cfg = PVE::Network::SDN::config();
 
-		my $scfg = PVE::Network::SDN::network_config($cfg, $networkid);
+		my $scfg = PVE::Network::SDN::sdn_config($cfg, $sdnid);
 
 		my $plugin = PVE::Network::SDN::Plugin->lookup($scfg->{type});
-		$plugin->on_delete_hook($networkid, $cfg);
+		$plugin->on_delete_hook($sdnid, $cfg);
 
-		delete $cfg->{ids}->{$networkid};
+		delete $cfg->{ids}->{$sdnid};
 		PVE::Network::SDN::write_config($cfg);
 
-	    }, "delete network object failed");
+	    }, "delete sdn object failed");
 
 
 	return undef;
