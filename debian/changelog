@@ -1,3 +1,13 @@
+libpve-network-perl (0.2-1) pve; urgency=medium
+
+  * add API
+
+  * improve VNET, VXLAN and VXLAN Multicast plugins
+
+  * use SDN (Software Defined Network) as base module path
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 18 Jun 2019 10:19:25 +0200
+
 libpve-network-perl (0.1-1) unstable; urgency=medium
 
   * Initial release 
