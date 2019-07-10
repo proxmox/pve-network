@@ -1,13 +1,11 @@
+include /usr/share/dpkg/pkg-info.mk
+
 PACKAGE=libpve-network-perl
-PKGVER != dpkg-parsechangelog -Sversion | cut -d- -f1
-PKGREL != dpkg-parsechangelog -Sversion | cut -d- -f2
 
-ARCH=all
+BUILDDIR ?= ${PACKAGE}-${DEB_VERSION_UPSTREAM}
 
-BUILDDIR ?= ${PACKAGE}-${PKGVER}
-
-DEB=${PACKAGE}_${PKGVER}-${PKGREL}_${ARCH}.deb
-DSC=${PACKAGE}_${PKGVER}-${PKGREL}.dsc
+DEB=${PACKAGE}_${DEB_VERSION_UPSTREAM_REVISION}_all.deb
+DSC=${PACKAGE}_${DEB_VERSION_UPSTREAM_REVISION}.dsc
 TARGZ=${PACKAGE}_${PKGVER}-${PKGREL}.tar.gz
 
 all:
