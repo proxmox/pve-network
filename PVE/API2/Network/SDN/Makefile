@@ -1,4 +1,4 @@
-SOURCES=Content.pm
+SOURCES=Content.pm Status.pm
 
 
 PERL5DIR=${DESTDIR}/usr/share/perl5
