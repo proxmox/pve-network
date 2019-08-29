@@ -91,4 +91,77 @@ sub status {
     return $interfaces;
 }
 
+
+sub generate_etc_network_config {
+
+    my $sdn_cfg = PVE::Cluster::cfs_read_file('sdn.cfg');
+    return if !$sdn_cfg;
+
+    #read main config for physical interfaces
+    my $current_config_file = "/etc/network/interfaces";
+    my $fh = IO::File->new($current_config_file);
+    my $interfaces_config = PVE::INotify::read_etc_network_interfaces(1,$fh);
+    $fh->close();
+
+    #check uplinks
+    my $uplinks = {};
+    foreach my $id (keys %{$interfaces_config->{ifaces}}) {
+	my $interface = $interfaces_config->{ifaces}->{$id};
+	if (my $uplink = $interface->{'uplink-id'}) {
+	    die "uplink-id $uplink is already defined on $uplinks->{$uplink}" if $uplinks->{$uplink};
+	    $interface->{name} = $id;
+	    $uplinks->{$interface->{'uplink-id'}} = $interface;
+	}
+    }
+
+    my $vnet_cfg = undef;
+    my $transport_cfg = undef;
+
+    foreach my $id (keys %{$sdn_cfg->{ids}}) {
+	if ($sdn_cfg->{ids}->{$id}->{type} eq 'vnet') {
+	    $vnet_cfg->{ids}->{$id} = $sdn_cfg->{ids}->{$id};
+	} else {
+	    $transport_cfg->{ids}->{$id} = $sdn_cfg->{ids}->{$id};
+	}
+    }
+
+    #generate configuration
+    my $rawconfig = "";
+    foreach my $id (keys %{$vnet_cfg->{ids}}) {
+	my $vnet = $vnet_cfg->{ids}->{$id};
+	my $zone = $vnet->{transportzone};
+
+	if(!$zone) {
+	    warn "can't generate vnet $vnet : zone $zone don't exist";
+	    next;
+	}
+
+	my $plugin_config = $transport_cfg->{ids}->{$zone};
+
+	if (!defined($plugin_config)) {
+	    warn "can't generate vnet $vnet : zone $zone don't exist";
+	    next;
+	}
+
+	my $plugin = PVE::Network::SDN::Plugin->lookup($plugin_config->{type});
+	$rawconfig .= $plugin->generate_sdn_config($plugin_config, $zone, $id, $vnet, $uplinks);
+    }
+
+    return $rawconfig;
+}
+
+sub write_etc_network_config {
+    my ($rawconfig) = @_;
+
+    return if !$rawconfig;
+    my $sdn_interfaces_file = "/etc/network/interfaces.d/sdn";
+
+    my $writefh = IO::File->new($sdn_interfaces_file,">");
+    print $writefh $rawconfig;
+    $writefh->close();
+}
+
 1;
+
+
+
