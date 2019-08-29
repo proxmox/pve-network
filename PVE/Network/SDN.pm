@@ -12,10 +12,12 @@ use PVE::Network::SDN::Plugin;
 use PVE::Network::SDN::VnetPlugin;
 use PVE::Network::SDN::VlanPlugin;
 use PVE::Network::SDN::VxlanPlugin;
+use PVE::Network::SDN::FrrPlugin;
 
 PVE::Network::SDN::VnetPlugin->register();
 PVE::Network::SDN::VlanPlugin->register();
 PVE::Network::SDN::VxlanPlugin->register();
+PVE::Network::SDN::FrrPlugin->register();
 PVE::Network::SDN::Plugin->init();
 
 

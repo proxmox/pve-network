@@ -71,6 +71,12 @@ sub generate_sdn_config {
     die "please implement inside plugin";
 }
 
+sub generate_frr_config {
+    my ($class, $plugin_config, $node, $data, $ctime) = @_;
+
+    die "please implement inside plugin";
+}
+
 sub on_delete_hook {
     my ($class, $sndid, $scfg) = @_;
 
