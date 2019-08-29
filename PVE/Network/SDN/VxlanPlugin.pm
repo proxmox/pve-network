@@ -34,6 +34,14 @@ sub properties {
 	    description => "Unicast peers address ip list.",
 	    type => 'string',  #fixme: format 
 	},
+	'vrf' => {
+	    description => "vrf name.",
+	    type => 'string',  #fixme: format 
+	},
+	'vrf-vxlan' => {
+	    type => 'integer',
+	    description => "l3vni.",
+	},
     };
 }
 
@@ -44,6 +52,8 @@ sub options {
         'multicast-address' => { optional => 1 },
         'unicast-address' => { optional => 1 },
         'vxlan-allowed' => { optional => 1 },
+        'vrf' => { optional => 1 },
+        'vrf-vxlan' => { optional => 1 },
     };
 }
 
@@ -58,6 +68,8 @@ sub generate_sdn_config {
 
     my $uplink = $plugin_config->{'uplink-id'};
     my $vxlanallowed = $plugin_config->{'vxlan-allowed'};
+    my $vrf = $plugin_config->{'vrf'};
+    my $vrfvxlan = $plugin_config->{'vrf-vxlan'};
 
     die "missing vxlan tag" if !$tag;
     my $iface = "uplink$uplink";
@@ -90,8 +102,6 @@ sub generate_sdn_config {
 	$config .= "       vxlan-local-tunnelip $ifaceip\n" if $ifaceip;
 	$config .= "       bridge-learning off\n";
 	$config .= "       bridge-arp-nd-suppress on\n";
-	$config .= "       bridge-unicast-flood off\n";
-	$config .= "       bridge-multicast-flood off\n";
     }
 
     $config .= "       mtu $mtu\n" if $mtu;
@@ -103,6 +113,37 @@ sub generate_sdn_config {
     $config .= "       bridge_fd 0\n";
     $config .= "       mtu $mtu\n" if $mtu;
     $config .= "       alias $alias\n" if $alias;
+    $config .= "       vrf $vrf\n" if $vrf;
+
+    if ($vrf) {
+	$config .= "\n";
+	$config .= "auto $vrf\n";
+	$config .= "iface $vrf\n";
+	$config .= "       vrf-table auto\n";
+
+	if ($vrfvxlan) {
+
+	    my $vxlanvrf = "vxlan$vrf";
+	    my $brvrf = "br$vrf";
+
+	    $config .= "\n";
+	    $config .= "auto $vxlanvrf\n";
+	    $config .= "iface $vxlanvrf\n";
+	    $config .= "	vxlan-id $vrfvxlan\n";
+	    $config .= "	vxlan-local-tunnelip $ifaceip\n" if $ifaceip;
+	    $config .= "	bridge-learning off\n";
+	    $config .= "	bridge-arp-nd-suppress on\n";
+	    $config .= "	mtu $mtu\n" if $mtu;
+
+	    $config .= "\n";
+	    $config .= "auto $brvrf\n";
+	    $config .= "	bridge-ports $vxlanvrf\n";
+	    $config .= "	bridge_stp off\n";
+	    $config .= "	bridge_fd 0\n";
+	    $config .= "	mtu $mtu\n" if $mtu;
+	    $config .= "	vrf $vrf\n";
+	}
+    }
 
     return $config;
 }
