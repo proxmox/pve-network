@@ -42,6 +42,10 @@ sub properties {
 	    type => 'integer',
 	    description => "l3vni.",
 	},
+	'router' => {
+	    type => 'string',
+	    description => "Frr router name",
+	},
     };
 }
 
@@ -54,6 +58,7 @@ sub options {
         'vxlan-allowed' => { optional => 1 },
         'vrf' => { optional => 1 },
         'vrf-vxlan' => { optional => 1 },
+        'router' => { optional => 1 },
     };
 }
 
@@ -107,7 +112,7 @@ sub generate_sdn_config {
     }
 
     push @iface_config, "mtu $mtu" if $mtu;
-    push(@{$config->{network}->{"vxlan$vnetid"}}, @iface_config) if !$config->{network}->{"vxlan$vnetid"};
+    push(@{$config->{"vxlan$vnetid"}}, @iface_config) if !$config->{"vxlan$vnetid"};
 
     #vnet bridge
     @iface_config = ();
@@ -120,13 +125,13 @@ sub generate_sdn_config {
     push @iface_config, "mtu $mtu" if $mtu;
     push @iface_config, "alias $alias" if $alias;
     push @iface_config, "vrf $vrf" if $vrf;
-    push(@{$config->{network}->{$vnetid}}, @iface_config) if !$config->{network}->{$vnetid};
+    push(@{$config->{$vnetid}}, @iface_config) if !$config->{$vnetid};
 
     if ($vrf) {
 	#vrf intreface
 	@iface_config = ();
 	push @iface_config, "vrf-table auto";
-	push(@{$config->{network}->{$vrf}}, @iface_config) if !$config->{network}->{$vrf};
+	push(@{$config->{$vrf}}, @iface_config) if !$config->{$vrf};
 
 	if ($vrfvxlan) {
 	    #l3vni vxlan interface
@@ -137,7 +142,7 @@ sub generate_sdn_config {
 	    push @iface_config, "bridge-learning off";
 	    push @iface_config, "bridge-arp-nd-suppress on";
 	    push @iface_config, "mtu $mtu" if $mtu;
-	    push(@{$config->{network}->{$iface_vxlan}}, @iface_config) if !$config->{network}->{$iface_vxlan};
+	    push(@{$config->{$iface_vxlan}}, @iface_config) if !$config->{$iface_vxlan};
 
 	    #l3vni bridge
 	    my $brvrf = "br$vrf";
@@ -147,9 +152,49 @@ sub generate_sdn_config {
 	    push @iface_config, "bridge_fd 0";
 	    push @iface_config, "mtu $mtu" if $mtu;
 	    push @iface_config, "vrf $vrf";
-	    push(@{$config->{network}->{$brvrf}}, @iface_config) if !$config->{network}->{$brvrf};
+	    push(@{$config->{$brvrf}}, @iface_config) if !$config->{$brvrf};
 	}
     }
+
+    return $config;
+}
+
+sub generate_frr_config {
+    my ($class, $plugin_config, $asn, $id, $uplinks, $config) = @_;
+
+    my $vrf = $plugin_config->{'vrf'};
+    my $vrfvxlan = $plugin_config->{'vrf-vxlan'};
+    return if !$vrf || !$vrfvxlan;
+
+    my $uplink = $plugin_config->{'uplink-id'};
+
+    my $iface = "uplink$uplink";
+    my $ifaceip = "";
+
+    if($uplinks->{$uplink}->{name}) {
+        $iface = $uplinks->{$uplink}->{name};
+        $ifaceip = PVE::Network::SDN::Plugin::get_first_local_ipv4_from_interface($iface);
+    }
+
+    #vrf
+    my @router_config = ();
+    push @router_config, "vni $vrfvxlan";
+    push @router_config, "exit-vrf";
+    push(@{$config->{vrf}->{"vrf $vrf"}}, @router_config);
+
+
+    #vrf router
+    @router_config = ();
+    push @router_config, "bgp router-id $ifaceip";
+    push @router_config, "!";
+    push @router_config, "address-family ipv4 unicast";
+    push @router_config, " redistribute connected";
+    push @router_config, "exit-address-family";
+    push @router_config, "!";
+    push @router_config, "address-family l2vpn evpn";
+    push @router_config, " advertise ipv4 unicast";
+    push @router_config, "exit-address-family";
+    push(@{$config->{router}->{"router bgp $asn vrf $vrf"}}, @router_config);
 
     return $config;
 }

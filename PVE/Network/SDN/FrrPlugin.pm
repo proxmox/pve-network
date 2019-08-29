@@ -34,27 +34,23 @@ sub options {
 }
 
 # Plugin implementation
-sub generate_sdn_config {
-    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $uplinks, $config) = @_;
+sub generate_frr_config {
+    my ($class, $plugin_config, $asn, $id, $uplinks, $config) = @_;
 
-    my $asn = $plugin_config->{'asn'};
     my @peers = split(',', $plugin_config->{'peers'}) if $plugin_config->{'peers'};
 
     my $uplink = $plugin_config->{'uplink-id'};
-
-    die "missing peers" if !$plugin_config->{'peers'};
 
     my $iface = "uplink$uplink";
     my $ifaceip = "";
 
     if($uplinks->{$uplink}->{name}) {
 	$iface = $uplinks->{$uplink}->{name};
-	$ifaceip = get_first_local_ipv4_from_interface($iface);
+        $ifaceip = PVE::Network::SDN::Plugin::get_first_local_ipv4_from_interface($iface);
     }
 
     my @router_config = ();
 
-    push @router_config, "router bgp $asn";
     push @router_config, "bgp router-id $ifaceip";
     push @router_config, "coalesce-time 1000";
 
@@ -70,11 +66,8 @@ sub generate_sdn_config {
     }
     push @router_config, " advertise-all-vni";
     push @router_config, "exit-address-family";
-    push @router_config, "!";
-    push @router_config, "line vty";
-    push @router_config, "!";
 
-    push(@{$config->{frr}->{$asn}}, @router_config);
+    push(@{$config->{router}->{"router bgp $asn"}}, @router_config);
 
     return $config;
 }

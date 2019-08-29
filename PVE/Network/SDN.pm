@@ -149,27 +149,103 @@ sub generate_etc_network_config {
 	$plugin->generate_sdn_config($plugin_config, $zone, $id, $vnet, $uplinks, $config);
     }
 
-    my $network_config = $config->{network};
     my $raw_network_config = "";
-    foreach my $iface (keys %$network_config) {
+    foreach my $iface (keys %$config) {
 	$raw_network_config .= "\n";
 	$raw_network_config .= "auto $iface\n";
 	$raw_network_config .= "iface $iface\n";
-	foreach my $option (@{$network_config->{$iface}}) {
+	foreach my $option (@{$config->{$iface}}) {
 	    $raw_network_config .= "\t$option\n";
 	}
     }
 
-    my $frr_config = $config->{frr};
-    my $raw_frr_config = "";
-    foreach my $asn (keys %$frr_config) {
-	$raw_frr_config .= "router bgp $asn";
-	foreach my $option (@{$frr_config->{$asn}}) {
-	    $raw_frr_config .= " $option\n";
+    return $raw_network_config;
+}
+
+sub generate_frr_config {
+
+    my $sdn_cfg = PVE::Cluster::cfs_read_file('sdn.cfg');
+    return if !$sdn_cfg;
+
+    #read main config for physical interfaces
+    my $current_config_file = "/etc/network/interfaces";
+    my $fh = IO::File->new($current_config_file);
+    my $interfaces_config = PVE::INotify::read_etc_network_interfaces(1,$fh);
+    $fh->close();
+
+    #check uplinks
+    my $uplinks = {};
+    foreach my $id (keys %{$interfaces_config->{ifaces}}) {
+	my $interface = $interfaces_config->{ifaces}->{$id};
+	if (my $uplink = $interface->{'uplink-id'}) {
+	    die "uplink-id $uplink is already defined on $uplinks->{$uplink}" if $uplinks->{$uplink};
+	    $interface->{name} = $id;
+	    $uplinks->{$interface->{'uplink-id'}} = $interface;
 	}
     }
 
-    return wantarray ? ($raw_network_config, $raw_frr_config) : $raw_network_config;
+    my $frr_cfg = undef;
+    my $transport_cfg = undef;
+
+    foreach my $id (keys %{$sdn_cfg->{ids}}) {
+	if ($sdn_cfg->{ids}->{$id}->{type} eq 'frr') {
+	    $frr_cfg->{ids}->{$id} = $sdn_cfg->{ids}->{$id};
+	} elsif ($sdn_cfg->{ids}->{$id}->{type} ne 'vnet') {
+	    $transport_cfg->{ids}->{$id} = $sdn_cfg->{ids}->{$id};
+	}
+    }
+
+    #generate configuration
+    my $config = {};
+
+    foreach my $id (keys %{$frr_cfg->{ids}}) {
+	my $plugin_config = $frr_cfg->{ids}->{$id};
+	my $asn = $plugin_config->{asn};
+	if ($asn) {
+	    my $plugin = PVE::Network::SDN::Plugin->lookup($plugin_config->{type});
+	    $plugin->generate_frr_config($plugin_config, $asn, $id, $uplinks, $config);
+	}
+    }
+
+    foreach my $id (keys %{$transport_cfg->{ids}}) {
+	my $plugin_config = $transport_cfg->{ids}->{$id};
+	my $router = $plugin_config->{router};
+	if ($router) {
+	    my $asn = $frr_cfg->{ids}->{$router}->{asn};
+	    if ($asn) {
+		my $plugin = PVE::Network::SDN::Plugin->lookup($plugin_config->{type});
+		$plugin->generate_frr_config($plugin_config, $asn, $id, $uplinks, $config);
+	    }
+	}
+    }
+
+    my $raw_frr_config = "log syslog informational\n";
+    $raw_frr_config .= "!\n";
+
+    #vrf first
+    my $vrfconfig = $config->{vrf};
+    foreach my $vrf (sort keys %$vrfconfig) {
+	$raw_frr_config .= "$vrf\n";
+	foreach my $option (@{$vrfconfig->{$vrf}}) {
+	    $raw_frr_config .= " $option\n";
+	}
+	$raw_frr_config .= "!\n";
+    }
+
+    #routers
+    my $routerconfig = $config->{router};
+    foreach my $router (sort keys %$routerconfig) {
+	$raw_frr_config .= "$router\n";
+	foreach my $option (@{$routerconfig->{$router}}) {
+	    $raw_frr_config .= " $option\n";
+	}
+	$raw_frr_config .= "!\n";
+    }
+
+    $raw_frr_config .= "line vty\n";
+    $raw_frr_config .= "!\n";
+
+    return $raw_frr_config;
 }
 
 sub write_etc_network_config {

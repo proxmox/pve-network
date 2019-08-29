@@ -77,7 +77,7 @@ sub generate_sdn_config {
     my @iface_config = ();
     push @iface_config, "vlan-protocol $vlanprotocol" if $vlanprotocol;
     push @iface_config, "mtu $mtu" if $mtu;
-    push(@{$config->{network}->{$iface}}, @iface_config) if !$config->{network}->{$iface};
+    push(@{$config->{$iface}}, @iface_config) if !$config->{$iface};
 
     #vnet bridge
     @iface_config = ();
@@ -87,7 +87,7 @@ sub generate_sdn_config {
     push @iface_config, "bridge-vlan-aware yes" if $vlanaware;
     push @iface_config, "mtu $mtu" if $mtu;
     push @iface_config, "alias $alias" if $alias;
-    push(@{$config->{network}->{$vnetid}}, @iface_config) if !$config->{network}->{$vnetid};
+    push(@{$config->{$vnetid}}, @iface_config) if !$config->{$vnetid};
 
     return $config;
 }
