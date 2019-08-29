@@ -259,6 +259,19 @@ sub write_etc_network_config {
     $writefh->close();
 }
 
+sub write_frr_config {
+    my ($rawconfig) = @_;
+
+    return if !$rawconfig;
+    return if !-d "/etc/frr";
+
+    my $frr_config_file = "/etc/frr/frr.conf";
+
+    my $writefh = IO::File->new($frr_config_file,">");
+    print $writefh $rawconfig;
+    $writefh->close();
+}
+
 
 sub status {
 
