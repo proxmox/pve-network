@@ -6,6 +6,7 @@ use PVE::Cluster qw(cfs_read_file);
 use PVE::Network::SDN;
 
 
-my $rawconfig = PVE::Network::SDN::generate_etc_network_config();
-PVE::Network::SDN::write_etc_network_config($rawconfig);
-print $rawconfig;
+my ($network_config, $frr_config) = PVE::Network::SDN::generate_etc_network_config();
+PVE::Network::SDN::write_etc_network_config($network_config);
+print $network_config;
+print $frr_config;

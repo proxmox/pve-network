@@ -57,7 +57,7 @@ sub options {
 
 # Plugin implementation
 sub generate_sdn_config {
-    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $uplinks) = @_;
+    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $uplinks, $config) = @_;
 
     my $tag = $vnet->{tag};
     my $mtu = $vnet->{mtu};
@@ -72,20 +72,22 @@ sub generate_sdn_config {
     my $iface = $uplinks->{$uplink}->{name};
     $iface = "uplink${uplink}" if !$iface;
     $iface .= ".$tag";
-    my $config = "\n";
-    $config .= "auto $iface\n";
-    $config .= "iface $iface inet manual\n";
-    $config .= "        vlan-protocol $vlanprotocol\n" if $vlanprotocol;
-    $config .= "        mtu $mtu\n" if $mtu;
-    $config .= "\n";
-    $config .= "auto $vnetid\n";
-    $config .= "iface $vnetid inet manual\n";
-    $config .= "        bridge_ports $iface\n";
-    $config .= "        bridge_stp off\n";
-    $config .= "        bridge_fd 0\n";
-    $config .= "        bridge-vlan-aware yes \n" if $vlanaware;
-    $config .= "        mtu $mtu\n" if $mtu;
-    $config .= "        alias $alias\n" if $alias;
+
+    #tagged interface
+    my @iface_config = ();
+    push @iface_config, "vlan-protocol $vlanprotocol" if $vlanprotocol;
+    push @iface_config, "mtu $mtu" if $mtu;
+    push(@{$config->{network}->{$iface}}, @iface_config) if !$config->{network}->{$iface};
+
+    #vnet bridge
+    @iface_config = ();
+    push @iface_config, "bridge_ports $iface";
+    push @iface_config, "bridge_stp off";
+    push @iface_config, "bridge_fd 0";
+    push @iface_config, "bridge-vlan-aware yes" if $vlanaware;
+    push @iface_config, "mtu $mtu" if $mtu;
+    push @iface_config, "alias $alias" if $alias;
+    push(@{$config->{network}->{$vnetid}}, @iface_config) if !$config->{network}->{$vnetid};
 
     return $config;
 }

@@ -34,8 +34,8 @@ sub options {
 }
 
 # Plugin implementation
-sub generate_frr_config {
-    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $uplinks) = @_;
+sub generate_sdn_config {
+    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $uplinks, $config) = @_;
 
     my $asn = $plugin_config->{'asn'};
     my @peers = split(',', $plugin_config->{'peers'}) if $plugin_config->{'peers'};
@@ -52,28 +52,29 @@ sub generate_frr_config {
 	$ifaceip = get_first_local_ipv4_from_interface($iface);
     }
 
-    my $config = "\n";
-    $config .= "router bgp $asn\n";
-    $config .= "bgp router-id $ifaceip\n";
-    $config .= "no bgp default ipv4-unicast\n";
-    $config .= "coalesce-time 1000\n";
+    my @router_config = ();
+
+    push @router_config, "router bgp $asn";
+    push @router_config, "bgp router-id $ifaceip";
+    push @router_config, "coalesce-time 1000";
 
     foreach my $address (@peers) {
 	next if $address eq $ifaceip;
-	$config .= "neighbor $address remote-as $asn\n";
+	push @router_config, "neighbor $address remote-as $asn";
     } 
-    $config .= "!\n";
-    $config .= "address-family l2vpn evpn\n";
+    push @router_config, "!";
+    push @router_config, "address-family l2vpn evpn";
     foreach my $address (@peers) {
 	next if $address eq $ifaceip;
-	$config .= " neighbor $address activate\n";
+	push @router_config, " neighbor $address activate";
     }
-    $config .= " advertise-all-vni\n";
-    $config .= "exit-address-family\n";
-    $config .= "!\n";
-    $config .= "line vty\n";
-    $config .= "!\n";
+    push @router_config, " advertise-all-vni";
+    push @router_config, "exit-address-family";
+    push @router_config, "!";
+    push @router_config, "line vty";
+    push @router_config, "!";
 
+    push(@{$config->{frr}->{$asn}}, @router_config);
 
     return $config;
 }

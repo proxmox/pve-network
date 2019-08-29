@@ -59,7 +59,7 @@ sub options {
 
 # Plugin implementation
 sub generate_sdn_config {
-    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $uplinks) = @_;
+    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $uplinks, $config) = @_;
 
     my $tag = $vnet->{tag};
     my $alias = $vnet->{alias};
@@ -87,68 +87,67 @@ sub generate_sdn_config {
     $mtu = $uplinks->{$uplink}->{mtu} - 50 if $uplinks->{$uplink}->{mtu};
     $mtu = $vnet->{mtu} if $vnet->{mtu};
 
-    my $config = "\n";
-    $config .= "auto vxlan$vnetid\n";
-    $config .= "iface vxlan$vnetid\n";
-    $config .= "       vxlan-id $tag\n";
+    #vxlan interface
+    my @iface_config = ();
+    push @iface_config, "vxlan-id $tag";
 
     if($multicastaddress) {
-	$config .= "       vxlan-svcnodeip $multicastaddress\n";
-	$config .= "       vxlan-physdev $iface\n";
+	push @iface_config, "vxlan-svcnodeip $multicastaddress";
+	push @iface_config, "vxlan-physdev $iface";
     } elsif (@unicastaddress) {
 
 	foreach my $address (@unicastaddress) {
 	    next if $address eq $ifaceip;
-	    $config .= "       vxlan_remoteip $address\n";
+	    push @iface_config, "vxlan_remoteip $address";
 	}
     } else {
-	$config .= "       vxlan-local-tunnelip $ifaceip\n" if $ifaceip;
-	$config .= "       bridge-learning off\n";
-	$config .= "       bridge-arp-nd-suppress on\n";
+	push @iface_config, "vxlan-local-tunnelip $ifaceip" if $ifaceip;
+	push @iface_config, "bridge-learning off";
+	push @iface_config, "bridge-arp-nd-suppress on";
     }
 
-    $config .= "       mtu $mtu\n" if $mtu;
-    $config .= "\n";
-    $config .= "auto $vnetid\n";
-    $config .= "iface $vnetid\n";
-    $config .= "       address $ipv4\n" if $ipv4;
-    $config .= "       address $ipv6\n" if $ipv6;
-    $config .= "       hwaddress $mac\n" if $mac;
-    $config .= "       bridge_ports vxlan$vnetid\n";
-    $config .= "       bridge_stp off\n";
-    $config .= "       bridge_fd 0\n";
-    $config .= "       mtu $mtu\n" if $mtu;
-    $config .= "       alias $alias\n" if $alias;
-    $config .= "       vrf $vrf\n" if $vrf;
+    push @iface_config, "mtu $mtu" if $mtu;
+    push(@{$config->{network}->{"vxlan$vnetid"}}, @iface_config) if !$config->{network}->{"vxlan$vnetid"};
+
+    #vnet bridge
+    @iface_config = ();
+    push @iface_config, "address $ipv4" if $ipv4;
+    push @iface_config, "address $ipv6" if $ipv6;
+    push @iface_config, "hwaddress $mac" if $mac;
+    push @iface_config, "bridge_ports vxlan$vnetid";
+    push @iface_config, "bridge_stp off";
+    push @iface_config, "bridge_fd 0";
+    push @iface_config, "mtu $mtu" if $mtu;
+    push @iface_config, "alias $alias" if $alias;
+    push @iface_config, "vrf $vrf" if $vrf;
+    push(@{$config->{network}->{$vnetid}}, @iface_config) if !$config->{network}->{$vnetid};
 
     if ($vrf) {
-	$config .= "\n";
-	$config .= "auto $vrf\n";
-	$config .= "iface $vrf\n";
-	$config .= "       vrf-table auto\n";
+	#vrf intreface
+	@iface_config = ();
+	push @iface_config, "vrf-table auto";
+	push(@{$config->{network}->{$vrf}}, @iface_config) if !$config->{network}->{$vrf};
 
 	if ($vrfvxlan) {
+	    #l3vni vxlan interface
+	    my $iface_vxlan = "vxlan$vrf";
+	    @iface_config = ();
+	    push @iface_config, "vxlan-id $vrfvxlan";
+	    push @iface_config, "vxlan-local-tunnelip $ifaceip" if $ifaceip;
+	    push @iface_config, "bridge-learning off";
+	    push @iface_config, "bridge-arp-nd-suppress on";
+	    push @iface_config, "mtu $mtu" if $mtu;
+	    push(@{$config->{network}->{$iface_vxlan}}, @iface_config) if !$config->{network}->{$iface_vxlan};
 
-	    my $vxlanvrf = "vxlan$vrf";
+	    #l3vni bridge
 	    my $brvrf = "br$vrf";
-
-	    $config .= "\n";
-	    $config .= "auto $vxlanvrf\n";
-	    $config .= "iface $vxlanvrf\n";
-	    $config .= "	vxlan-id $vrfvxlan\n";
-	    $config .= "	vxlan-local-tunnelip $ifaceip\n" if $ifaceip;
-	    $config .= "	bridge-learning off\n";
-	    $config .= "	bridge-arp-nd-suppress on\n";
-	    $config .= "	mtu $mtu\n" if $mtu;
-
-	    $config .= "\n";
-	    $config .= "auto $brvrf\n";
-	    $config .= "iface $brvrf\n";
-	    $config .= "	bridge-ports $vxlanvrf\n";
-	    $config .= "	bridge_stp off\n";
-	    $config .= "	bridge_fd 0\n";
-	    $config .= "	mtu $mtu\n" if $mtu;
-	    $config .= "	vrf $vrf\n";
+	    @iface_config = ();
+	    push @iface_config, "bridge-ports $iface_vxlan";
+	    push @iface_config, "bridge_stp off";
+	    push @iface_config, "bridge_fd 0";
+	    push @iface_config, "mtu $mtu" if $mtu;
+	    push @iface_config, "vrf $vrf";
+	    push(@{$config->{network}->{$brvrf}}, @iface_config) if !$config->{network}->{$brvrf};
 	}
     }
 

@@ -128,7 +128,7 @@ sub generate_etc_network_config {
     }
 
     #generate configuration
-    my $rawconfig = "";
+    my $config = {};
     foreach my $id (keys %{$vnet_cfg->{ids}}) {
 	my $vnet = $vnet_cfg->{ids}->{$id};
 	my $zone = $vnet->{transportzone};
@@ -146,10 +146,30 @@ sub generate_etc_network_config {
 	}
 
 	my $plugin = PVE::Network::SDN::Plugin->lookup($plugin_config->{type});
-	$rawconfig .= $plugin->generate_sdn_config($plugin_config, $zone, $id, $vnet, $uplinks);
+	$plugin->generate_sdn_config($plugin_config, $zone, $id, $vnet, $uplinks, $config);
     }
 
-    return $rawconfig;
+    my $network_config = $config->{network};
+    my $raw_network_config = "";
+    foreach my $iface (keys %$network_config) {
+	$raw_network_config .= "\n";
+	$raw_network_config .= "auto $iface\n";
+	$raw_network_config .= "iface $iface\n";
+	foreach my $option (@{$network_config->{$iface}}) {
+	    $raw_network_config .= "\t$option\n";
+	}
+    }
+
+    my $frr_config = $config->{frr};
+    my $raw_frr_config = "";
+    foreach my $asn (keys %$frr_config) {
+	$raw_frr_config .= "router bgp $asn";
+	foreach my $option (@{$frr_config->{$asn}}) {
+	    $raw_frr_config .= " $option\n";
+	}
+    }
+
+    return wantarray ? ($raw_network_config, $raw_frr_config) : $raw_network_config;
 }
 
 sub write_etc_network_config {
