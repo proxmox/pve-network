@@ -34,16 +34,16 @@ sub properties {
         },
         ipv4 => {
             description => "Anycast router ipv4 address.",
-            type => 'string', format => 'ipv4',
+            type => 'string', format => 'CIDRv4',
             optional => 1,
         },
 	ipv6 => {
 	    description => "Anycast router ipv6 address.",
-	    type => 'string', format => 'ipv6',
+	    type => 'string', format => 'CIDRv6',
 	    optional => 1,
 	},
         mac => {
-            type => 'boolean',
+            type => 'string',
             description => "Anycast router mac address",
 	    optional => 1,
         }
@@ -58,6 +58,7 @@ sub options {
         ipv4 => { optional => 1 },
         ipv6 => { optional => 1 },
         mtu => { optional => 1 },
+        mac => { optional => 1 },
     };
 }
 

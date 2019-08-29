@@ -63,6 +63,9 @@ sub generate_sdn_config {
 
     my $tag = $vnet->{tag};
     my $alias = $vnet->{alias};
+    my $ipv4 = $vnet->{ipv4};
+    my $ipv6 = $vnet->{ipv6};
+    my $mac = $vnet->{mac};
     my $multicastaddress = $plugin_config->{'multicast-address'};
     my @unicastaddress = split(',', $plugin_config->{'unicast-address'}) if $plugin_config->{'unicast-address'};
 
@@ -86,7 +89,7 @@ sub generate_sdn_config {
 
     my $config = "\n";
     $config .= "auto vxlan$vnetid\n";
-    $config .= "iface vxlan$vnetid inet manual\n";
+    $config .= "iface vxlan$vnetid\n";
     $config .= "       vxlan-id $tag\n";
 
     if($multicastaddress) {
@@ -107,7 +110,10 @@ sub generate_sdn_config {
     $config .= "       mtu $mtu\n" if $mtu;
     $config .= "\n";
     $config .= "auto $vnetid\n";
-    $config .= "iface $vnetid inet manual\n";
+    $config .= "iface $vnetid\n";
+    $config .= "       address $ipv4\n" if $ipv4;
+    $config .= "       address $ipv6\n" if $ipv6;
+    $config .= "       hwaddress $mac\n" if $mac;
     $config .= "       bridge_ports vxlan$vnetid\n";
     $config .= "       bridge_stp off\n";
     $config .= "       bridge_fd 0\n";
@@ -137,6 +143,7 @@ sub generate_sdn_config {
 
 	    $config .= "\n";
 	    $config .= "auto $brvrf\n";
+	    $config .= "iface $brvrf\n";
 	    $config .= "	bridge-ports $vxlanvrf\n";
 	    $config .= "	bridge_stp off\n";
 	    $config .= "	bridge_fd 0\n";
