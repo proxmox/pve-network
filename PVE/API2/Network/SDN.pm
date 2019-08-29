@@ -9,7 +9,7 @@ use PVE::Cluster qw(cfs_read_file cfs_write_file);
 use PVE::Network::SDN;
 use PVE::Network::SDN::Plugin;
 use PVE::Network::SDN::VlanPlugin;
-use PVE::Network::SDN::VxlanMulticastPlugin;
+use PVE::Network::SDN::VxlanPlugin;
 use PVE::Network::SDN::VnetPlugin;
 use Storable qw(dclone);
 use PVE::JSONSchema qw(get_standard_option);

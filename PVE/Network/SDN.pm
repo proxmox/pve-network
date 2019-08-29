@@ -11,11 +11,11 @@ use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 use PVE::Network::SDN::Plugin;
 use PVE::Network::SDN::VnetPlugin;
 use PVE::Network::SDN::VlanPlugin;
-use PVE::Network::SDN::VxlanMulticastPlugin;
+use PVE::Network::SDN::VxlanPlugin;
 
 PVE::Network::SDN::VnetPlugin->register();
 PVE::Network::SDN::VlanPlugin->register();
-PVE::Network::SDN::VxlanMulticastPlugin->register();
+PVE::Network::SDN::VxlanPlugin->register();
 PVE::Network::SDN::Plugin->init();
 
 
