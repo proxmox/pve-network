@@ -235,6 +235,41 @@ sub on_update_hook {
 	    }
 	}
     }
+
+    # verify that router exist
+    if (defined($sdn_cfg->{ids}->{$transportid}->{router})) {
+	my $router = $sdn_cfg->{ids}->{$transportid}->{router};
+	if (!defined($sdn_cfg->{ids}->{$router})) {
+	    die "router $router don't exist";
+	} else {
+	    die "$router is not a router type" if $sdn_cfg->{ids}->{$router}->{type} ne 'frr';
+	}
+
+	#vrf && vrf-vxlan need to be defined with router
+	my $vrf = $sdn_cfg->{ids}->{$transportid}->{vrf};
+	if (!defined($vrf)) {
+	    die "missing vrf option";
+	} else {
+	    # verify that vrf is not already declared in another transport
+	    foreach my $id (keys %{$sdn_cfg->{ids}}) {
+		next if $id eq $transportid;
+		die "vrf $vrf is already declared in $id"
+			if (defined($sdn_cfg->{ids}->{$id}->{vrf}) && $sdn_cfg->{ids}->{$id}->{vrf} eq $vrf);
+	    }
+	}
+
+	my $vrfvxlan = $sdn_cfg->{ids}->{$transportid}->{'vrf-vxlan'};
+	if (!defined($vrfvxlan)) {
+	    die "missing vrf-vxlan option";
+	} else {
+	    # verify that vrf-vxlan is not already declared in another transport
+	    foreach my $id (keys %{$sdn_cfg->{ids}}) {
+		next if $id eq $transportid;
+		die "vrf-vxlan $vrfvxlan is already declared in $id"
+			if (defined($sdn_cfg->{ids}->{$id}->{'vrf-vxlan'}) && $sdn_cfg->{ids}->{$id}->{'vrf-vxlan'} eq $vrfvxlan);
+	    }
+	}
+    } 
 }
 
 1;

@@ -73,13 +73,27 @@ sub generate_frr_config {
 }
 
 sub on_delete_hook {
-    my ($class, $transportid, $sdn_cfg) = @_;
+    my ($class, $routerid, $sdn_cfg) = @_;
 
+    # verify that transport is associated to this router
+    foreach my $id (keys %{$sdn_cfg->{ids}}) {
+        my $sdn = $sdn_cfg->{ids}->{$id};
+        die "router $routerid is used by $id"
+            if (defined($sdn->{router}) && $sdn->{router} eq $routerid);
+    }
 }
 
 sub on_update_hook {
-    my ($class, $transportid, $sdn_cfg) = @_;
+    my ($class, $routerid, $sdn_cfg) = @_;
 
+    # verify that asn is not already used by another router
+    my $asn = $sdn_cfg->{ids}->{$routerid}->{asn};
+    foreach my $id (keys %{$sdn_cfg->{ids}}) {
+	next if $id eq $routerid;
+        my $sdn = $sdn_cfg->{ids}->{$id};
+        die "asn $asn is already used by $id"
+            if (defined($sdn->{asn}) && $sdn->{asn} eq $asn);
+    }
 }
 
 1;
