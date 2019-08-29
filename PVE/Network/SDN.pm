@@ -65,7 +65,7 @@ sub complete_sdn {
     return  $cmdname eq 'add' ? [] : [ PVE::Network::SDN::sdn_ids($cfg) ];
 }
 
-sub status {
+sub ifquery_check {
 
     my $cmd = ['ifquery', '-a', '-c', '-o','json'];
 
@@ -161,7 +161,63 @@ sub write_etc_network_config {
     $writefh->close();
 }
 
+
+sub status {
+
+    my $cluster_sdn_file = "/etc/pve/sdn.cfg";
+    my $local_sdn_file = "/etc/network/interfaces.d/sdn";
+    my $err_config = undef;
+
+    return if !-e $cluster_sdn_file;
+
+    if (!-e $local_sdn_file) {
+	warn "local sdn network configuration is not yet generated, please reload";
+	$err_config = 'pending';
+    } else {
+	# fixme : use some kind of versioning info?
+	my $cluster_sdn_timestamp = (stat($cluster_sdn_file))[9];
+	my $local_sdn_timestamp = (stat($local_sdn_file))[9];
+
+	if ($local_sdn_timestamp < $cluster_sdn_timestamp) {
+	    warn "local sdn network configuration is too old, please reload";
+	    $err_config = 'unknown';
+        }
+    }
+
+    my $status = ifquery_check();
+
+    my $network_cfg = PVE::Cluster::cfs_read_file('sdn.cfg');
+    my $vnet_cfg = undef;
+    my $transport_cfg = undef;
+
+    my $vnet_status = {};
+    my $transport_status = {};
+
+    foreach my $id (keys %{$network_cfg->{ids}}) {
+	if ($network_cfg->{ids}->{$id}->{type} eq 'vnet') {
+	    my $transportzone = $network_cfg->{ids}->{$id}->{transportzone};
+	    $vnet_status->{$id}->{transportzone} = $transportzone;
+	    $transport_status->{$transportzone}->{status} = 'available' if !defined($transport_status->{$transportzone}->{status});
+
+	    if($err_config) {
+		$vnet_status->{$id}->{status} = $err_config;
+		$transport_status->{$transportzone}->{status} = $err_config;
+	    } elsif ($status->{$id}->{status} && $status->{$id}->{status} eq 'pass') {
+		$vnet_status->{$id}->{status} = 'available';
+		my $bridgeport = $status->{$id}->{config}->{'bridge-ports'};
+
+		if ($status->{$bridgeport}->{status} && $status->{$bridgeport}->{status} ne 'pass') {
+		     $vnet_status->{$id}->{status} = 'error';
+		     $transport_status->{$transportzone}->{status} = 'error';
+		}
+	    } else {
+		$vnet_status->{$id}->{status} = 'error';
+		$transport_status->{$transportzone}->{status} = 'error';
+	    }
+	}
+    }
+    return($transport_status, $vnet_status);
+}
+
 1;
-
-
 
