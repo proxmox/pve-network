@@ -4,6 +4,8 @@ use strict;
 use warnings;
 use PVE::Network::SDN::Plugin;
 use PVE::Tools;
+use PVE::INotify;
+use PVE::JSONSchema qw(get_standard_option);
 
 use base('PVE::Network::SDN::Plugin');
 
@@ -46,6 +48,7 @@ sub properties {
 	    type => 'string',
 	    description => "Frr router name",
 	},
+	'gateway-nodes' => get_standard_option('pve-node-list'),
     };
 }
 
@@ -59,6 +62,7 @@ sub options {
         'vrf' => { optional => 1 },
         'vrf-vxlan' => { optional => 1 },
         'router' => { optional => 1 },
+        'gateway-nodes' => { optional => 1 },
     };
 }
 
@@ -164,17 +168,9 @@ sub generate_frr_config {
 
     my $vrf = $plugin_config->{'vrf'};
     my $vrfvxlan = $plugin_config->{'vrf-vxlan'};
+    my $gatewaynodes = $plugin_config->{'gateway-nodes'};
+
     return if !$vrf || !$vrfvxlan;
-
-    my $uplink = $plugin_config->{'uplink-id'};
-
-    my $iface = "uplink$uplink";
-    my $ifaceip = "";
-
-    if($uplinks->{$uplink}->{name}) {
-        $iface = $uplinks->{$uplink}->{name};
-        $ifaceip = PVE::Network::SDN::Plugin::get_first_local_ipv4_from_interface($iface);
-    }
 
     #vrf
     my @router_config = ();
@@ -183,18 +179,36 @@ sub generate_frr_config {
     push(@{$config->{vrf}->{"vrf $vrf"}}, @router_config);
 
 
-    #vrf router
     @router_config = ();
-    push @router_config, "bgp router-id $ifaceip";
-    push @router_config, "!";
-    push @router_config, "address-family ipv4 unicast";
-    push @router_config, " redistribute connected";
-    push @router_config, "exit-address-family";
-    push @router_config, "!";
-    push @router_config, "address-family l2vpn evpn";
-    push @router_config, " advertise ipv4 unicast";
-    push @router_config, "exit-address-family";
-    push(@{$config->{router}->{"router bgp $asn vrf $vrf"}}, @router_config);
+
+    my $is_gateway = undef;
+    my $local_node = PVE::INotify::nodename();
+
+    foreach my $gatewaynode (PVE::Tools::split_list($gatewaynodes)) {
+	$is_gateway = 1 if $gatewaynode eq $local_node;
+    }
+
+    if ($is_gateway) {
+
+	@router_config = ();
+	#import /32 routes of evpn network from vrf1 to default vrf (for packet return)
+	#frr 7.1 tag is bugged -> works fine with 7.1 stable branch(20190829-02-g6ba76bbc1)
+	#https://github.com/FRRouting/frr/issues/4905
+	push @router_config, "!";
+	push @router_config, "address-family ipv4 unicast";
+	push @router_config, " import vrf $vrf";
+	push @router_config, "exit-address-family";
+	push(@{$config->{router}->{"router bgp $asn"}}, @router_config);
+
+	@router_config = ();
+
+	#add default originate to announce 0.0.0.0/0 type5 route in evpn
+	push @router_config, "!";
+	push @router_config, "address-family l2vpn evpn";
+	push @router_config, " default-originate ipv4";
+	push @router_config, "exit-address-family";
+	push(@{$config->{router}->{"router bgp $asn vrf $vrf"}}, @router_config);
+    }
 
     return $config;
 }
