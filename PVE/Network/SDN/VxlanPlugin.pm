@@ -128,6 +128,9 @@ sub generate_sdn_config {
     push @iface_config, "bridge_fd 0";
     push @iface_config, "mtu $mtu" if $mtu;
     push @iface_config, "alias $alias" if $alias;
+    push @iface_config, "ip-forward on" if $ipv4;
+    push @iface_config, "ip6-forward on" if $ipv6;
+    push @iface_config, "arp-accept on" if $ipv4||$ipv6;
     push @iface_config, "vrf $vrf" if $vrf;
     push(@{$config->{$vnetid}}, @iface_config) if !$config->{$vnetid};
 
