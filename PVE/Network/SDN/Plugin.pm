@@ -37,7 +37,7 @@ sub parse_sdn_id {
 my $defaultData = {
 
     propertyList => {
-	type => { 
+	type => {
 	    description => "Plugin type.",
 	    type => 'string', format => 'pve-configid',
 	    type => 'string',

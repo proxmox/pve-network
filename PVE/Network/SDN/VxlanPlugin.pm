@@ -28,15 +28,15 @@ sub properties {
         },
         'multicast-address' => {
             description => "Multicast address.",
-            type => 'string',  #fixme: format 
+            type => 'string',  #fixme: format
         },
 	'unicast-address' => {
 	    description => "Unicast peers address ip list.",
-	    type => 'string',  #fixme: format 
+	    type => 'string',  #fixme: format
 	},
 	'vrf' => {
 	    description => "vrf name.",
-	    type => 'string',  #fixme: format 
+	    type => 'string',  #fixme: format
 	},
 	'vrf-vxlan' => {
 	    type => 'integer',
@@ -205,7 +205,7 @@ sub on_delete_hook {
     # verify that no vnet are associated to this transport
     foreach my $id (keys %{$sdn_cfg->{ids}}) {
 	my $sdn = $sdn_cfg->{ids}->{$id};
-	die "transport $transportid is used by vnet $id" 
+	die "transport $transportid is used by vnet $id"
 	    if ($sdn->{type} eq 'vnet' && defined($sdn->{transportzone}) && $sdn->{transportzone} eq $transportid);
     }
 }
@@ -217,7 +217,7 @@ sub on_update_hook {
 
     # verify that vxlan-allowed don't conflict with another vxlan-allowed transport
 
-    # verify that vxlan-allowed is matching currently vnet tag in this transport  
+    # verify that vxlan-allowed is matching currently vnet tag in this transport
     my $vxlanallowed = $transport->{'vxlan-allowed'};
     if ($vxlanallowed) {
 	foreach my $id (keys %{$sdn_cfg->{ids}}) {
@@ -269,7 +269,7 @@ sub on_update_hook {
 			if (defined($sdn_cfg->{ids}->{$id}->{'vrf-vxlan'}) && $sdn_cfg->{ids}->{$id}->{'vrf-vxlan'} eq $vrfvxlan);
 	    }
 	}
-    } 
+    }
 }
 
 1;

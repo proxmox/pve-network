@@ -33,20 +33,20 @@ my $api_sdn_config = sub {
 };
 
 __PACKAGE__->register_method ({
-    name => 'index', 
+    name => 'index',
     path => '',
     method => 'GET',
     description => "SDN index.",
-    permissions => { 
+    permissions => {
 	description => "Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/cluster/sdn/<sdn>'",
 	user => 'all',
     },
     parameters => {
     	additionalProperties => 0,
 	properties => {
-	    type => { 
+	    type => {
 		description => "Only list sdn of specific type",
-		type => 'string', 
+		type => 'string',
 		enum => $sdn_type_enum,
 		optional => 1,
 	    },
@@ -84,11 +84,11 @@ __PACKAGE__->register_method ({
     }});
 
 __PACKAGE__->register_method ({
-    name => 'read', 
+    name => 'read',
     path => '{sdn}',
     method => 'GET',
     description => "Read sdn configuration.",
-#    permissions => { 
+#    permissions => {
 #	check => ['perm', '/cluster/sdn/{sdn}', ['SDN.Allocate']],
 #   },
 
@@ -110,10 +110,10 @@ __PACKAGE__->register_method ({
 __PACKAGE__->register_method ({
     name => 'create',
     protected => 1,
-    path => '', 
+    path => '',
     method => 'POST',
     description => "Create a new sdn object.",
-#    permissions => { 
+#    permissions => {
 #	check => ['perm', '/cluster/sdn', ['SDN.Allocate']],
 #    },
     parameters => PVE::Network::SDN::Plugin->createSchema(),
@@ -149,7 +149,7 @@ __PACKAGE__->register_method ({
 		}
 
 		PVE::Network::SDN::write_config($cfg);
-	    
+
 	    }, "create sdn object failed");
 
 	return undef;
@@ -161,7 +161,7 @@ __PACKAGE__->register_method ({
     path => '',
     method => 'PUT',
     description => "Apply sdn changes.",
-#    permissions => { 
+#    permissions => {
 #	check => ['perm', '/cluster/sdn', ['SDN.Allocate']],
 #    },
     parameters => {
@@ -185,7 +185,7 @@ __PACKAGE__->register_method ({
     path => '',
     method => 'DELETE',
     description => "Revert sdn changes.",
-#    permissions => { 
+#    permissions => {
 #	check => ['perm', '/cluster/sdn', ['SDN.Allocate']],
 #    },
     parameters => {
@@ -207,7 +207,7 @@ __PACKAGE__->register_method ({
     path => '{sdn}',
     method => 'PUT',
     description => "Update sdn object configuration.",
-#    permissions => { 
+#    permissions => {
 #	check => ['perm', '/cluster/sdn', ['SDN.Allocate']],
 #    },
     parameters => PVE::Network::SDN::Plugin->updateSchema(),
@@ -256,12 +256,12 @@ __PACKAGE__->register_method ({
     path => '{sdn}',
     method => 'DELETE',
     description => "Delete sdn object configuration.",
-#    permissions => { 
+#    permissions => {
 #	check => ['perm', '/cluster/sdn', ['SDN.Allocate']],
 #    },
     parameters => {
     	additionalProperties => 0,
-	properties => { 
+	properties => {
 	    sdn => get_standard_option('pve-sdn-id', {
                 completion => \&PVE::Network::SDN::complete_sdn,
             }),

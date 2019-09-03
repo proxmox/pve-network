@@ -17,18 +17,18 @@ use PVE::Network::SDN;
 use base qw(PVE::RESTHandler);
 
 __PACKAGE__->register_method ({
-    name => 'index', 
+    name => 'index',
     path => '',
     method => 'GET',
     description => "List transportzone content.",
-#    permissions => { 
+#    permissions => {
 #	check => ['perm', '/sdn/{sdn}', ['SDN.Audit'], any => 1],
 #    },
     protected => 1,
     proxyto => 'node',
     parameters => {
     	additionalProperties => 0,
-	properties => { 
+	properties => {
 	    node => get_standard_option('pve-node'),
 	    sdn => get_standard_option('pve-sdn-id', {
 		completion => \&PVE::Network::SDN::complete_sdn,
@@ -39,7 +39,7 @@ __PACKAGE__->register_method ({
 	type => 'array',
 	items => {
 	    type => "object",
-	    properties => { 
+	    properties => {
 		vnet => {
 		    description => "Vnet identifier.",
 		    type => 'string',
@@ -74,7 +74,7 @@ __PACKAGE__->register_method ({
 	    }
         }
 
-	return $res;    
+	return $res;
     }});
 
 1;

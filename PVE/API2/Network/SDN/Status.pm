@@ -17,16 +17,16 @@ use PVE::Exception qw(raise_param_exc);
 use base qw(PVE::RESTHandler);
 
 __PACKAGE__->register_method ({
-    subclass => "PVE::API2::Network::SDN::Content", 
+    subclass => "PVE::API2::Network::SDN::Content",
     path => '{sdn}/content',
 });
 
 __PACKAGE__->register_method ({
-    name => 'index', 
+    name => 'index',
     path => '',
     method => 'GET',
     description => "Get status for all transportzones.",
-    permissions => { 
+    permissions => {
 	description => "Only list entries where you have 'SDN.Audit'",
 	user => 'all',
     },
@@ -75,10 +75,10 @@ __PACKAGE__->register_method ({
 
 __PACKAGE__->register_method ({
     name => 'diridx',
-    path => '{sdn}', 
+    path => '{sdn}',
     method => 'GET',
     description => "",
-#    permissions => { 
+#    permissions => {
 #	check => ['perm', '/sdn/{sdn}', ['SDN.Audit'], any => 1],
 #    },
     parameters => {
@@ -103,7 +103,7 @@ __PACKAGE__->register_method ({
 	my $res = [
 	    { subdir => 'content' },
 	    ];
-	
+
 	return $res;
     }});
 

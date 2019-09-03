@@ -19,7 +19,7 @@ sub properties {
         },
         'peers' => {
             description => "peers address list.",
-            type => 'string',  #fixme: format 
+            type => 'string',  #fixme: format
         },
     };
 }
@@ -57,7 +57,7 @@ sub generate_frr_config {
     foreach my $address (@peers) {
 	next if $address eq $ifaceip;
 	push @router_config, "neighbor $address remote-as $asn";
-    } 
+    }
     push @router_config, "!";
     push @router_config, "address-family l2vpn evpn";
     foreach my $address (@peers) {
