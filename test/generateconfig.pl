@@ -15,6 +15,8 @@ print "\n";
 
 
 my $frr_config = PVE::Network::SDN::generate_frr_config();
-PVE::Network::SDN::write_frr_config($frr_config);
-print "/etc/frr/frr.conf\n";
-print $frr_config;
+if ($frr_config) {
+    PVE::Network::SDN::write_frr_config($frr_config);
+    print "/etc/frr/frr.conf\n";
+    print $frr_config;
+}

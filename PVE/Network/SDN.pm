@@ -195,6 +195,8 @@ sub generate_frr_config {
 	}
     }
 
+    return undef if !$frr_cfg;
+
     #generate configuration
     my $config = {};
 
