@@ -245,7 +245,7 @@ sub sort_frr_config {
 
     $a_val = $order->{$a} if defined($order->{$a});
     $b_val = $order->{$b} if defined($order->{$b});
-  
+
     if($a =~ /bgp (\d+)$/) {
 	$a_val = 2;
     }
@@ -291,7 +291,7 @@ sub generate_frr_recurse{
 
 	    my $option = $content->{$key};
 	    generate_frr_recurse($final_config, $option, $key, $level+1);
-	    
+
 	    push @{$final_config}, $padding."exit-$parentkey" if $parentkey && defined($exitkeylist->{$parentkey});
 	}
     }
