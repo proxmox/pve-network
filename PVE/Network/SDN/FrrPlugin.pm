@@ -74,7 +74,6 @@ sub generate_frr_config {
 
     push @router_config, "bgp router-id $ifaceip";
     push @router_config, "no bgp default ipv4-unicast";
-    push @router_config, "no bgp default ipv6-unicast";
     push @router_config, "coalesce-time 1000";
 
     foreach my $address (@peers) {
