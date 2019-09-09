@@ -221,35 +221,88 @@ sub generate_frr_config {
 	}
     }
 
-    my $raw_frr_config = "log syslog informational\n";
-    $raw_frr_config .= "!\n";
+    my $final_config = [];
+    push @{$final_config}, "log syslog informational";
 
-    #vrf first
-    my $vrfconfig = $config->{vrf};
-    foreach my $vrf (sort keys %$vrfconfig) {
-	$raw_frr_config .= "$vrf\n";
-	foreach my $option (@{$vrfconfig->{$vrf}}) {
-	    $raw_frr_config .= " $option\n";
-	}
-	$raw_frr_config .= "!\n";
-    }
+    generate_frr_recurse($final_config, $config, undef, 0);
 
-    #routers
-    my $routerconfig = $config->{router};
-    foreach my $router (sort keys %$routerconfig) {
-	$raw_frr_config .= "$router\n";
-	foreach my $option (@{$routerconfig->{$router}}) {
-	    $raw_frr_config .= " $option\n";
-	}
-	$raw_frr_config .= "!\n";
-    }
+    push @{$final_config}, "!";
+    push @{$final_config}, "line vty";
+    push @{$final_config}, "!";
 
-    $raw_frr_config .= "line vty\n";
-    $raw_frr_config .= "!\n";
-
+    my $raw_frr_config = join("\n", @{$final_config});
     return $raw_frr_config;
 }
 
+sub sort_frr_config {
+    my $order = {};
+    $order->{''} = 0;
+    $order->{'vrf'} = 1;
+    $order->{'ipv4 unicast'} = 1;
+    $order->{'l2vpn evpn'} = 2;
+
+    my $a_val = 100;
+    my $b_val = 100;
+
+    $a_val = $order->{$a} if defined($order->{$a});
+    $b_val = $order->{$b} if defined($order->{$b});
+  
+    if($a =~ /bgp (\d+)$/) {
+	$a_val = 2;
+    }
+
+    if($b =~ /bgp (\d+)$/) {
+	$b_val = 2;
+    }
+
+    return $a_val <=> $b_val;
+}
+
+sub generate_frr_recurse{
+   my ($final_config, $content, $parentkey, $level) = @_;
+
+   my $keylist = {};
+   $keylist->{vrf} = 1;
+   $keylist->{'address-family'} = 1;
+   $keylist->{router} = 1;
+
+   my $exitkeylist = {};
+   $exitkeylist->{vrf} = 1;
+   $exitkeylist->{'address-family'} = 1;
+
+   #fix me, make this generic
+   my $paddinglevel = undef;
+   if($level == 1 || $level == 2) {
+     $paddinglevel = $level - 1;
+   } elsif ($level == 3 || $level ==  4) {
+     $paddinglevel = $level - 2;
+   }
+
+   my $padding = "";
+   $padding = ' ' x ($paddinglevel) if $paddinglevel;
+
+   if (ref $content eq ref {}) {
+	foreach my $key (sort sort_frr_config keys %$content) {
+	    if ($parentkey && defined($keylist->{$parentkey})) {
+	 	    push @{$final_config}, $padding."!";
+	 	    push @{$final_config}, $padding."$parentkey $key";
+	    } else {
+	 	    push @{$final_config}, $padding."$key" if $key ne '' && !defined($keylist->{$key});
+	    }
+
+	    my $option = $content->{$key};
+	    generate_frr_recurse($final_config, $option, $key, $level+1);
+	    
+	    push @{$final_config}, $padding."exit-$parentkey" if $parentkey && defined($exitkeylist->{$parentkey});
+	}
+    }
+
+    if (ref $content eq 'ARRAY') {
+	foreach my $value (@$content) {
+	    push @{$final_config}, $padding."$value";
+	}
+    }
+}
 sub write_etc_network_config {
     my ($rawconfig) = @_;
 

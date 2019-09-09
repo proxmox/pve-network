@@ -49,6 +49,7 @@ sub generate_frr_config {
         $ifaceip = PVE::Network::SDN::Plugin::get_first_local_ipv4_from_interface($iface);
     }
 
+
     my @router_config = ();
 
     push @router_config, "bgp router-id $ifaceip";
@@ -58,16 +59,14 @@ sub generate_frr_config {
 	next if $address eq $ifaceip;
 	push @router_config, "neighbor $address remote-as $asn";
     }
-    push @router_config, "!";
-    push @router_config, "address-family l2vpn evpn";
+    push(@{$config->{router}->{"bgp $asn"}->{""}}, @router_config);
+    @router_config = ();
     foreach my $address (@peers) {
 	next if $address eq $ifaceip;
-	push @router_config, " neighbor $address activate";
+	push @router_config, "neighbor $address activate";
     }
-    push @router_config, " advertise-all-vni";
-    push @router_config, "exit-address-family";
-
-    push(@{$config->{router}->{"router bgp $asn"}}, @router_config);
+    push @router_config, "advertise-all-vni";
+    push(@{$config->{router}->{"bgp $asn"}->{"address-family"}->{"l2vpn evpn"}}, @router_config);
 
     return $config;
 }

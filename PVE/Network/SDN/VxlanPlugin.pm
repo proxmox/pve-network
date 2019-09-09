@@ -178,9 +178,7 @@ sub generate_frr_config {
     #vrf
     my @router_config = ();
     push @router_config, "vni $vrfvxlan";
-    push @router_config, "exit-vrf";
-    push(@{$config->{vrf}->{"vrf $vrf"}}, @router_config);
-
+    push(@{$config->{vrf}->{"$vrf"}}, @router_config);
 
     @router_config = ();
 
@@ -197,20 +195,14 @@ sub generate_frr_config {
 	#import /32 routes of evpn network from vrf1 to default vrf (for packet return)
 	#frr 7.1 tag is bugged -> works fine with 7.1 stable branch(20190829-02-g6ba76bbc1)
 	#https://github.com/FRRouting/frr/issues/4905
-	push @router_config, "!";
-	push @router_config, "address-family ipv4 unicast";
-	push @router_config, " import vrf $vrf";
-	push @router_config, "exit-address-family";
-	push(@{$config->{router}->{"router bgp $asn"}}, @router_config);
+	push @router_config, "import vrf $vrf";
+	push(@{$config->{router}->{"bgp $asn"}->{"address-family"}->{"ipv4 unicast"}}, @router_config);
 
 	@router_config = ();
 
 	#add default originate to announce 0.0.0.0/0 type5 route in evpn
-	push @router_config, "!";
-	push @router_config, "address-family l2vpn evpn";
-	push @router_config, " default-originate ipv4";
-	push @router_config, "exit-address-family";
-	push(@{$config->{router}->{"router bgp $asn vrf $vrf"}}, @router_config);
+	push @router_config, "default-originate ipv4";
+	push(@{$config->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"l2vpn evpn"}}, @router_config);
     }
 
     return $config;
