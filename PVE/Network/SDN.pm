@@ -224,7 +224,6 @@ sub generate_frr_config {
     my $final_config = [];
     push @{$final_config}, "log syslog informational";
     push @{$final_config}, "!";
-    push @{$final_config}, "ip prefix-list deny seq 10 deny any";
 
     generate_frr_recurse($final_config, $config, undef, 0);
 

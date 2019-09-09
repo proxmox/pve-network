@@ -53,6 +53,8 @@ sub generate_frr_config {
     my @router_config = ();
 
     push @router_config, "bgp router-id $ifaceip";
+    push @router_config, "no bgp default ipv4-unicast";
+    push @router_config, "no bgp default ipv6-unicast";
     push @router_config, "coalesce-time 1000";
 
     foreach my $address (@peers) {
@@ -67,14 +69,6 @@ sub generate_frr_config {
     }
     push @router_config, "advertise-all-vni";
     push(@{$config->{router}->{"bgp $asn"}->{"address-family"}->{"l2vpn evpn"}}, @router_config);
-
-    #don't distribute default vrf route to other peers
-    @router_config = ();
-    foreach my $address (@peers) {
-	next if $address eq $ifaceip;
-	push @router_config, "neighbor $address prefix-list deny out";
-    }
-    push(@{$config->{router}->{"bgp $asn"}->{"address-family"}->{"ipv4 unicast"}}, @router_config);
 
     return $config;
 }
