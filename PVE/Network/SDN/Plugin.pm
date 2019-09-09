@@ -72,7 +72,7 @@ sub generate_sdn_config {
 }
 
 sub generate_frr_config {
-    my ($class, $plugin_config, $node, $data, $ctime) = @_;
+    my ($class, $plugin_config, $router, $id, $uplinks, $config) = @_;
 
     die "please implement inside plugin";
 }

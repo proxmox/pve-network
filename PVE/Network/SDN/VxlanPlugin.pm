@@ -5,7 +5,6 @@ use warnings;
 use PVE::Network::SDN::Plugin;
 use PVE::Tools;
 use PVE::INotify;
-use PVE::JSONSchema qw(get_standard_option);
 
 use base('PVE::Network::SDN::Plugin');
 
@@ -48,7 +47,6 @@ sub properties {
 	    type => 'string',
 	    description => "Frr router name",
 	},
-	'gateway-nodes' => get_standard_option('pve-node-list'),
     };
 }
 
@@ -62,7 +60,6 @@ sub options {
         'vrf' => { optional => 1 },
         'vrf-vxlan' => { optional => 1 },
         'router' => { optional => 1 },
-        'gateway-nodes' => { optional => 1 },
     };
 }
 
@@ -167,13 +164,14 @@ sub generate_sdn_config {
 }
 
 sub generate_frr_config {
-    my ($class, $plugin_config, $asn, $id, $uplinks, $config) = @_;
+    my ($class, $plugin_config, $router, $id, $uplinks, $config) = @_;
 
     my $vrf = $plugin_config->{'vrf'};
     my $vrfvxlan = $plugin_config->{'vrf-vxlan'};
-    my $gatewaynodes = $plugin_config->{'gateway-nodes'};
+    my $asn = $router->{asn};
+    my $gatewaynodes = $router->{'gateway-nodes'};
 
-    return if !$vrf || !$vrfvxlan;
+    return if !$vrf || !$vrfvxlan || !$asn;
 
     #vrf
     my @router_config = ();
@@ -197,15 +195,18 @@ sub generate_frr_config {
 	#https://github.com/FRRouting/frr/issues/4905
 	push @router_config, "import vrf $vrf";
 	push(@{$config->{router}->{"bgp $asn"}->{"address-family"}->{"ipv4 unicast"}}, @router_config);
+	push(@{$config->{router}->{"bgp $asn"}->{"address-family"}->{"ipv6 unicast"}}, @router_config);
 
 	@router_config = ();
 	#redistribute connected to be able to route to local vms on the gateway
 	push @router_config, "redistribute connected";
 	push(@{$config->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"ipv4 unicast"}}, @router_config);
+	push(@{$config->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"ipv6 unicast"}}, @router_config);
 
 	@router_config = ();
 	#add default originate to announce 0.0.0.0/0 type5 route in evpn
 	push @router_config, "default-originate ipv4";
+	push @router_config, "default-originate ipv6";
 	push(@{$config->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"l2vpn evpn"}}, @router_config);
     }
 

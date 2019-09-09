@@ -200,23 +200,20 @@ sub generate_frr_config {
     #generate configuration
     my $config = {};
 
-    foreach my $id (keys %{$frr_cfg->{ids}}) {
+    foreach my $id (sort keys %{$frr_cfg->{ids}}) {
 	my $plugin_config = $frr_cfg->{ids}->{$id};
-	my $asn = $plugin_config->{asn};
-	if ($asn) {
-	    my $plugin = PVE::Network::SDN::Plugin->lookup($plugin_config->{type});
-	    $plugin->generate_frr_config($plugin_config, $asn, $id, $uplinks, $config);
-	}
+	my $plugin = PVE::Network::SDN::Plugin->lookup($plugin_config->{type});
+	$plugin->generate_frr_config($plugin_config, $plugin_config, $id, $uplinks, $config);
     }
 
-    foreach my $id (keys %{$transport_cfg->{ids}}) {
+    foreach my $id (sort keys %{$transport_cfg->{ids}}) {
 	my $plugin_config = $transport_cfg->{ids}->{$id};
-	my $router = $plugin_config->{router};
-	if ($router) {
-	    my $asn = $frr_cfg->{ids}->{$router}->{asn};
-	    if ($asn) {
+	my $routerid = $plugin_config->{router};
+	if ($routerid) {
+	    my $router = $frr_cfg->{ids}->{$routerid};
+	    if ($router) {
 		my $plugin = PVE::Network::SDN::Plugin->lookup($plugin_config->{type});
-		$plugin->generate_frr_config($plugin_config, $asn, $id, $uplinks, $config);
+		$plugin->generate_frr_config($plugin_config, $router, $id, $uplinks, $config);
 	    }
 	}
     }
@@ -240,7 +237,8 @@ sub sort_frr_config {
     $order->{''} = 0;
     $order->{'vrf'} = 1;
     $order->{'ipv4 unicast'} = 1;
-    $order->{'l2vpn evpn'} = 2;
+    $order->{'ipv6 unicast'} = 2;
+    $order->{'l2vpn evpn'} = 3;
 
     my $a_val = 100;
     my $b_val = 100;
