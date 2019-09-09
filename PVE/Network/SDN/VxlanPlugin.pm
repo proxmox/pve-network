@@ -199,7 +199,11 @@ sub generate_frr_config {
 	push(@{$config->{router}->{"bgp $asn"}->{"address-family"}->{"ipv4 unicast"}}, @router_config);
 
 	@router_config = ();
+	#redistribute connected to be able to route to local vms on the gateway
+	push @router_config, "redistribute connected";
+	push(@{$config->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"ipv4 unicast"}}, @router_config);
 
+	@router_config = ();
 	#add default originate to announce 0.0.0.0/0 type5 route in evpn
 	push @router_config, "default-originate ipv4";
 	push(@{$config->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"l2vpn evpn"}}, @router_config);
