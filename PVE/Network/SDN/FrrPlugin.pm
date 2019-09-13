@@ -21,12 +21,12 @@ sub properties {
         },
         'peers' => {
             description => "peers address list.",
-            type => 'string',  #fixme: format
+            type => 'string', format => 'ip-list'
         },
 	'gateway-nodes' => get_standard_option('pve-node-list'),
         'gateway-external-peers' => {
             description => "upstream bgp peers address list.",
-            type => 'string',  #fixme: format
+            type => 'string', format => 'ip-list'
         },
     };
 }

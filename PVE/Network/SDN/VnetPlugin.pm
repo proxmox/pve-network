@@ -45,7 +45,7 @@ sub properties {
         mac => {
             type => 'string',
             description => "Anycast router mac address",
-	    optional => 1,
+	    optional => 1, format => 'mac-addr'
         }
     };
 }

@@ -33,7 +33,7 @@ sub properties {
         },
 	'unicast-address' => {
 	    description => "Unicast peers address ip list.",
-	    type => 'string',  #fixme: format
+	    type => 'string',  format => 'ip-list'
 	},
 	'vrf' => {
 	    description => "vrf name.",
