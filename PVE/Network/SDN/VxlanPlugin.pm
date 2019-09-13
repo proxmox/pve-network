@@ -3,7 +3,7 @@ package PVE::Network::SDN::VxlanPlugin;
 use strict;
 use warnings;
 use PVE::Network::SDN::Plugin;
-use PVE::Tools;
+use PVE::Tools qw($IPV4RE);
 use PVE::INotify;
 
 use base('PVE::Network::SDN::Plugin');
@@ -15,6 +15,25 @@ sub pve_verify_sdn_vxlanrange {
    PVE::Network::SDN::Plugin::parse_tag_number_or_range($vxlanstr, '16777216');
 
    return $vxlanstr;
+}
+
+PVE::JSONSchema::register_format('ipv4-multicast', \&parse_ipv4_multicast);
+sub parse_ipv4_multicast {
+    my ($ipv4, $noerr) = @_;
+
+    if ($ipv4 !~ m/^(?:$IPV4RE)$/) {
+        return undef if $noerr;
+        die "value does not look like a valid multicast IPv4 address\n";
+    }
+
+    if ($ipv4 =~ m/^(\d+)\.\d+.\d+.\d+/) {
+	if($1 < 224 || $1 > 239) {
+	    return undef if $noerr;
+	    die "value does not look like a valid multicast IPv4 address\n";
+	}
+    }
+
+    return $ipv4;
 }
 
 sub type {
@@ -29,7 +48,7 @@ sub properties {
         },
         'multicast-address' => {
             description => "Multicast address.",
-            type => 'string',  #fixme: format
+            type => 'string', format => 'ipv4-multicast'
         },
 	'unicast-address' => {
 	    description => "Unicast peers address ip list.",
