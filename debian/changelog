@@ -1,3 +1,21 @@
+libpve-network-perl (0.3-1) pve; urgency=medium
+
+  * add FRR plugin
+
+  * VXLAN: add VRF and VRFVXLAN
+
+  * VXLAN: add support for ipv4/ipv6/mac for anycast routing
+
+  * VXLAN: add ip-forward|ip6-forward|arp-accept for routing
+
+  * VXLAN: add gateway-nodes option
+
+  * VXLAN: EVPN: fix routing to local vms on gateway nodes
+
+  * general fixes and improvements
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 20 Sep 2019 16:57:42 +0200
+
 libpve-network-perl (0.2-1) pve; urgency=medium
 
   * add API
