@@ -230,6 +230,23 @@ sub generate_controller_config {
     return $config;
 }
 
+
+sub reload_controller {
+
+    my $sdn_cfg = PVE::Cluster::cfs_read_file('sdn.cfg');
+    return if !$sdn_cfg;
+
+    foreach my $id (keys %{$sdn_cfg->{ids}}) {
+	my $plugin_config = $sdn_cfg->{ids}->{$id};
+	my $plugin = PVE::Network::SDN::Plugin->lookup($plugin_config->{type});
+	my $pd = $plugin->plugindata();
+	my $role = $pd->{role};
+	if ($role eq 'controller') {
+	    $plugin->reload_controller();
+	}
+    }
+}
+
 sub write_etc_network_config {
     my ($rawconfig) = @_;
 

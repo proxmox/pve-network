@@ -98,5 +98,16 @@ sub write_controller_config {
     $writefh->close();
 }
 
+sub reload_controller {
+    my ($class) = @_;
+
+    my $conf_file = "/etc/faucet/faucet.yaml";
+    my $bin_path = "/usr/bin/faucet";
+
+    if (-e $conf_file && -e $bin_path) {
+        PVE::Tools::run_command(['systemctl', 'reload', 'faucet']);
+    }
+}
+
 1;
 

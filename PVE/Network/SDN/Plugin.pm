@@ -88,6 +88,12 @@ sub write_controller_config {
     die "please implement inside plugin";
 }
 
+sub controller_reload {
+    my ($class) = @_;
+
+    die "please implement inside plugin";
+}
+
 sub on_delete_hook {
     my ($class, $sndid, $scfg) = @_;
 

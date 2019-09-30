@@ -290,6 +290,24 @@ sub write_controller_config {
     $writefh->close();
 }
 
+sub reload_controller {
+    my ($class) = @_;
+
+    my $conf_file = "/etc/frr/frr.conf";
+    my $bin_path = "/usr/bin/vtysh";
+
+    my $err = sub {
+	my $line = shift;
+	if ($line =~ /^line (\S+)/) {
+	    print "$line \n";
+	}
+    };
+
+    if (-e $conf_file && -e $bin_path) {
+	PVE::Tools::run_command([$bin_path, '-m', '-f', $conf_file], outfunc => {}, errfunc => $err);
+    }
+}
+
 1;
 
 
