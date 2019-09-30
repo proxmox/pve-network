@@ -199,8 +199,8 @@ sub generate_controller_config {
 	    if ($controllerid) {
 		my $controller = $sdn_cfg->{ids}->{$controllerid};
 		if ($controller) {
-		    my $controller_plugin = PVE::Network::SDN::Plugin->lookup($plugin_config->{type});
-		    $controller_plugin->generate_controller_config($plugin_config, $controller, $id, $uplinks, $config);
+		    my $controller_plugin = PVE::Network::SDN::Plugin->lookup($controller->{type});
+		    $controller_plugin->generate_controller_transport_config($plugin_config, $controller, $id, $uplinks, $config);
 		}
 	    }
 	}
