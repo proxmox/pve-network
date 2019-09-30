@@ -36,17 +36,6 @@ sub properties {
 	    type => 'string', format => 'pve-sdn-vlanrange',
 	    description => "Allowed vlan range",
 	},
-	'vlan-aware' => {
-            type => 'boolean',
-	    description => "enable 802.1q stacked vlan",
-	},
-	'vlan-protocol' => {
-	    type => 'string',
-            enum => ['802.1q', '802.1ad'],
-	    default => '802.1q',
-	    optional => 1,
-	    description => "vlan protocol",
-	}
     };
 }
 
@@ -55,9 +44,6 @@ sub options {
     return {
 	'uplink-id' => { optional => 0 },
         'vlan-allowed' => { optional => 1 },
-	'vlan-protocol' => { optional => 1 },
-	'vlan-aware' => { optional => 1 },
-
     };
 }
 
@@ -68,10 +54,7 @@ sub generate_sdn_config {
     my $tag = $vnet->{tag};
     my $mtu = $vnet->{mtu};
     my $alias = $vnet->{alias};
-    my $vlanaware = $plugin_config->{'vlan-aware'};
-    my $vlanprotocol = $plugin_config->{'vlan-protocol'};
     my $uplink = $plugin_config->{'uplink-id'};
-    my $vlanallowed = $plugin_config->{'vlan-allowed'};
 
     die "missing vlan tag" if !$tag;
 
@@ -81,7 +64,6 @@ sub generate_sdn_config {
 
     #tagged interface
     my @iface_config = ();
-    push @iface_config, "vlan-protocol $vlanprotocol" if $vlanprotocol;
     push @iface_config, "mtu $mtu" if $mtu;
     push(@{$config->{$iface}}, @iface_config) if !$config->{$iface};
 
@@ -90,7 +72,6 @@ sub generate_sdn_config {
     push @iface_config, "bridge_ports $iface";
     push @iface_config, "bridge_stp off";
     push @iface_config, "bridge_fd 0";
-    push @iface_config, "bridge-vlan-aware yes" if $vlanaware;
     push @iface_config, "mtu $mtu" if $mtu;
     push @iface_config, "alias $alias" if $alias;
     push(@{$config->{$vnetid}}, @iface_config) if !$config->{$vnetid};
