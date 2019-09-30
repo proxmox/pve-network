@@ -15,6 +15,7 @@ use PVE::Network::SDN::VxlanPlugin;
 use PVE::Network::SDN::FrrPlugin;
 use PVE::Network::SDN::OVSFaucetPlugin;
 use PVE::Network::SDN::FaucetPlugin;
+use PVE::Network::SDN::EvpnPlugin;
 
 PVE::Network::SDN::VnetPlugin->register();
 PVE::Network::SDN::VlanPlugin->register();
@@ -22,6 +23,7 @@ PVE::Network::SDN::VxlanPlugin->register();
 PVE::Network::SDN::FrrPlugin->register();
 PVE::Network::SDN::OVSFaucetPlugin->register();
 PVE::Network::SDN::FaucetPlugin->register();
+PVE::Network::SDN::EvpnPlugin->register();
 PVE::Network::SDN::Plugin->init();
 
 

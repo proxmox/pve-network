@@ -14,6 +14,7 @@ use PVE::Network::SDN::VnetPlugin;
 use PVE::Network::SDN::FrrPlugin;
 use PVE::Network::SDN::OVSFaucetPlugin;
 use PVE::Network::SDN::FaucetPlugin;
+use PVE::Network::SDN::EvpnPlugin;
 
 use Storable qw(dclone);
 use PVE::JSONSchema qw(get_standard_option);

@@ -1,4 +1,4 @@
-package PVE::Network::SDN::VxlanPlugin;
+package PVE::Network::SDN::EvpnPlugin;
 
 use strict;
 use warnings;
@@ -6,38 +6,10 @@ use PVE::Network::SDN::Plugin;
 use PVE::Tools qw($IPV4RE);
 use PVE::INotify;
 
-use base('PVE::Network::SDN::Plugin');
-
-PVE::JSONSchema::register_format('pve-sdn-vxlanrange', \&pve_verify_sdn_vxlanrange);
-sub pve_verify_sdn_vxlanrange {
-   my ($vxlanstr) = @_;
-
-   PVE::Network::SDN::Plugin::parse_tag_number_or_range($vxlanstr, '16777216');
-
-   return $vxlanstr;
-}
-
-PVE::JSONSchema::register_format('ipv4-multicast', \&parse_ipv4_multicast);
-sub parse_ipv4_multicast {
-    my ($ipv4, $noerr) = @_;
-
-    if ($ipv4 !~ m/^(?:$IPV4RE)$/) {
-        return undef if $noerr;
-        die "value does not look like a valid multicast IPv4 address\n";
-    }
-
-    if ($ipv4 =~ m/^(\d+)\.\d+.\d+.\d+/) {
-	if($1 < 224 || $1 > 239) {
-	    return undef if $noerr;
-	    die "value does not look like a valid multicast IPv4 address\n";
-	}
-    }
-
-    return $ipv4;
-}
+use base('PVE::Network::SDN::VxlanPlugin');
 
 sub type {
-    return 'vxlan';
+    return 'evpn';
 }
 
 sub plugindata {
@@ -48,17 +20,17 @@ sub plugindata {
 
 sub properties {
     return {
-        'vxlan-allowed' => {
-            type => 'string', format => 'pve-sdn-vxlanrange',
-            description => "Allowed vlan range",
-        },
-        'multicast-address' => {
-            description => "Multicast address.",
-            type => 'string', format => 'ipv4-multicast'
-        },
-	'unicast-address' => {
-	    description => "Unicast peers address ip list.",
-	    type => 'string',  format => 'ip-list'
+	'vrf' => {
+	    description => "vrf name.",
+	    type => 'string',  #fixme: format
+	},
+	'vrf-vxlan' => {
+	    type => 'integer',
+	    description => "l3vni.",
+	},
+	'controller' => {
+	    type => 'string',
+	    description => "Frr router name",
 	},
     };
 }
@@ -67,9 +39,10 @@ sub options {
 
     return {
 	'uplink-id' => { optional => 0 },
-        'multicast-address' => { optional => 1 },
-        'unicast-address' => { optional => 1 },
         'vxlan-allowed' => { optional => 1 },
+        'vrf' => { optional => 0 },
+        'vrf-vxlan' => { optional => 0 },
+        'controller' => { optional => 0 },
     };
 }
 
@@ -82,11 +55,11 @@ sub generate_sdn_config {
     my $ipv4 = $vnet->{ipv4};
     my $ipv6 = $vnet->{ipv6};
     my $mac = $vnet->{mac};
-    my $multicastaddress = $plugin_config->{'multicast-address'};
-    my @unicastaddress = split(',', $plugin_config->{'unicast-address'}) if $plugin_config->{'unicast-address'};
 
     my $uplink = $plugin_config->{'uplink-id'};
     my $vxlanallowed = $plugin_config->{'vxlan-allowed'};
+    my $vrf = $plugin_config->{'vrf'};
+    my $vrfvxlan = $plugin_config->{'vrf-vxlan'};
 
     die "missing vxlan tag" if !$tag;
     my $iface = "uplink$uplink";
@@ -105,16 +78,9 @@ sub generate_sdn_config {
     my @iface_config = ();
     push @iface_config, "vxlan-id $tag";
 
-    if($multicastaddress) {
-	push @iface_config, "vxlan-svcnodeip $multicastaddress";
-	push @iface_config, "vxlan-physdev $iface";
-    } elsif (@unicastaddress) {
-
-	foreach my $address (@unicastaddress) {
-	    next if $address eq $ifaceip;
-	    push @iface_config, "vxlan_remoteip $address";
-	}
-    }
+    push @iface_config, "vxlan-local-tunnelip $ifaceip" if $ifaceip;
+    push @iface_config, "bridge-learning off";
+    push @iface_config, "bridge-arp-nd-suppress on";
 
     push @iface_config, "mtu $mtu" if $mtu;
     push(@{$config->{"vxlan$vnetid"}}, @iface_config) if !$config->{"vxlan$vnetid"};
@@ -129,20 +95,42 @@ sub generate_sdn_config {
     push @iface_config, "bridge_fd 0";
     push @iface_config, "mtu $mtu" if $mtu;
     push @iface_config, "alias $alias" if $alias;
+    push @iface_config, "ip-forward on" if $ipv4;
+    push @iface_config, "ip6-forward on" if $ipv6;
+    push @iface_config, "arp-accept on" if $ipv4||$ipv6;
+    push @iface_config, "vrf $vrf" if $vrf;
     push(@{$config->{$vnetid}}, @iface_config) if !$config->{$vnetid};
 
-    return $config;
-}
+    if ($vrf) {
+	#vrf interface
+	@iface_config = ();
+	push @iface_config, "vrf-table auto";
+	push(@{$config->{$vrf}}, @iface_config) if !$config->{$vrf};
 
-sub on_delete_hook {
-    my ($class, $transportid, $sdn_cfg) = @_;
+	if ($vrfvxlan) {
+	    #l3vni vxlan interface
+	    my $iface_vxlan = "vxlan$vrf";
+	    @iface_config = ();
+	    push @iface_config, "vxlan-id $vrfvxlan";
+	    push @iface_config, "vxlan-local-tunnelip $ifaceip" if $ifaceip;
+	    push @iface_config, "bridge-learning off";
+	    push @iface_config, "bridge-arp-nd-suppress on";
+	    push @iface_config, "mtu $mtu" if $mtu;
+	    push(@{$config->{$iface_vxlan}}, @iface_config) if !$config->{$iface_vxlan};
 
-    # verify that no vnet are associated to this transport
-    foreach my $id (keys %{$sdn_cfg->{ids}}) {
-	my $sdn = $sdn_cfg->{ids}->{$id};
-	die "transport $transportid is used by vnet $id"
-	    if ($sdn->{type} eq 'vnet' && defined($sdn->{transportzone}) && $sdn->{transportzone} eq $transportid);
+	    #l3vni bridge
+	    my $brvrf = "br$vrf";
+	    @iface_config = ();
+	    push @iface_config, "bridge-ports $iface_vxlan";
+	    push @iface_config, "bridge_stp off";
+	    push @iface_config, "bridge_fd 0";
+	    push @iface_config, "mtu $mtu" if $mtu;
+	    push @iface_config, "vrf $vrf";
+	    push(@{$config->{$brvrf}}, @iface_config) if !$config->{$brvrf};
+	}
     }
+
+    return $config;
 }
 
 sub on_update_hook {
