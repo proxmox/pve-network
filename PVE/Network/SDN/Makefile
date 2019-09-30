@@ -1,4 +1,4 @@
-SOURCES=Plugin.pm VnetPlugin.pm VlanPlugin.pm VxlanPlugin.pm FrrPlugin.pm FaucetPlugin.pm OVSFaucetPlugin.pm EvpnPlugin.pm
+SOURCES=Plugin.pm VnetPlugin.pm VlanPlugin.pm VxlanPlugin.pm FaucetControllerPlugin.pm FaucetPlugin.pm EvpnPlugin.pm EvpnControllerPlugin.pm
 
 
 PERL5DIR=${DESTDIR}/usr/share/perl5

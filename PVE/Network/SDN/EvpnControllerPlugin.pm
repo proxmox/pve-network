@@ -1,4 +1,4 @@
-package PVE::Network::SDN::FrrPlugin;
+package PVE::Network::SDN::EvpnControllerPlugin;
 
 use strict;
 use warnings;
@@ -10,7 +10,7 @@ use PVE::JSONSchema qw(get_standard_option);
 use base('PVE::Network::SDN::Plugin');
 
 sub type {
-    return 'frr';
+    return 'evpncontroller';
 }
 
 sub plugindata {

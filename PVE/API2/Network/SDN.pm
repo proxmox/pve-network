@@ -11,9 +11,9 @@ use PVE::Network::SDN::Plugin;
 use PVE::Network::SDN::VlanPlugin;
 use PVE::Network::SDN::VxlanPlugin;
 use PVE::Network::SDN::VnetPlugin;
-use PVE::Network::SDN::FrrPlugin;
-use PVE::Network::SDN::OVSFaucetPlugin;
+use PVE::Network::SDN::FaucetControllerPlugin;
 use PVE::Network::SDN::FaucetPlugin;
+use PVE::Network::SDN::EvpnControllerPlugin;
 use PVE::Network::SDN::EvpnPlugin;
 
 use Storable qw(dclone);
