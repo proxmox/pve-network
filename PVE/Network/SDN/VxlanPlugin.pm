@@ -40,6 +40,12 @@ sub type {
     return 'vxlan';
 }
 
+sub plugindata {
+    return {
+        role => 'transport',
+    };
+}
+
 sub properties {
     return {
         'vxlan-allowed' => {
@@ -62,7 +68,7 @@ sub properties {
 	    type => 'integer',
 	    description => "l3vni.",
 	},
-	'router' => {
+	'controller' => {
 	    type => 'string',
 	    description => "Frr router name",
 	},
@@ -78,7 +84,7 @@ sub options {
         'vxlan-allowed' => { optional => 1 },
         'vrf' => { optional => 1 },
         'vrf-vxlan' => { optional => 1 },
-        'router' => { optional => 1 },
+        'controller' => { optional => 1 },
     };
 }
 
@@ -182,7 +188,7 @@ sub generate_sdn_config {
     return $config;
 }
 
-sub generate_frr_config {
+sub generate_controller_config {
     my ($class, $plugin_config, $router, $id, $uplinks, $config) = @_;
 
     my $vrf = $plugin_config->{'vrf'};
@@ -195,7 +201,7 @@ sub generate_frr_config {
     #vrf
     my @router_config = ();
     push @router_config, "vni $vrfvxlan";
-    push(@{$config->{vrf}->{"$vrf"}}, @router_config);
+    push(@{$config->{frr}->{vrf}->{"$vrf"}}, @router_config);
 
     @router_config = ();
 
@@ -213,20 +219,20 @@ sub generate_frr_config {
 	#frr 7.1 tag is bugged -> works fine with 7.1 stable branch(20190829-02-g6ba76bbc1)
 	#https://github.com/FRRouting/frr/issues/4905
 	push @router_config, "import vrf $vrf";
-	push(@{$config->{router}->{"bgp $asn"}->{"address-family"}->{"ipv4 unicast"}}, @router_config);
-	push(@{$config->{router}->{"bgp $asn"}->{"address-family"}->{"ipv6 unicast"}}, @router_config);
+	push(@{$config->{frr}->{router}->{"bgp $asn"}->{"address-family"}->{"ipv4 unicast"}}, @router_config);
+	push(@{$config->{frr}->{router}->{"bgp $asn"}->{"address-family"}->{"ipv6 unicast"}}, @router_config);
 
 	@router_config = ();
 	#redistribute connected to be able to route to local vms on the gateway
 	push @router_config, "redistribute connected";
-	push(@{$config->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"ipv4 unicast"}}, @router_config);
-	push(@{$config->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"ipv6 unicast"}}, @router_config);
+	push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"ipv4 unicast"}}, @router_config);
+	push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"ipv6 unicast"}}, @router_config);
 
 	@router_config = ();
 	#add default originate to announce 0.0.0.0/0 type5 route in evpn
 	push @router_config, "default-originate ipv4";
 	push @router_config, "default-originate ipv6";
-	push(@{$config->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"l2vpn evpn"}}, @router_config);
+	push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"l2vpn evpn"}}, @router_config);
     }
 
     return $config;

@@ -10,6 +10,12 @@ sub type {
     return 'vlan';
 }
 
+sub plugindata {
+    return {
+	role => 'transport',
+    };
+}
+
 PVE::JSONSchema::register_format('pve-sdn-vlanrange', \&pve_verify_sdn_vlanrange);
 sub pve_verify_sdn_vlanrange {
    my ($vlanstr) = @_;

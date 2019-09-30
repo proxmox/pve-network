@@ -71,8 +71,14 @@ sub generate_sdn_config {
     die "please implement inside plugin";
 }
 
-sub generate_frr_config {
+sub generate_controller_config {
     my ($class, $plugin_config, $router, $id, $uplinks, $config) = @_;
+
+    die "please implement inside plugin";
+}
+
+sub write_controller_config {
+    my ($class, $plugin_config, $config) = @_;
 
     die "please implement inside plugin";
 }

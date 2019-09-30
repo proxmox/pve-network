@@ -12,6 +12,12 @@ sub type {
     return 'vnet';
 }
 
+sub plugindata {
+    return {
+        role => 'vnet',
+    };
+}
+
 sub properties {
     return {
 	transportzone => {
