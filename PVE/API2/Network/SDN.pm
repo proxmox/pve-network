@@ -61,7 +61,10 @@ __PACKAGE__->register_method ({
 	type => 'array',
 	items => {
 	    type => "object",
-	    properties => { sdn => { type => 'string'} },
+	    properties => { sdn => { type => 'string'}, 
+			    type => { type => 'string'},
+			    role => { type => 'string'}
+			  },
 	},
 	links => [ { rel => 'child', href => "{sdn}" } ],
     },
@@ -82,6 +85,12 @@ __PACKAGE__->register_method ({
 
 	    my $scfg = &$api_sdn_config($cfg, $sdnid);
 	    next if $param->{type} && $param->{type} ne $scfg->{type};
+
+	    my $plugin_config = $cfg->{ids}->{$sdnid};
+	    my $plugin = PVE::Network::SDN::Plugin->lookup($plugin_config->{type});
+	    my $pd = $plugin->plugindata();
+	    my $role = $pd->{role};
+	    $scfg->{role} = $role;
 	    push @$res, $scfg;
 	}
 
