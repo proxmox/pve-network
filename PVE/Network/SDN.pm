@@ -13,11 +13,15 @@ use PVE::Network::SDN::VnetPlugin;
 use PVE::Network::SDN::VlanPlugin;
 use PVE::Network::SDN::VxlanPlugin;
 use PVE::Network::SDN::FrrPlugin;
+use PVE::Network::SDN::OVSFaucetPlugin;
+use PVE::Network::SDN::FaucetPlugin;
 
 PVE::Network::SDN::VnetPlugin->register();
 PVE::Network::SDN::VlanPlugin->register();
 PVE::Network::SDN::VxlanPlugin->register();
 PVE::Network::SDN::FrrPlugin->register();
+PVE::Network::SDN::OVSFaucetPlugin->register();
+PVE::Network::SDN::FaucetPlugin->register();
 PVE::Network::SDN::Plugin->init();
 
 
@@ -201,6 +205,21 @@ sub generate_controller_config {
 		if ($controller) {
 		    my $controller_plugin = PVE::Network::SDN::Plugin->lookup($controller->{type});
 		    $controller_plugin->generate_controller_transport_config($plugin_config, $controller, $id, $uplinks, $config);
+		}
+	    }
+	} elsif ($role eq 'vnet') {
+	    my $transportid = $plugin_config->{transportzone};
+	    if ($transportid) {
+		my $transport = $sdn_cfg->{ids}->{$transportid};
+		if ($transport) {
+		    my $controllerid = $transport->{controller};
+		    if ($controllerid) {
+			my $controller = $sdn_cfg->{ids}->{$controllerid};
+			if ($controller) {
+			    my $controller_plugin = PVE::Network::SDN::Plugin->lookup($controller->{type});
+			    $controller_plugin->generate_controller_vnet_config($plugin_config, $controller, $transportid, $id, $config);
+			}
+		    }
 		}
 	    }
 	}

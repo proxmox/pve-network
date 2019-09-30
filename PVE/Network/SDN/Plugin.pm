@@ -77,6 +77,11 @@ sub generate_controller_config {
     die "please implement inside plugin";
 }
 
+sub generate_controller_vnet_config {
+    my ($class, $plugin_config, $controller, $transportid, $vnetid, $config) = @_;
+
+}
+
 sub write_controller_config {
     my ($class, $plugin_config, $config) = @_;
 

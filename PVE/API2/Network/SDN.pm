@@ -12,6 +12,9 @@ use PVE::Network::SDN::VlanPlugin;
 use PVE::Network::SDN::VxlanPlugin;
 use PVE::Network::SDN::VnetPlugin;
 use PVE::Network::SDN::FrrPlugin;
+use PVE::Network::SDN::OVSFaucetPlugin;
+use PVE::Network::SDN::FaucetPlugin;
+
 use Storable qw(dclone);
 use PVE::JSONSchema qw(get_standard_option);
 use PVE::RPCEnvironment;
