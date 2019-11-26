@@ -27,10 +27,11 @@ PVE::JSONSchema::register_format('pve-sdn-controller-id', \&parse_sdn_controller
 sub parse_sdn_controller_id {
     my ($id, $noerr) = @_;
 
-    if ($id !~ m/^[a-z][a-z0-9\-\_\.]*[a-z0-9]$/i) {
+    if ($id !~ m/^[a-z][a-z0-9]*[a-z0-9]$/i) {
         return undef if $noerr;
-        die "SDN controller object ID '$id' contains illegal characters\n";
+        die "controller ID '$id' contains illegal characters\n";
     }
+    die "controller ID '$id' can't be more length than 10 characters\n" if length($id) > 10;
     return $id;
 }
 

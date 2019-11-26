@@ -27,10 +27,11 @@ PVE::JSONSchema::register_format('pve-sdn-zone-id', \&parse_sdn_zone_id);
 sub parse_sdn_zone_id {
     my ($id, $noerr) = @_;
 
-    if ($id !~ m/^[a-z][a-z0-9\-\_\.]*[a-z0-9]$/i) {
-        return undef if $noerr;
-        die "SDN zone object ID '$id' contains illegal characters\n";
+    if ($id !~ m/^[a-z][a-z0-9]*[a-z0-9]$/i) {
+	return undef if $noerr;
+	die "zone ID '$id' contains illegal characters\n";
     }
+    die "zone ID '$id' can't be more length than 10 characters\n" if length($id) > 10;
     return $id;
 }
 

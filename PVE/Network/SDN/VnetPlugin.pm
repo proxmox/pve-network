@@ -23,10 +23,11 @@ PVE::JSONSchema::register_format('pve-sdn-vnet-id', \&parse_sdn_vnet_id);
 sub parse_sdn_vnet_id {
     my ($id, $noerr) = @_;
 
-    if ($id !~ m/^[a-z][a-z0-9\-\_\.]*[a-z0-9]$/i) {
+    if ($id !~ m/^[a-z][a-z0-9]*[a-z0-9]$/i) {
         return undef if $noerr;
-        die "SDN object vnet ID '$id' contains illegal characters\n";
+        die "vnet ID '$id' contains illegal characters\n";
     }
+    die "vnet ID '$id' can't be more length than 10 characters\n" if length($id) > 10;
     return $id;
 }
 
