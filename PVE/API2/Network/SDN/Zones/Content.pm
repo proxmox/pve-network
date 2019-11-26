@@ -1,4 +1,4 @@
-package PVE::API2::Network::SDN::Content;
+package PVE::API2::Network::SDN::Zones::Content;
 
 use strict;
 use warnings;
@@ -30,8 +30,8 @@ __PACKAGE__->register_method ({
     	additionalProperties => 0,
 	properties => {
 	    node => get_standard_option('pve-node'),
-	    sdn => get_standard_option('pve-sdn-id', {
-		completion => \&PVE::Network::SDN::complete_sdn,
+	    zone => get_standard_option('pve-sdn-zone-id', {
+		completion => \&PVE::Network::SDN::Zones::complete_sdn_zone,
             }),
 	},
     },
@@ -60,7 +60,7 @@ __PACKAGE__->register_method ({
 
 	my $authuser = $rpcenv->get_user();
 
-	my $transportid = $param->{sdn};
+	my $transportid = $param->{zone};
 
 	my $res = [];
 

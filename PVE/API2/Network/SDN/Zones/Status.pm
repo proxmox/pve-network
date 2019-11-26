@@ -1,4 +1,4 @@
-package PVE::API2::Network::SDN::Status;
+package PVE::API2::Network::SDN::Zones::Status;
 
 use strict;
 use warnings;
@@ -8,7 +8,7 @@ use File::Basename;
 use PVE::Tools;
 use PVE::INotify;
 use PVE::Cluster;
-use PVE::API2::Network::SDN::Content;
+use PVE::API2::Network::SDN::Zones::Content;
 use PVE::RESTHandler;
 use PVE::RPCEnvironment;
 use PVE::JSONSchema qw(get_standard_option);
@@ -17,8 +17,8 @@ use PVE::Exception qw(raise_param_exc);
 use base qw(PVE::RESTHandler);
 
 __PACKAGE__->register_method ({
-    subclass => "PVE::API2::Network::SDN::Content",
-    path => '{sdn}/content',
+    subclass => "PVE::API2::Network::SDN::Zones::Content",
+    path => '{zone}/content',
 });
 
 __PACKAGE__->register_method ({
@@ -43,14 +43,14 @@ __PACKAGE__->register_method ({
 	items => {
 	    type => "object",
 	    properties => {
-		sdn => get_standard_option('pve-sdn-id'),
+		zone => get_standard_option('pve-sdn-zone-id'),
 		status => {
 		    description => "Status of transportzone",
 		    type => 'string',
 		},
 	    },
 	},
-	links => [ { rel => 'child', href => "{sdn}" } ],
+	links => [ { rel => 'child', href => "{zone}" } ],
     },
     code => sub {
 	my ($param) = @_;
@@ -65,7 +65,7 @@ __PACKAGE__->register_method ({
         my ($transport_status, $vnet_status) = PVE::Network::SDN::status();
 
         foreach my $id (keys %{$transport_status}) {
-	    my $item->{sdn} = $id;
+	    my $item->{zone} = $id;
 	    $item->{status} = $transport_status->{$id}->{'status'};
 	    push @$res,$item;
         }
@@ -75,7 +75,7 @@ __PACKAGE__->register_method ({
 
 __PACKAGE__->register_method ({
     name => 'diridx',
-    path => '{sdn}',
+    path => '{zone}',
     method => 'GET',
     description => "",
 #    permissions => {
@@ -85,7 +85,7 @@ __PACKAGE__->register_method ({
     	additionalProperties => 0,
 	properties => {
 	    node => get_standard_option('pve-node'),
-	    sdn => get_standard_option('pve-sdn-id'),
+	    zone => get_standard_option('pve-sdn-zone-id'),
 	},
     },
     returns => {
