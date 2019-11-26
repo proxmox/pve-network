@@ -178,8 +178,9 @@ sub status {
     return if !-e $cluster_vnet_file && !-e $cluster_transport_file;
 
     if (!-e $local_sdn_file) {
-	warn "local sdn network configuration is not yet generated, please reload";
-	$err_config = 'pending';
+
+	$err_config = "local sdn network configuration is not yet generated, please reload";
+	warn $err_config;
     } else {
 	# fixme : use some kind of versioning info?
 	my $cluster_vnet_timestamp = (stat($cluster_vnet_file))[9];
@@ -187,8 +188,8 @@ sub status {
 	my $local_sdn_timestamp = (stat($local_sdn_file))[9];
 
 	if ($local_sdn_timestamp < $cluster_vnet_timestamp || $local_sdn_timestamp < $cluster_transport_timestamp) {
-	    warn "local sdn network configuration is too old, please reload";
-	    $err_config = 'pending';
+	    $err_config = "local sdn network configuration is too old, please reload";
+	    warn $err_config;
         }
     }
 
@@ -205,18 +206,21 @@ sub status {
 	$transport_status->{$zone}->{status} = 'available' if !defined($transport_status->{$zone}->{status});
 
 	if($err_config) {
-	    $vnet_status->{$id}->{status} = $err_config;
-	    $transport_status->{$zone}->{status} = $err_config;
+	    $vnet_status->{$id}->{status} = 'pending';
+	    $vnet_status->{$id}->{statusmsg} = $err_config;
+	    $transport_status->{$zone}->{status} = 'pending';
 	} elsif ($status->{$id}->{status} && $status->{$id}->{status} eq 'pass') {
 	    $vnet_status->{$id}->{status} = 'available';
 	    my $bridgeport = $status->{$id}->{config}->{'bridge-ports'};
 
 	    if ($status->{$bridgeport}->{status} && $status->{$bridgeport}->{status} ne 'pass') {
 		$vnet_status->{$id}->{status} = 'error';
+		$vnet_status->{$id}->{statusmsg} = 'configuration not fully applied';
 		$transport_status->{$zone}->{status} = 'error';
 	    }
 	} else {
 	    $vnet_status->{$id}->{status} = 'error';
+	    $vnet_status->{$id}->{statusmsg} = 'missing';
 	    $transport_status->{$zone}->{status} = 'error';
 	}
     }

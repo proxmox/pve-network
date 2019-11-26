@@ -49,6 +49,11 @@ __PACKAGE__->register_method ({
 		    type => 'string',
 		    optional => 1,
 		},
+		statusmsg => {
+		    description => "Status details",
+		    type => 'string',
+		    optional => 1,
+		},
 	    },
 	},
 	links => [ { rel => 'child', href => "{vnet}" } ],
@@ -70,6 +75,7 @@ __PACKAGE__->register_method ({
 	    if ($vnet_status->{$id}->{zone} eq $transportid) {
 		my $item->{vnet} = $id;
 		$item->{status} = $vnet_status->{$id}->{'status'};
+		$item->{status} = $vnet_status->{$id}->{'statusmsg'};
 		push @$res,$item;
 	    }
         }
