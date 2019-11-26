@@ -45,7 +45,7 @@ __PACKAGE__->register_method ({
     method => 'GET',
     description => "SDN zones index.",
     permissions => {
-	description => "Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/cluster/sdn/zones/<zone>'",
+	description => "Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/zones/<zone>'",
 	user => 'all',
     },
     parameters => {
@@ -81,8 +81,8 @@ __PACKAGE__->register_method ({
 	my @sids = PVE::Network::SDN::Zones::sdn_zones_ids($cfg);
 	my $res = [];
 	foreach my $id (@sids) {
-#	    my $privs = [ 'SDN.Audit', 'SDN.Allocate' ];
-#	    next if !$rpcenv->check_any($authuser, "/cluster/sdn/zones/$id", $privs, 1);
+	    my $privs = [ 'SDN.Audit', 'SDN.Allocate' ];
+	    next if !$rpcenv->check_any($authuser, "/sdn/zones/$id", $privs, 1);
 
 	    my $scfg = &$api_sdn_zones_config($cfg, $id);
 	    next if $param->{type} && $param->{type} ne $scfg->{type};
@@ -100,9 +100,9 @@ __PACKAGE__->register_method ({
     path => '{zone}',
     method => 'GET',
     description => "Read sdn zone configuration.",
-#    permissions => {
-#	check => ['perm', '/cluster/sdn/zones/{zone}', ['SDN.Allocate']],
-#   },
+    permissions => {
+	check => ['perm', '/sdn/zones/{zone}', ['SDN.Allocate']],
+   },
 
     parameters => {
     	additionalProperties => 0,
@@ -125,9 +125,9 @@ __PACKAGE__->register_method ({
     path => '',
     method => 'POST',
     description => "Create a new sdn zone object.",
-#    permissions => {
-#	check => ['perm', '/cluster/sdn/zones', ['SDN.Allocate']],
-#    },
+    permissions => {
+	check => ['perm', '/sdn/zones', ['SDN.Allocate']],
+    },
     parameters => PVE::Network::SDN::Zones::Plugin->createSchema(),
     returns => { type => 'null' },
     code => sub {
@@ -166,9 +166,9 @@ __PACKAGE__->register_method ({
     path => '',
     method => 'DELETE',
     description => "Revert sdn zone changes.",
-#    permissions => {
-#	check => ['perm', '/cluster/sdn/zones', ['SDN.Allocate']],
-#    },
+    permissions => {
+	check => ['perm', '/sdn/zones', ['SDN.Allocate']],
+    },
     parameters => {
 	additionalProperties => 0,
     },
@@ -188,9 +188,9 @@ __PACKAGE__->register_method ({
     path => '{zone}',
     method => 'PUT',
     description => "Update sdn zone object configuration.",
-#    permissions => {
-#	check => ['perm', '/cluster/sdn/zones', ['SDN.Allocate']],
-#    },
+    permissions => {
+	check => ['perm', '/sdn/zones', ['SDN.Allocate']],
+    },
     parameters => PVE::Network::SDN::Zones::Plugin->updateSchema(),
     returns => { type => 'null' },
     code => sub {
@@ -231,9 +231,9 @@ __PACKAGE__->register_method ({
     path => '{zone}',
     method => 'DELETE',
     description => "Delete sdn zone object configuration.",
-#    permissions => {
-#	check => ['perm', '/cluster/sdn/zones', ['SDN.Allocate']],
-#    },
+    permissions => {
+	check => ['perm', '/sdn/zones', ['SDN.Allocate']],
+    },
     parameters => {
     	additionalProperties => 0,
 	properties => {

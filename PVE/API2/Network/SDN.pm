@@ -37,7 +37,7 @@ __PACKAGE__->register_method({
     method => 'GET',
     description => "Directory index.",
     permissions => {
-	check => ['perm', '/', [ 'Sys.Audit' ]],
+	check => ['perm', '/', [ 'SDN.Audit' ]],
     },
     parameters => {
     	additionalProperties => 0,
@@ -82,9 +82,9 @@ __PACKAGE__->register_method ({
     path => '',
     method => 'PUT',
     description => "Apply sdn controller changes && reload.",
-#    permissions => {
-#       check => ['perm', '/cluster/sdn/controllers', ['SDN.Allocate']],
-#    },
+    permissions => {
+       check => ['perm', '/sdn', ['SDN.Allocate']],
+    },
     parameters => {
         additionalProperties => 0,
     },

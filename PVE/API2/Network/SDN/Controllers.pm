@@ -38,7 +38,7 @@ __PACKAGE__->register_method ({
     method => 'GET',
     description => "SDN controllers index.",
     permissions => {
-	description => "Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/cluster/sdn/controllers/<controller>'",
+	description => "Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/controllers/<controller>'",
 	user => 'all',
     },
     parameters => {
@@ -74,8 +74,8 @@ __PACKAGE__->register_method ({
 	my @sids = PVE::Network::SDN::Controllers::sdn_controllers_ids($cfg);
 	my $res = [];
 	foreach my $id (@sids) {
-#	    my $privs = [ 'SDN.Audit', 'SDN.Allocate' ];
-#	    next if !$rpcenv->check_any($authuser, "/cluster/sdn/controllers/$id", $privs, 1);
+	    my $privs = [ 'SDN.Audit', 'SDN.Allocate' ];
+	    next if !$rpcenv->check_any($authuser, "/sdn/controllers/$id", $privs, 1);
 
 	    my $scfg = &$api_sdn_controllers_config($cfg, $id);
 	    next if $param->{type} && $param->{type} ne $scfg->{type};
@@ -93,9 +93,9 @@ __PACKAGE__->register_method ({
     path => '{controller}',
     method => 'GET',
     description => "Read sdn controller configuration.",
-#    permissions => {
-#	check => ['perm', '/cluster/sdn/controllers/{controller}', ['SDN.Allocate']],
-#   },
+    permissions => {
+	check => ['perm', '/sdn/controllers/{controller}', ['SDN.Allocate']],
+   },
 
     parameters => {
     	additionalProperties => 0,
@@ -118,9 +118,9 @@ __PACKAGE__->register_method ({
     path => '',
     method => 'POST',
     description => "Create a new sdn controller object.",
-#    permissions => {
-#	check => ['perm', '/cluster/sdn/controllers', ['SDN.Allocate']],
-#    },
+    permissions => {
+	check => ['perm', '/sdn/controllers', ['SDN.Allocate']],
+    },
     parameters => PVE::Network::SDN::Controllers::Plugin->createSchema(),
     returns => { type => 'null' },
     code => sub {
@@ -158,9 +158,9 @@ __PACKAGE__->register_method ({
     path => '',
     method => 'DELETE',
     description => "Revert sdn controller changes.",
-#    permissions => {
-#	check => ['perm', '/cluster/sdn/controllers', ['SDN.Allocate']],
-#    },
+    permissions => {
+	check => ['perm', '/sdn/controllers', ['SDN.Allocate']],
+    },
     parameters => {
 	additionalProperties => 0,
     },
@@ -180,9 +180,9 @@ __PACKAGE__->register_method ({
     path => '{controller}',
     method => 'PUT',
     description => "Update sdn controller object configuration.",
-#    permissions => {
-#	check => ['perm', '/cluster/sdn/controllers', ['SDN.Allocate']],
-#    },
+    permissions => {
+	check => ['perm', '/sdn/controllers', ['SDN.Allocate']],
+    },
     parameters => PVE::Network::SDN::Controllers::Plugin->updateSchema(),
     returns => { type => 'null' },
     code => sub {
@@ -222,9 +222,9 @@ __PACKAGE__->register_method ({
     path => '{controller}',
     method => 'DELETE',
     description => "Delete sdn controller object configuration.",
-#    permissions => {
-#	check => ['perm', '/cluster/sdn/controllers', ['SDN.Allocate']],
-#    },
+    permissions => {
+	check => ['perm', '/sdn/controllers', ['SDN.Allocate']],
+    },
     parameters => {
     	additionalProperties => 0,
 	properties => {

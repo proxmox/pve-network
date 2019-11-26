@@ -33,7 +33,7 @@ __PACKAGE__->register_method ({
     method => 'GET',
     description => "SDN vnets index.",
     permissions => {
-	description => "Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/cluster/sdn/vnets/<vnet>'",
+	description => "Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/vnets/<vnet>'",
 	user => 'all',
     },
     parameters => {
@@ -59,8 +59,8 @@ __PACKAGE__->register_method ({
 	my @sids = PVE::Network::SDN::Vnets::sdn_vnets_ids($cfg);
 	my $res = [];
 	foreach my $id (@sids) {
-#	    my $privs = [ 'SDN.Audit', 'SDN.Allocate' ];
-#	    next if !$rpcenv->check_any($authuser, "/cluster/sdn/vnets/$id", $privs, 1);
+	    my $privs = [ 'SDN.Audit', 'SDN.Allocate' ];
+	    next if !$rpcenv->check_any($authuser, "/sdn/vnets/$id", $privs, 1);
 
 	    my $scfg = &$api_sdn_vnets_config($cfg, $id);
 	    push @$res, $scfg;
@@ -74,9 +74,9 @@ __PACKAGE__->register_method ({
     path => '{vnet}',
     method => 'GET',
     description => "Read sdn vnet configuration.",
-#    permissions => {
-#	check => ['perm', '/cluster/sdn/vnets/{vnet}', ['SDN.Allocate']],
-#   },
+    permissions => {
+	check => ['perm', '/sdn/vnets/{vnet}', ['SDN.Allocate']],
+   },
 
     parameters => {
         additionalProperties => 0,
@@ -101,9 +101,9 @@ __PACKAGE__->register_method ({
     path => '',
     method => 'POST',
     description => "Create a new sdn vnet object.",
-#    permissions => {
-#	check => ['perm', '/cluster/sdn/vnets', ['SDN.Allocate']],
-#    },
+    permissions => {
+	check => ['perm', '/sdn/vnets', ['SDN.Allocate']],
+    },
     parameters => PVE::Network::SDN::VnetPlugin->createSchema(),
     returns => { type => 'null' },
     code => sub {
@@ -139,9 +139,9 @@ __PACKAGE__->register_method ({
     path => '',
     method => 'DELETE',
     description => "Revert sdn vnet changes.",
-#    permissions => {
-#	check => ['perm', '/cluster/sdn/vnets', ['SDN.Allocate']],
-#    },
+    permissions => {
+	check => ['perm', '/sdn/vnets', ['SDN.Allocate']],
+    },
     parameters => {
 	additionalProperties => 0,
     },
@@ -161,9 +161,9 @@ __PACKAGE__->register_method ({
     path => '{vnet}',
     method => 'PUT',
     description => "Update sdn vnet object configuration.",
-#    permissions => {
-#	check => ['perm', '/cluster/sdn/vnets', ['SDN.Allocate']],
-#    },
+    permissions => {
+	check => ['perm', '/sdn/vnets', ['SDN.Allocate']],
+    },
     parameters => PVE::Network::SDN::VnetPlugin->updateSchema(),
     returns => { type => 'null' },
     code => sub {
@@ -201,9 +201,9 @@ __PACKAGE__->register_method ({
     path => '{vnet}',
     method => 'DELETE',
     description => "Delete sdn vnet object configuration.",
-#    permissions => {
-#	check => ['perm', '/cluster/sdn/vnets', ['SDN.Allocate']],
-#    },
+    permissions => {
+	check => ['perm', '/sdn/vnets', ['SDN.Allocate']],
+    },
     parameters => {
     	additionalProperties => 0,
 	properties => {

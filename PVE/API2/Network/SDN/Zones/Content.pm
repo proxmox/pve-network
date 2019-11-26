@@ -21,9 +21,9 @@ __PACKAGE__->register_method ({
     path => '',
     method => 'GET',
     description => "List zone content.",
-#    permissions => {
-#	check => ['perm', '/sdn/{sdn}', ['SDN.Audit'], any => 1],
-#    },
+    permissions => {
+	check => ['perm', '/sdn/zones/{zone}', ['SDN.Audit'], any => 1],
+    },
     protected => 1,
     proxyto => 'node',
     parameters => {

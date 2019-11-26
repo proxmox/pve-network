@@ -78,9 +78,9 @@ __PACKAGE__->register_method ({
     path => '{zone}',
     method => 'GET',
     description => "",
-#    permissions => {
-#	check => ['perm', '/sdn/{sdn}', ['SDN.Audit'], any => 1],
-#    },
+    permissions => {
+	check => ['perm', '/sdn/zones/{zone}', ['SDN.Audit'], any => 1],
+    },
     parameters => {
     	additionalProperties => 0,
 	properties => {
