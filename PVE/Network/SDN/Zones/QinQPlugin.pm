@@ -41,18 +41,18 @@ sub generate_sdn_config {
     my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $uplinks, $config) = @_;
 
     my $tag = $vnet->{tag};
-    my $transport_tag = $plugin_config->{tag};
+    my $zone_tag = $plugin_config->{tag};
     my $mtu = $vnet->{mtu};
     my $alias = $vnet->{alias};
     my $vlanprotocol = $plugin_config->{'vlan-protocol'};
     my $uplink = $plugin_config->{'uplink-id'};
 
     die "missing vlan tag" if !$tag;
-    die "missing transport vlan tag" if !$transport_tag;
+    die "missing zone vlan tag" if !$zone_tag;
 
     my $iface = $uplinks->{$uplink}->{name};
     $iface = "uplink${uplink}" if !$iface;
-    $iface .= ".$transport_tag";
+    $iface .= ".$zone_tag";
 
     #tagged interface
     my @iface_config = ();

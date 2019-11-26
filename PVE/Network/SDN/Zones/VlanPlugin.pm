@@ -69,17 +69,6 @@ sub generate_sdn_config {
     return $config;
 }
 
-sub on_delete_hook {
-    my ($class, $transportid, $sdn_cfg) = @_;
-
-    # verify that no vnet are associated to this transport
-    foreach my $id (keys %{$sdn_cfg->{ids}}) {
-	my $sdn = $sdn_cfg->{ids}->{$id};
-	die "transport $transportid is used by vnet $id"
-	    if ($sdn->{type} eq 'vnet' && defined($sdn->{zone}) && $sdn->{zone} eq $transportid);
-    }
-}
-
 1;
 
 

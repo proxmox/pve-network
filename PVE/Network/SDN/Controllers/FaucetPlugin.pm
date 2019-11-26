@@ -22,28 +22,28 @@ sub properties {
 
 # Plugin implementation
 sub generate_controller_config {
-    my ($class, $plugin_config, $router, $id, $uplinks, $config) = @_;
+    my ($class, $plugin_config, $controller, $id, $uplinks, $config) = @_;
 
 }
 
-sub generate_controller_transport_config {
-    my ($class, $plugin_config, $router, $id, $uplinks, $config) = @_;
+sub generate_controller_zone_config {
+    my ($class, $plugin_config, $controller, $id, $uplinks, $config) = @_;
 
     my $dpid = $plugin_config->{'dp-id'};
     my $dphex = printf("%x",$dpid);
 
-    my $transport_config = {
+    my $zone_config = {
 				dp_id => $dphex,
 				hardware => "Open vSwitch",
 			   };
 
-    $config->{faucet}->{dps}->{$id} = $transport_config;
+    $config->{faucet}->{dps}->{$id} = $zone_config;
 
 }
 
 
 sub generate_controller_vnet_config {
-    my ($class, $plugin_config, $controller, $transportid, $vnetid, $config) = @_;
+    my ($class, $plugin_config, $controller, $zoneid, $vnetid, $config) = @_;
 
     my $mac = $plugin_config->{mac};
     my $ipv4 = $plugin_config->{ipv4};
@@ -63,17 +63,7 @@ sub generate_controller_vnet_config {
 
     $config->{faucet}->{vlans}->{$vnetid} = $vlan_config;
 
-    push(@{$config->{faucet}->{routers}->{$transportid}->{vlans}} , $vnetid);
-
-}
-
-sub on_delete_hook {
-    my ($class, $routerid, $sdn_cfg) = @_;
-
-}
-
-sub on_update_hook {
-    my ($class, $routerid, $sdn_cfg) = @_;
+    push(@{$config->{faucet}->{routers}->{$zoneid}->{vlans}} , $vnetid);
 
 }
 

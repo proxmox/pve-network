@@ -75,8 +75,8 @@ sub complete_sdn_zone {
 sub generate_etc_network_config {
 
     my $vnet_cfg = PVE::Cluster::cfs_read_file('sdn/vnets.cfg');
-    my $transport_cfg = PVE::Cluster::cfs_read_file('sdn/zones.cfg');
-    return if !$vnet_cfg && !$transport_cfg;
+    my $zone_cfg = PVE::Cluster::cfs_read_file('sdn/zones.cfg');
+    return if !$vnet_cfg && !$zone_cfg;
 
     #read main config for physical interfaces
     my $current_config_file = "/etc/network/interfaces";
@@ -108,7 +108,7 @@ sub generate_etc_network_config {
 	    next;
 	}
 
-	my $plugin_config = $transport_cfg->{ids}->{$zone};
+	my $plugin_config = $zone_cfg->{ids}->{$zone};
 
 	if (!defined($plugin_config)) {
 	    warn "can't generate vnet $vnet : zone $zone don't exist";
@@ -175,11 +175,11 @@ sub ifquery_check {
 sub status {
 
     my $cluster_vnet_file = "/etc/pve/sdn/vnets.cfg";
-    my $cluster_transport_file = "/etc/pve/sdn/zones.cfg";
+    my $cluster_zone_file = "/etc/pve/sdn/zones.cfg";
     my $local_sdn_file = "/etc/network/interfaces.d/sdn";
     my $err_config = undef;
 
-    return if !-e $cluster_vnet_file && !-e $cluster_transport_file;
+    return if !-e $cluster_vnet_file && !-e $cluster_zone_file;
 
     if (!-e $local_sdn_file) {
 
@@ -188,10 +188,10 @@ sub status {
     } else {
 	# fixme : use some kind of versioning info?
 	my $cluster_vnet_timestamp = (stat($cluster_vnet_file))[9];
-	my $cluster_transport_timestamp = (stat($cluster_transport_file))[9];
+	my $cluster_zone_timestamp = (stat($cluster_zone_file))[9];
 	my $local_sdn_timestamp = (stat($local_sdn_file))[9];
 
-	if ($local_sdn_timestamp < $cluster_vnet_timestamp || $local_sdn_timestamp < $cluster_transport_timestamp) {
+	if ($local_sdn_timestamp < $cluster_vnet_timestamp || $local_sdn_timestamp < $cluster_zone_timestamp) {
 	    $err_config = "local sdn network configuration is too old, please reload";
 	    warn $err_config;
         }
@@ -204,19 +204,19 @@ sub status {
     my $nodename = PVE::INotify::nodename();
 
     my $vnet_status = {};
-    my $transport_status = {};
+    my $zone_status = {};
 
     foreach my $id (keys %{$vnet_cfg->{ids}}) {
 	my $zone = $vnet_cfg->{ids}->{$id}->{zone};
 	next if defined($zone_cfg->{ids}->{$zone}->{nodes}) && !$zone_cfg->{ids}->{$zone}->{nodes}->{$nodename};
 
 	$vnet_status->{$id}->{zone} = $zone;
-	$transport_status->{$zone}->{status} = 'available' if !defined($transport_status->{$zone}->{status});
+	$zone_status->{$zone}->{status} = 'available' if !defined($zone_status->{$zone}->{status});
 
 	if($err_config) {
 	    $vnet_status->{$id}->{status} = 'pending';
 	    $vnet_status->{$id}->{statusmsg} = $err_config;
-	    $transport_status->{$zone}->{status} = 'pending';
+	    $zone_status->{$zone}->{status} = 'pending';
 	} elsif ($status->{$id}->{status} && $status->{$id}->{status} eq 'pass') {
 	    $vnet_status->{$id}->{status} = 'available';
 	    my $bridgeport = $status->{$id}->{config}->{'bridge-ports'};
@@ -224,15 +224,15 @@ sub status {
 	    if ($status->{$bridgeport}->{status} && $status->{$bridgeport}->{status} ne 'pass') {
 		$vnet_status->{$id}->{status} = 'error';
 		$vnet_status->{$id}->{statusmsg} = 'configuration not fully applied';
-		$transport_status->{$zone}->{status} = 'error';
+		$zone_status->{$zone}->{status} = 'error';
 	    }
 	} else {
 	    $vnet_status->{$id}->{status} = 'error';
 	    $vnet_status->{$id}->{statusmsg} = 'missing';
-	    $transport_status->{$zone}->{status} = 'error';
+	    $zone_status->{$zone}->{status} = 'error';
 	}
     }
-    return($transport_status, $vnet_status);
+    return($zone_status, $vnet_status);
 }
 
 1;

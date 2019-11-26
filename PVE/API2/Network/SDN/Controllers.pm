@@ -135,17 +135,17 @@ __PACKAGE__->register_method ({
         PVE::Network::SDN::Controllers::lock_sdn_controllers_config(
 	    sub {
 
-		my $cfg = PVE::Network::SDN::Controllers::config();
+		my $controller_cfg = PVE::Network::SDN::Controllers::config();
 
 		my $scfg = undef;
-		if ($scfg = PVE::Network::SDN::Controllers::sdn_controllers_config($cfg, $id, 1)) {
+		if ($scfg = PVE::Network::SDN::Controllers::sdn_controllers_config($controller_cfg, $id, 1)) {
 		    die "sdn controller object ID '$id' already defined\n";
 		}
 
-		$cfg->{ids}->{$id} = $opts;
-		$plugin->on_update_hook($id, $cfg);
+		$controller_cfg->{ids}->{$id} = $opts;
+		$plugin->on_update_hook($id, $controller_cfg);
 
-		PVE::Network::SDN::Controllers::write_config($cfg);
+		PVE::Network::SDN::Controllers::write_config($controller_cfg);
 
 	    }, "create sdn controller object failed");
 
@@ -194,11 +194,11 @@ __PACKAGE__->register_method ({
         PVE::Network::SDN::Controllers::lock_sdn_controllers_config(
 	 sub {
 
-	    my $cfg = PVE::Network::SDN::Controllers::config();
+	    my $controller_cfg = PVE::Network::SDN::Controllers::config();
 
-	    PVE::SectionConfig::assert_if_modified($cfg, $digest);
+	    PVE::SectionConfig::assert_if_modified($controller_cfg, $digest);
 
-	    my $scfg = PVE::Network::SDN::Controllers::sdn_controllers_config($cfg, $id);
+	    my $scfg = PVE::Network::SDN::Controllers::sdn_controllers_config($controller_cfg, $id);
 
 	    my $plugin = PVE::Network::SDN::Controllers::Plugin->lookup($scfg->{type});
 	    my $opts = $plugin->check_config($id, $param, 0, 1);
@@ -207,9 +207,9 @@ __PACKAGE__->register_method ({
 		$scfg->{$k} = $opts->{$k};
 	    }
 
-	    $plugin->on_update_hook($id, $cfg);
+	    $plugin->on_update_hook($id, $controller_cfg);
 
-	    PVE::Network::SDN::Controllers::write_config($cfg);
+	    PVE::Network::SDN::Controllers::write_config($controller_cfg);
 
 	    }, "update sdn controller object failed");
 
@@ -248,9 +248,9 @@ __PACKAGE__->register_method ({
 
 		my $plugin = PVE::Network::SDN::Controllers::Plugin->lookup($scfg->{type});
 
-		my $transport_cfg = PVE::Network::SDN::Zones::config();
+		my $zone_cfg = PVE::Network::SDN::Zones::config();
 
-		$plugin->on_delete_hook($id, $transport_cfg);
+		$plugin->on_delete_hook($id, $zone_cfg);
 
 		delete $cfg->{ids}->{$id};
 		PVE::Network::SDN::Controllers::write_config($cfg);

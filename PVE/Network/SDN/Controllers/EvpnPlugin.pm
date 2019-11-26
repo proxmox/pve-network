@@ -49,7 +49,7 @@ sub options {
 
 # Plugin implementation
 sub generate_controller_config {
-    my ($class, $plugin_config, $router, $id, $uplinks, $config) = @_;
+    my ($class, $plugin_config, $controller, $id, $uplinks, $config) = @_;
 
     my @peers = split(',', $plugin_config->{'peers'}) if $plugin_config->{'peers'};
 
@@ -75,63 +75,63 @@ sub generate_controller_config {
         $is_gateway = 1 if $gatewaynode eq $local_node;
     }
 
-    my @router_config = ();
+    my @controller_config = ();
 
-    push @router_config, "bgp router-id $ifaceip";
-    push @router_config, "no bgp default ipv4-unicast";
-    push @router_config, "coalesce-time 1000";
+    push @controller_config, "bgp router-id $ifaceip";
+    push @controller_config, "no bgp default ipv4-unicast";
+    push @controller_config, "coalesce-time 1000";
 
     foreach my $address (@peers) {
 	next if $address eq $ifaceip;
-	push @router_config, "neighbor $address remote-as $asn";
+	push @controller_config, "neighbor $address remote-as $asn";
     }
 
     if ($is_gateway) {
 	foreach my $address (@gatewaypeers) {
-	    push @router_config, "neighbor $address remote-as external";
+	    push @controller_config, "neighbor $address remote-as external";
 	}
     }
-    push(@{$config->{frr}->{router}->{"bgp $asn"}->{""}}, @router_config);
+    push(@{$config->{frr}->{router}->{"bgp $asn"}->{""}}, @controller_config);
 
-    @router_config = ();
+    @controller_config = ();
     foreach my $address (@peers) {
 	next if $address eq $ifaceip;
-	push @router_config, "neighbor $address activate";
+	push @controller_config, "neighbor $address activate";
     }
-    push @router_config, "advertise-all-vni";
-    push(@{$config->{frr}->{router}->{"bgp $asn"}->{"address-family"}->{"l2vpn evpn"}}, @router_config);
+    push @controller_config, "advertise-all-vni";
+    push(@{$config->{frr}->{router}->{"bgp $asn"}->{"address-family"}->{"l2vpn evpn"}}, @controller_config);
 
     if ($is_gateway) {
 
-        @router_config = ();
+        @controller_config = ();
         #import /32 routes of evpn network from vrf1 to default vrf (for packet return)
 	foreach my $address (@gatewaypeers) {
-	    push @router_config, "neighbor $address activate";
+	    push @controller_config, "neighbor $address activate";
 	}
-        push(@{$config->{frr}->{router}->{"bgp $asn"}->{"address-family"}->{"ipv4 unicast"}}, @router_config);
-        push(@{$config->{frr}->{router}->{"bgp $asn"}->{"address-family"}->{"ipv6 unicast"}}, @router_config);
+        push(@{$config->{frr}->{router}->{"bgp $asn"}->{"address-family"}->{"ipv4 unicast"}}, @controller_config);
+        push(@{$config->{frr}->{router}->{"bgp $asn"}->{"address-family"}->{"ipv6 unicast"}}, @controller_config);
 
     }
 
     return $config;
 }
 
-sub generate_controller_transport_config {
-    my ($class, $plugin_config, $router, $id, $uplinks, $config) = @_;
+sub generate_controller_zone_config {
+    my ($class, $plugin_config, $controller, $id, $uplinks, $config) = @_;
 
     my $vrf = $id;
     my $vrfvxlan = $plugin_config->{'vrf-vxlan'};
-    my $asn = $router->{asn};
-    my $gatewaynodes = $router->{'gateway-nodes'};
+    my $asn = $controller->{asn};
+    my $gatewaynodes = $controller->{'gateway-nodes'};
 
     return if !$vrf || !$vrfvxlan || !$asn;
 
     #vrf
-    my @router_config = ();
-    push @router_config, "vni $vrfvxlan";
-    push(@{$config->{frr}->{vrf}->{"$vrf"}}, @router_config);
+    my @controller_config = ();
+    push @controller_config, "vni $vrfvxlan";
+    push(@{$config->{frr}->{vrf}->{"$vrf"}}, @controller_config);
 
-    @router_config = ();
+    @controller_config = ();
 
     my $is_gateway = undef;
     my $local_node = PVE::INotify::nodename();
@@ -142,51 +142,49 @@ sub generate_controller_transport_config {
 
     if ($is_gateway) {
 
-	@router_config = ();
+	@controller_config = ();
 	#import /32 routes of evpn network from vrf1 to default vrf (for packet return)
-	#frr 7.1 tag is bugged -> works fine with 7.1 stable branch(20190829-02-g6ba76bbc1)
-	#https://github.com/FRRouting/frr/issues/4905
-	push @router_config, "import vrf $vrf";
-	push(@{$config->{frr}->{router}->{"bgp $asn"}->{"address-family"}->{"ipv4 unicast"}}, @router_config);
-	push(@{$config->{frr}->{router}->{"bgp $asn"}->{"address-family"}->{"ipv6 unicast"}}, @router_config);
+	push @controller_config, "import vrf $vrf";
+	push(@{$config->{frr}->{router}->{"bgp $asn"}->{"address-family"}->{"ipv4 unicast"}}, @controller_config);
+	push(@{$config->{frr}->{router}->{"bgp $asn"}->{"address-family"}->{"ipv6 unicast"}}, @controller_config);
 
-	@router_config = ();
+	@controller_config = ();
 	#redistribute connected to be able to route to local vms on the gateway
-	push @router_config, "redistribute connected";
-	push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"ipv4 unicast"}}, @router_config);
-	push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"ipv6 unicast"}}, @router_config);
+	push @controller_config, "redistribute connected";
+	push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"ipv4 unicast"}}, @controller_config);
+	push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"ipv6 unicast"}}, @controller_config);
 
-	@router_config = ();
+	@controller_config = ();
 	#add default originate to announce 0.0.0.0/0 type5 route in evpn
-	push @router_config, "default-originate ipv4";
-	push @router_config, "default-originate ipv6";
-	push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"l2vpn evpn"}}, @router_config);
+	push @controller_config, "default-originate ipv4";
+	push @controller_config, "default-originate ipv6";
+	push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"l2vpn evpn"}}, @controller_config);
     }
 
     return $config;
 }
 
 sub on_delete_hook {
-    my ($class, $routerid, $sdn_cfg) = @_;
+    my ($class, $controllerid, $zone_cfg) = @_;
 
-    # verify that transport is associated to this router
-    foreach my $id (keys %{$sdn_cfg->{ids}}) {
-        my $sdn = $sdn_cfg->{ids}->{$id};
-        die "router $routerid is used by $id"
-            if (defined($sdn->{router}) && $sdn->{router} eq $routerid);
+    # verify that zone is associated to this controller
+    foreach my $id (keys %{$zone_cfg->{ids}}) {
+        my $zone = $zone_cfg->{ids}->{$id};
+        die "controller $controllerid is used by $id"
+            if (defined($zone->{controller}) && $zone->{controller} eq $controllerid);
     }
 }
 
 sub on_update_hook {
-    my ($class, $routerid, $sdn_cfg) = @_;
+    my ($class, $controllerid, $controller_cfg) = @_;
 
-    # verify that asn is not already used by another router
-    my $asn = $sdn_cfg->{ids}->{$routerid}->{asn};
-    foreach my $id (keys %{$sdn_cfg->{ids}}) {
-	next if $id eq $routerid;
-        my $sdn = $sdn_cfg->{ids}->{$id};
+    # verify that asn is not already used by another controller
+    my $asn = $controller_cfg->{ids}->{$controllerid}->{asn};
+    foreach my $id (keys %{$controller_cfg->{ids}}) {
+	next if $id eq $controllerid;
+        my $controller = $controller_cfg->{ids}->{$id};
         die "asn $asn is already used by $id"
-            if (defined($sdn->{asn}) && $sdn->{asn} eq $asn);
+            if (defined($controller->{asn}) && $controller->{asn} eq $asn);
     }
 }
 

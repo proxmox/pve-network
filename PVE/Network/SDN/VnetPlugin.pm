@@ -102,21 +102,21 @@ sub options {
 }
 
 sub on_delete_hook {
-    my ($class, $sdnid, $sdn_cfg) = @_;
+    my ($class, $sdnid, $vnet_cfg) = @_;
 
     return;
 }
 
 sub on_update_hook {
-    my ($class, $sdnid, $sdn_cfg) = @_;
+    my ($class, $vnetid, $vnet_cfg) = @_;
     # verify that tag is not already defined in another vnet
-    if (defined($sdn_cfg->{ids}->{$sdnid}->{tag})) {
-	my $tag = $sdn_cfg->{ids}->{$sdnid}->{tag};
-	foreach my $id (keys %{$sdn_cfg->{ids}}) {
-	    next if $id eq $sdnid;
-	    my $sdn = $sdn_cfg->{ids}->{$id};
-	    if ($sdn->{type} eq 'vnet' && defined($sdn->{tag})) {
-		die "tag $tag already exist in vnet $id" if $tag eq $sdn->{tag};
+    if (defined($vnet_cfg->{ids}->{$vnetid}->{tag})) {
+	my $tag = $vnet_cfg->{ids}->{$vnetid}->{tag};
+	foreach my $id (keys %{$vnet_cfg->{ids}}) {
+	    next if $id eq $vnetid;
+	    my $vnet = $vnet_cfg->{ids}->{$id};
+	    if ($vnet->{type} eq 'vnet' && defined($vnet->{tag})) {
+		die "tag $tag already exist in vnet $id" if $tag eq $vnet->{tag};
 	    }
 	}
     }

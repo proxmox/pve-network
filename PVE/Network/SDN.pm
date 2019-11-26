@@ -41,8 +41,8 @@ sub ifquery_check {
 
 sub status {
 
-    my ($transport_status, $vnet_status) = PVE::Network::SDN::Zones::status();
-    return($transport_status, $vnet_status);
+    my ($zone_status, $vnet_status) = PVE::Network::SDN::Zones::status();
+    return($zone_status, $vnet_status);
 }
 
 1;

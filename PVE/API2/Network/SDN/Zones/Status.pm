@@ -62,11 +62,11 @@ __PACKAGE__->register_method ({
 
 	my $res = [];
 
-        my ($transport_status, $vnet_status) = PVE::Network::SDN::status();
+        my ($zone_status, $vnet_status) = PVE::Network::SDN::status();
 
-        foreach my $id (keys %{$transport_status}) {
+        foreach my $id (keys %{$zone_status}) {
 	    my $item->{zone} = $id;
-	    $item->{status} = $transport_status->{$id}->{'status'};
+	    $item->{status} = $zone_status->{$id}->{'status'};
 	    push @$res,$item;
         }
 

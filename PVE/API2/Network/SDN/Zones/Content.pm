@@ -65,14 +65,14 @@ __PACKAGE__->register_method ({
 
 	my $authuser = $rpcenv->get_user();
 
-	my $transportid = $param->{zone};
+	my $zoneid = $param->{zone};
 
 	my $res = [];
 
-        my ($transport_status, $vnet_status) = PVE::Network::SDN::status();
+        my ($zone_status, $vnet_status) = PVE::Network::SDN::status();
 
 	foreach my $id (keys %{$vnet_status}) {
-	    if ($vnet_status->{$id}->{zone} eq $transportid) {
+	    if ($vnet_status->{$id}->{zone} eq $zoneid) {
 		my $item->{vnet} = $id;
 		$item->{status} = $vnet_status->{$id}->{'status'};
 		$item->{status} = $vnet_status->{$id}->{'statusmsg'};

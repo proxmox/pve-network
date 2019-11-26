@@ -73,13 +73,13 @@ sub generate_sdn_config {
 }
 
 sub generate_controller_config {
-    my ($class, $plugin_config, $router, $id, $uplinks, $config) = @_;
+    my ($class, $plugin_config, $controller, $id, $uplinks, $config) = @_;
 
     die "please implement inside plugin";
 }
 
 sub generate_controller_vnet_config {
-    my ($class, $plugin_config, $controller, $transportid, $vnetid, $config) = @_;
+    my ($class, $plugin_config, $controller, $zoneid, $vnetid, $config) = @_;
 
 }
 
@@ -96,13 +96,13 @@ sub controller_reload {
 }
 
 sub on_delete_hook {
-    my ($class, $sndid, $scfg) = @_;
+    my ($class, $controllerid, $zone_cfg) = @_;
 
     # do nothing by default
 }
 
 sub on_update_hook {
-    my ($class, $sdnid, $scfg) = @_;
+    my ($class, $controllerid, $controller_cfg) = @_;
 
     # do nothing by default
 }

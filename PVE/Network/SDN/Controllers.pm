@@ -69,9 +69,9 @@ sub complete_sdn_controller {
 sub generate_controller_config {
 
     my $vnet_cfg = PVE::Cluster::cfs_read_file('sdn/vnets.cfg');
-    my $transport_cfg = PVE::Cluster::cfs_read_file('sdn/zones.cfg');
+    my $zone_cfg = PVE::Cluster::cfs_read_file('sdn/zones.cfg');
     my $controller_cfg = PVE::Cluster::cfs_read_file('sdn/controllers.cfg');
-    return if !$vnet_cfg && !$transport_cfg && !$controller_cfg;
+    return if !$vnet_cfg && !$zone_cfg && !$controller_cfg;
 
     #read main config for physical interfaces
     my $current_config_file = "/etc/network/interfaces";
@@ -99,29 +99,29 @@ sub generate_controller_config {
 	$plugin->generate_controller_config($plugin_config, $plugin_config, $id, $uplinks, $config);
     }
 
-    foreach my $id (keys %{$transport_cfg->{ids}}) {
-	my $plugin_config = $transport_cfg->{ids}->{$id};
+    foreach my $id (keys %{$zone_cfg->{ids}}) {
+	my $plugin_config = $zone_cfg->{ids}->{$id};
 	my $controllerid = $plugin_config->{controller};
 	next if !$controllerid;
 	my $controller = $controller_cfg->{ids}->{$controllerid};
 	if ($controller) {
 	    my $controller_plugin = PVE::Network::SDN::Controllers::Plugin->lookup($controller->{type});
-	    $controller_plugin->generate_controller_transport_config($plugin_config, $controller, $id, $uplinks, $config);
+	    $controller_plugin->generate_controller_zone_config($plugin_config, $controller, $id, $uplinks, $config);
 	}
     }
 
     foreach my $id (keys %{$vnet_cfg->{ids}}) {
 	my $plugin_config = $vnet_cfg->{ids}->{$id};
-	my $transportid = $plugin_config->{zone};
-	next if !$transportid;
-	my $transport = $transport_cfg->{ids}->{$transportid};
-	next if !$transport;
-	my $controllerid = $transport->{controller};
+	my $zoneid = $plugin_config->{zone};
+	next if !$zoneid;
+	my $zone = $zone_cfg->{ids}->{$zoneid};
+	next if !$zone;
+	my $controllerid = $zone->{controller};
 	next if !$controllerid;
 	my $controller = $controller_cfg->{ids}->{$controllerid};
 	if ($controller) {
 	    my $controller_plugin = PVE::Network::SDN::Controllers::Plugin->lookup($controller->{type});
-	    $controller_plugin->generate_controller_vnet_config($plugin_config, $controller, $transportid, $id, $config);
+	    $controller_plugin->generate_controller_vnet_config($plugin_config, $controller, $zoneid, $id, $config);
 	}
     }
 

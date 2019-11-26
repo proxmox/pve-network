@@ -102,13 +102,13 @@ sub generate_sdn_config {
 }
 
 sub generate_controller_config {
-    my ($class, $plugin_config, $router, $id, $uplinks, $config) = @_;
+    my ($class, $plugin_config, $controller, $id, $uplinks, $config) = @_;
 
     die "please implement inside plugin";
 }
 
 sub generate_controller_vnet_config {
-    my ($class, $plugin_config, $controller, $transportid, $vnetid, $config) = @_;
+    my ($class, $plugin_config, $controller, $zoneid, $vnetid, $config) = @_;
 
 }
 
@@ -125,9 +125,14 @@ sub controller_reload {
 }
 
 sub on_delete_hook {
-    my ($class, $sndid, $scfg) = @_;
+    my ($class, $zoneid, $vnet_cfg) = @_;
 
-    # do nothing by default
+    # verify that no vnet are associated to this zone
+    foreach my $id (keys %{$vnet_cfg->{ids}}) {
+	my $vnet = $vnet_cfg->{ids}->{$id};
+	die "zone $zoneid is used by vnet $id"
+	    if ($vnet->{type} eq 'vnet' && defined($vnet->{zone}) && $vnet->{zone} eq $zoneid);
+    }
 }
 
 sub on_update_hook {
