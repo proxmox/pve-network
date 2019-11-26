@@ -1,23 +1,21 @@
-package PVE::Network::SDN::QinQPlugin;
+package PVE::Network::SDN::Zones::QinQPlugin;
 
 use strict;
 use warnings;
-use PVE::Network::SDN::VlanPlugin;
+use PVE::Network::SDN::Zones::VlanPlugin;
 
-use base('PVE::Network::SDN::VlanPlugin');
+use base('PVE::Network::SDN::Zones::VlanPlugin');
 
 sub type {
     return 'qinq';
 }
 
-sub plugindata {
-    return {
-	role => 'transport',
-    };
-}
-
 sub properties {
     return {
+        tag => {
+            type => 'integer',
+            description => "vlan tag",
+        },
 	'vlan-protocol' => {
 	    type => 'string',
             enum => ['802.1q', '802.1ad'],

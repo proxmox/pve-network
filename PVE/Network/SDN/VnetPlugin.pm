@@ -2,28 +2,60 @@ package PVE::Network::SDN::VnetPlugin;
 
 use strict;
 use warnings;
-use PVE::Network::SDN::Plugin;
 
-use base('PVE::Network::SDN::Plugin');
+use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
+use base qw(PVE::SectionConfig);
+use PVE::JSONSchema qw(get_standard_option);
 
-use PVE::Cluster;
+PVE::Cluster::cfs_register_file('sdn/vnets.cfg',
+                                 sub { __PACKAGE__->parse_config(@_); });
+
+PVE::Cluster::cfs_register_file('sdn/vnets.cfg.new',
+                                 sub { __PACKAGE__->parse_config(@_); },
+                                 sub { __PACKAGE__->write_config(@_); });
+
+PVE::JSONSchema::register_standard_option('pve-sdn-vnet-id', {
+    description => "The SDN vnet object identifier.",
+    type => 'string', format => 'pve-sdn-vnet-id',
+});
+
+PVE::JSONSchema::register_format('pve-sdn-vnet-id', \&parse_sdn_vnet_id);
+sub parse_sdn_vnet_id {
+    my ($id, $noerr) = @_;
+
+    if ($id !~ m/^[a-z][a-z0-9\-\_\.]*[a-z0-9]$/i) {
+        return undef if $noerr;
+        die "SDN object vnet ID '$id' contains illegal characters\n";
+    }
+    return $id;
+}
+
+my $defaultData = {
+
+    propertyList => {
+        vnet => get_standard_option('pve-sdn-vnet-id',
+            { completion => \&PVE::Network::SDN::Vnets::complete_sdn_vnet }),
+    },
+};
 
 sub type {
     return 'vnet';
 }
 
-sub plugindata {
-    return {
-        role => 'vnet',
-    };
+sub private {
+    return $defaultData;
 }
 
 sub properties {
     return {
-	transportzone => {
+	zone => {
             type => 'string',
-            description => "transportzone id",
+            description => "zone id",
 	},
+        type => {
+            description => "Type",
+            optional => 1,
+        },
 	tag => {
             type => 'integer',
             description => "vlan or vxlan id",
@@ -58,7 +90,7 @@ sub properties {
 
 sub options {
     return {
-        transportzone => { optional => 0},
+        zone => { optional => 0},
         tag => { optional => 0},
         alias => { optional => 1 },
         ipv4 => { optional => 1 },

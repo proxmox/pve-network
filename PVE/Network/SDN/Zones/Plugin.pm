@@ -1,4 +1,4 @@
-package PVE::Network::SDN::Plugin;
+package PVE::Network::SDN::Zones::Plugin;
 
 use strict;
 use warnings;
@@ -11,27 +11,27 @@ use Data::Dumper;
 use PVE::JSONSchema qw(get_standard_option);
 use base qw(PVE::SectionConfig);
 
-PVE::Cluster::cfs_register_file('sdn.cfg',
+PVE::Cluster::cfs_register_file('sdn/zones.cfg',
 				 sub { __PACKAGE__->parse_config(@_); });
 
-PVE::Cluster::cfs_register_file('sdn.cfg.new',
+PVE::Cluster::cfs_register_file('sdn/zones.cfg.new',
 				 sub { __PACKAGE__->parse_config(@_); },
 				 sub { __PACKAGE__->write_config(@_); });
 
-PVE::JSONSchema::register_standard_option('pve-sdn-id', {
-    description => "The SDN object identifier.",
-    type => 'string', format => 'pve-sdn-id',
+PVE::JSONSchema::register_standard_option('pve-sdn-zone-id', {
+    description => "The SDN zone object identifier.",
+    type => 'string', format => 'pve-sdn-zone-id',
 });
 
-PVE::JSONSchema::register_format('pve-sdn-id', \&parse_sdn_id);
-sub parse_sdn_id {
-    my ($sdnid, $noerr) = @_;
+PVE::JSONSchema::register_format('pve-sdn-zone-id', \&parse_sdn_zone_id);
+sub parse_sdn_zone_id {
+    my ($id, $noerr) = @_;
 
-    if ($sdnid !~ m/^[a-z][a-z0-9\-\_\.]*[a-z0-9]$/i) {
+    if ($id !~ m/^[a-z][a-z0-9\-\_\.]*[a-z0-9]$/i) {
         return undef if $noerr;
-        die "SDN object ID '$sdnid' contains illegal characters\n";
+        die "SDN zone object ID '$id' contains illegal characters\n";
     }
-    return $sdnid;
+    return $id;
 }
 
 my $defaultData = {
@@ -42,8 +42,8 @@ my $defaultData = {
 	    type => 'string', format => 'pve-configid',
 	    type => 'string',
 	},
-        sdn => get_standard_option('pve-sdn-id',
-            { completion => \&PVE::Network::SDN::complete_sdn }),
+        zone => get_standard_option('pve-sdn-zone-id',
+            { completion => \&PVE::Network::SDN::Zones::complete_sdn_zone }),
     },
 };
 
@@ -55,12 +55,12 @@ sub parse_section_header {
     my ($class, $line) = @_;
 
     if ($line =~ m/^(\S+):\s*(\S+)\s*$/) {
-        my ($type, $sdnid) = (lc($1), $2);
+        my ($type, $id) = (lc($1), $2);
 	my $errmsg = undef; # set if you want to skip whole section
 	eval { PVE::JSONSchema::pve_verify_configid($type); };
 	$errmsg = $@ if $@;
 	my $config = {}; # to return additional attributes
-	return ($type, $sdnid, $errmsg, $config);
+	return ($type, $id, $errmsg, $config);
     }
     return undef;
 }

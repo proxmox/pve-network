@@ -1,26 +1,25 @@
-package PVE::Network::SDN::EvpnControllerPlugin;
+package PVE::Network::SDN::Controllers::FrrEvpnPlugin;
 
 use strict;
 use warnings;
-use PVE::Network::SDN::Plugin;
+use PVE::Network::SDN::Controllers::Plugin;
 use PVE::Tools;
 use PVE::INotify;
 use PVE::JSONSchema qw(get_standard_option);
 
-use base('PVE::Network::SDN::Plugin');
+use base('PVE::Network::SDN::Controllers::Plugin');
 
 sub type {
-    return 'evpncontroller';
-}
-
-sub plugindata {
-    return {
-        role => 'controller',
-    };
+    return 'frrevpn';
 }
 
 sub properties {
     return {
+	'uplink-id' => {
+	    type => 'integer',
+	    minimum => 1, maximum => 4096,
+	    description => 'Uplink interface',
+	},
         'asn' => {
             type => 'integer',
             description => "autonomous system number",
@@ -66,7 +65,7 @@ sub generate_controller_config {
 
     if($uplinks->{$uplink}->{name}) {
 	$iface = $uplinks->{$uplink}->{name};
-        $ifaceip = PVE::Network::SDN::Plugin::get_first_local_ipv4_from_interface($iface);
+        $ifaceip = PVE::Network::SDN::Controllers::Plugin::get_first_local_ipv4_from_interface($iface);
     }
 
     my $is_gateway = undef;

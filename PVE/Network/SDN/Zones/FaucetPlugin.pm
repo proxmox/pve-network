@@ -1,10 +1,10 @@
-package PVE::Network::SDN::FaucetPlugin;
+package PVE::Network::SDN::Zones::FaucetPlugin;
 
 use strict;
 use warnings;
-use PVE::Network::SDN::VlanPlugin;
+use PVE::Network::SDN::Zones::VlanPlugin;
 
-use base('PVE::Network::SDN::VlanPlugin');
+use base('PVE::Network::SDN::Zones::VlanPlugin');
 
 sub type {
     return 'faucet';

@@ -1,24 +1,18 @@
-package PVE::Network::SDN::FaucetControllerPlugin;
+package PVE::Network::SDN::Controllers::FaucetPlugin;
 
 use strict;
 use warnings;
-use PVE::Network::SDN::Plugin;
+use PVE::Network::SDN::Controllers::Plugin;
 use PVE::Tools;
 use PVE::INotify;
 use PVE::JSONSchema qw(get_standard_option);
 use CPAN::Meta::YAML;
 use Encode;
 
-use base('PVE::Network::SDN::Plugin');
+use base('PVE::Network::SDN::Controllers::Plugin');
 
 sub type {
-    return 'faucetcontroller';
-}
-
-sub plugindata {
-    return {
-        role => 'controller',
-    };
+    return 'faucet';
 }
 
 sub properties {
