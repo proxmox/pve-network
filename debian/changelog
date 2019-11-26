@@ -1,3 +1,13 @@
+libpve-network-perl (0.3-2) pve; urgency=medium
+
+  * add faucet, evpn, qinq Plugins
+
+  * add permissions
+
+  * general refactoring
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 26 Nov 2019 12:56:55 +0100
+
 libpve-network-perl (0.3-1) pve; urgency=medium
 
   * add FRR plugin
