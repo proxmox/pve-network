@@ -134,30 +134,6 @@ __PACKAGE__->register_method ({
     }});
 
 __PACKAGE__->register_method ({
-    name => 'apply_configuration',
-    protected => 1,
-    path => '',
-    method => 'PUT',
-    description => "Apply sdn vnet changes.",
-#    permissions => {
-#	check => ['perm', '/cluster/sdn/vnets', ['SDN.Allocate']],
-#    },
-    parameters => {
-	additionalProperties => 0,
-    },
-    returns => { type => 'null' },
-    code => sub {
-	my ($param) = @_;
-
-	die "no sdn vnet changes to apply" if !-e "/etc/pve/sdn/vnets.cfg.new";
-	rename("/etc/pve/sdn/vnets.cfg.new", "/etc/pve/sdn/vnets.cfg")
-	    || die "applying sdn/vnets.cfg changes failed - $!\n";
-
-
-	return undef;
-    }});
-
-__PACKAGE__->register_method ({
     name => 'revert_configuration',
     protected => 1,
     path => '',

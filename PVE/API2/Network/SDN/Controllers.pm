@@ -153,30 +153,6 @@ __PACKAGE__->register_method ({
     }});
 
 __PACKAGE__->register_method ({
-    name => 'apply_configuration',
-    protected => 1,
-    path => '',
-    method => 'PUT',
-    description => "Apply sdn controller changes.",
-#    permissions => {
-#	check => ['perm', '/cluster/sdn/controllers', ['SDN.Allocate']],
-#    },
-    parameters => {
-	additionalProperties => 0,
-    },
-    returns => { type => 'null' },
-    code => sub {
-	my ($param) = @_;
-
-	die "no sdn controller changes to apply" if !-e "/etc/pve/sdn/controllers.cfg.new";
-	rename("/etc/pve/sdn/controllers.cfg.new", "/etc/pve/sdn/controllers.cfg")
-	    || die "applying sdn/controllers.cfg changes failed - $!\n";
-
-
-	return undef;
-    }});
-
-__PACKAGE__->register_method ({
     name => 'revert_configuration',
     protected => 1,
     path => '',

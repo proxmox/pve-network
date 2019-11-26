@@ -156,30 +156,6 @@ __PACKAGE__->register_method ({
     }});
 
 __PACKAGE__->register_method ({
-    name => 'apply_configuration',
-    protected => 1,
-    path => '',
-    method => 'PUT',
-    description => "Apply sdn zone changes.",
-#    permissions => {
-#	check => ['perm', '/cluster/sdn/zones', ['SDN.Allocate']],
-#    },
-    parameters => {
-	additionalProperties => 0,
-    },
-    returns => { type => 'null' },
-    code => sub {
-	my ($param) = @_;
-
-	die "no sdn zone changes to apply" if !-e "/etc/pve/sdn/zones.cfg.new";
-	rename("/etc/pve/sdn/zones.cfg.new", "/etc/pve/sdn/zones.cfg")
-	    || die "applying sdn/zones.cfg changes failed - $!\n";
-
-
-	return undef;
-    }});
-
-__PACKAGE__->register_method ({
     name => 'revert_configuration',
     protected => 1,
     path => '',
