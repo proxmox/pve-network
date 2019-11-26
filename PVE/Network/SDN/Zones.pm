@@ -97,6 +97,8 @@ sub generate_etc_network_config {
 
     #generate configuration
     my $config = {};
+    my $nodename = PVE::INotify::nodename();
+
     foreach my $id (keys %{$vnet_cfg->{ids}}) {
 	my $vnet = $vnet_cfg->{ids}->{$id};
 	my $zone = $vnet->{zone};
@@ -112,6 +114,8 @@ sub generate_etc_network_config {
 	    warn "can't generate vnet $vnet : zone $zone don't exist";
 	    next;
 	}
+
+	next if defined($plugin_config->{nodes}) && !$plugin_config->{nodes}->{$nodename};
 
 	my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
 	$plugin->generate_sdn_config($plugin_config, $zone, $id, $vnet, $uplinks, $config);
@@ -196,12 +200,16 @@ sub status {
     my $status = ifquery_check();
 
     my $vnet_cfg = PVE::Cluster::cfs_read_file('sdn/vnets.cfg');
+    my $zone_cfg = PVE::Cluster::cfs_read_file('sdn/zones.cfg');
+    my $nodename = PVE::INotify::nodename();
 
     my $vnet_status = {};
     my $transport_status = {};
 
     foreach my $id (keys %{$vnet_cfg->{ids}}) {
 	my $zone = $vnet_cfg->{ids}->{$id}->{zone};
+	next if defined($zone_cfg->{ids}->{$zone}->{nodes}) && !$zone_cfg->{ids}->{$zone}->{nodes}->{$nodename};
+
 	$vnet_status->{$id}->{zone} = $zone;
 	$transport_status->{$zone}->{status} = 'available' if !defined($transport_status->{$zone}->{status});
 

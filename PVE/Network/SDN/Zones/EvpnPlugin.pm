@@ -38,6 +38,7 @@ sub properties {
 sub options {
 
     return {
+        nodes => { optional => 1},
 	'uplink-id' => { optional => 0 },
         'vrf' => { optional => 0 },
         'vrf-vxlan' => { optional => 0 },

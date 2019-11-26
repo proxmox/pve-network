@@ -32,6 +32,7 @@ sub properties {
 sub options {
 
     return {
+        nodes => { optional => 1},
 	'uplink-id' => { optional => 0 },
     };
 }

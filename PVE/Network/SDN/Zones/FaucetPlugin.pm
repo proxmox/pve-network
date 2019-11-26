@@ -28,6 +28,7 @@ sub properties {
 sub options {
 
     return {
+        nodes => { optional => 1},
 	'dp-id' => { optional => 0 },
 	'uplink-id' => { optional => 0 },
         'controller' => { optional => 0 },

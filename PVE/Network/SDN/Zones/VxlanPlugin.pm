@@ -56,6 +56,7 @@ sub properties {
 sub options {
 
     return {
+        nodes => { optional => 1},
 	'uplink-id' => { optional => 0 },
         'multicast-address' => { optional => 1 },
         'unicast-address' => { optional => 1 },
