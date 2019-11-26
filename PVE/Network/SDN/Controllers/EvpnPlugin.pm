@@ -131,6 +131,8 @@ sub generate_controller_zone_config {
     push @controller_config, "vni $vrfvxlan";
     push(@{$config->{frr}->{vrf}->{"$vrf"}}, @controller_config);
 
+    push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{""}}, "!");
+
     @controller_config = ();
 
     my $is_gateway = undef;
@@ -262,8 +264,15 @@ sub generate_frr_recurse{
 sub write_controller_config {
     my ($class, $plugin_config, $config) = @_;
 
+    my $nodename = PVE::INotify::nodename();
+
     my $final_config = [];
     push @{$final_config}, "log syslog informational";
+    push @{$final_config}, "ip forwarding";
+    push @{$final_config}, "ipv6 forwarding";
+    push @{$final_config}, "frr defaults traditional";
+    push @{$final_config}, "service integrated-vtysh-config";
+    push @{$final_config}, "hostname $nodename";
     push @{$final_config}, "!";
 
     generate_frr_recurse($final_config, $config->{frr}, undef, 0);
@@ -289,17 +298,22 @@ sub reload_controller {
     my ($class) = @_;
 
     my $conf_file = "/etc/frr/frr.conf";
-    my $bin_path = "/usr/bin/vtysh";
+    my $bin_path = "/usr/lib/frr/frr-reload.py";
+
+    if (!-e $bin_path) {
+	warn "missing $bin_path. Please install frr-pythontools package";
+	return;
+    }
 
     my $err = sub {
 	my $line = shift;
-	if ($line =~ /^line (\S+)/) {
-	    print "$line \n";
+	if ($line =~ /ERROR:/) {
+	    warn "$line \n";
 	}
     };
 
     if (-e $conf_file && -e $bin_path) {
-	PVE::Tools::run_command([$bin_path, '-m', '-f', $conf_file], outfunc => {}, errfunc => $err);
+	PVE::Tools::run_command([$bin_path, '--stdout', '--reload', $conf_file], outfunc => {}, errfunc => $err);
     }
 }
 
