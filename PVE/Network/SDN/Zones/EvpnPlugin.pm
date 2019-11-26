@@ -39,7 +39,6 @@ sub options {
 
     return {
 	'uplink-id' => { optional => 0 },
-        'vxlan-allowed' => { optional => 1 },
         'vrf' => { optional => 0 },
         'vrf-vxlan' => { optional => 0 },
         'controller' => { optional => 0 },
@@ -57,7 +56,6 @@ sub generate_sdn_config {
     my $mac = $vnet->{mac};
 
     my $uplink = $plugin_config->{'uplink-id'};
-    my $vxlanallowed = $plugin_config->{'vxlan-allowed'};
     my $vrf = $plugin_config->{'vrf'};
     my $vrfvxlan = $plugin_config->{'vrf-vxlan'};
 
@@ -135,29 +133,6 @@ sub generate_sdn_config {
 
 sub on_update_hook {
     my ($class, $transportid, $sdn_cfg) = @_;
-
-    my $transport = $sdn_cfg->{ids}->{$transportid};
-
-    # verify that vxlan-allowed don't conflict with another vxlan-allowed transport
-
-    # verify that vxlan-allowed is matching currently vnet tag in this transport
-    my $vxlanallowed = $transport->{'vxlan-allowed'};
-    if ($vxlanallowed) {
-	foreach my $id (keys %{$sdn_cfg->{ids}}) {
-	    my $sdn = $sdn_cfg->{ids}->{$id};
-	    if ($sdn->{type} eq 'vnet' && defined($sdn->{tag})) {
-		if(defined($sdn->{zone}) && $sdn->{zone} eq $transportid) {
-		    my $tag = $sdn->{tag};
-		    eval {
-			PVE::Network::SDN::Zones::Plugin::parse_tag_number_or_range($vxlanallowed, '16777216', $tag);
-		    };
-		    if($@) {
-			die "vnet $id - vlan $tag is not allowed in transport $transportid";
-		    }
-		}
-	    }
-	}
-    }
 
     # verify that router exist
     if (defined($sdn_cfg->{ids}->{$transportid}->{router})) {

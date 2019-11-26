@@ -31,7 +31,6 @@ sub options {
 	'dp-id' => { optional => 0 },
 	'uplink-id' => { optional => 0 },
         'controller' => { optional => 0 },
-        'vlan-allowed' => { optional => 1 },
     };
 }
 

@@ -42,10 +42,6 @@ sub type {
 
 sub properties {
     return {
-        'vxlan-allowed' => {
-            type => 'string', format => 'pve-sdn-vxlanrange',
-            description => "Allowed vlan range",
-        },
         'multicast-address' => {
             description => "Multicast address.",
             type => 'string', format => 'ipv4-multicast'
@@ -63,7 +59,6 @@ sub options {
 	'uplink-id' => { optional => 0 },
         'multicast-address' => { optional => 1 },
         'unicast-address' => { optional => 1 },
-        'vxlan-allowed' => { optional => 1 },
     };
 }
 
@@ -80,7 +75,6 @@ sub generate_sdn_config {
     my @unicastaddress = split(',', $plugin_config->{'unicast-address'}) if $plugin_config->{'unicast-address'};
 
     my $uplink = $plugin_config->{'uplink-id'};
-    my $vxlanallowed = $plugin_config->{'vxlan-allowed'};
 
     die "missing vxlan tag" if !$tag;
     my $iface = "uplink$uplink";
@@ -141,29 +135,6 @@ sub on_delete_hook {
 
 sub on_update_hook {
     my ($class, $transportid, $sdn_cfg) = @_;
-
-    my $transport = $sdn_cfg->{ids}->{$transportid};
-
-    # verify that vxlan-allowed don't conflict with another vxlan-allowed transport
-
-    # verify that vxlan-allowed is matching currently vnet tag in this transport
-    my $vxlanallowed = $transport->{'vxlan-allowed'};
-    if ($vxlanallowed) {
-	foreach my $id (keys %{$sdn_cfg->{ids}}) {
-	    my $sdn = $sdn_cfg->{ids}->{$id};
-	    if ($sdn->{type} eq 'vnet' && defined($sdn->{tag})) {
-		if(defined($sdn->{zone}) && $sdn->{zone} eq $transportid) {
-		    my $tag = $sdn->{tag};
-		    eval {
-			PVE::Network::SDN::Zones::Plugin::parse_tag_number_or_range($vxlanallowed, '16777216', $tag);
-		    };
-		    if($@) {
-			die "vnet $id - vlan $tag is not allowed in transport $transportid";
-		    }
-		}
-	    }
-	}
-    }
 
     # verify that router exist
     if (defined($sdn_cfg->{ids}->{$transportid}->{router})) {

@@ -26,10 +26,6 @@ sub properties {
 	    minimum => 1, maximum => 4096,
 	    description => 'Uplink interface',
 	},
-	'vlan-allowed' => {
-	    type => 'string', format => 'pve-sdn-vlanrange',
-	    description => "Allowed vlan range",
-	},
     };
 }
 
@@ -37,7 +33,6 @@ sub options {
 
     return {
 	'uplink-id' => { optional => 0 },
-        'vlan-allowed' => { optional => 1 },
     };
 }
 
@@ -87,28 +82,6 @@ sub on_delete_hook {
 sub on_update_hook {
     my ($class, $transportid, $sdn_cfg) = @_;
 
-    my $transport = $sdn_cfg->{ids}->{$transportid};
-
-    # verify that vlan-allowed don't conflict with another vlan-allowed transport
-
-    # verify that vlan-allowed is matching currently vnet tag in this transport
-    my $vlanallowed = $transport->{'vlan-allowed'};
-    if ($vlanallowed) {
-	foreach my $id (keys %{$sdn_cfg->{ids}}) {
-	    my $sdn = $sdn_cfg->{ids}->{$id};
-	    if ($sdn->{type} eq 'vnet' && defined($sdn->{tag})) {
-		if(defined($sdn->{zone}) && $sdn->{zone} eq $transportid) {
-		    my $tag = $sdn->{tag};
-		    eval {
-			PVE::Network::SDN::Zones::Plugin::parse_tag_number_or_range($vlanallowed, '4096', $tag);
-		    };
-		    if($@) {
-			die "vlan $tag is not allowed in transport $transportid";
-		    }
-		}
-	    }
-	}
-    }
 }
 
 1;

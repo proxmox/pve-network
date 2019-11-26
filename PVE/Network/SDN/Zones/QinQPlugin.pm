@@ -31,7 +31,6 @@ sub options {
     return {
 	'uplink-id' => { optional => 0 },
 	'tag' => { optional => 0 },
-        'vlan-allowed' => { optional => 1 },
 	'vlan-protocol' => { optional => 1 },
     };
 }
@@ -46,7 +45,6 @@ sub generate_sdn_config {
     my $alias = $vnet->{alias};
     my $vlanprotocol = $plugin_config->{'vlan-protocol'};
     my $uplink = $plugin_config->{'uplink-id'};
-    my $vlanallowed = $plugin_config->{'vlan-allowed'};
 
     die "missing vlan tag" if !$tag;
     die "missing transport vlan tag" if !$transport_tag;
