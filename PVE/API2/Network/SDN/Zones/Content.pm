@@ -20,7 +20,7 @@ __PACKAGE__->register_method ({
     name => 'index',
     path => '',
     method => 'GET',
-    description => "List transportzone content.",
+    description => "List zone content.",
 #    permissions => {
 #	check => ['perm', '/sdn/{sdn}', ['SDN.Audit'], any => 1],
 #    },
@@ -67,7 +67,7 @@ __PACKAGE__->register_method ({
         my ($transport_status, $vnet_status) = PVE::Network::SDN::status();
 
 	foreach my $id (keys %{$vnet_status}) {
-	    if ($vnet_status->{$id}->{transportzone} eq $transportid) {
+	    if ($vnet_status->{$id}->{zone} eq $transportid) {
 		my $item->{vnet} = $id;
 		$item->{status} = $vnet_status->{$id}->{'status'};
 		push @$res,$item;

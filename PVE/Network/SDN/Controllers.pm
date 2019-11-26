@@ -112,7 +112,7 @@ sub generate_controller_config {
 
     foreach my $id (keys %{$vnet_cfg->{ids}}) {
 	my $plugin_config = $vnet_cfg->{ids}->{$id};
-	my $transportid = $plugin_config->{transportzone};
+	my $transportid = $plugin_config->{zone};
 	next if !$transportid;
 	my $transport = $transport_cfg->{ids}->{$transportid};
 	next if !$transport;

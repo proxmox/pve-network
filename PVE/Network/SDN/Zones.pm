@@ -99,7 +99,7 @@ sub generate_etc_network_config {
     my $config = {};
     foreach my $id (keys %{$vnet_cfg->{ids}}) {
 	my $vnet = $vnet_cfg->{ids}->{$id};
-	my $zone = $vnet->{transportzone};
+	my $zone = $vnet->{zone};
 
 	if(!$zone) {
 	    warn "can't generate vnet $vnet : zone $zone don't exist";
@@ -200,24 +200,24 @@ sub status {
     my $transport_status = {};
 
     foreach my $id (keys %{$vnet_cfg->{ids}}) {
-	my $transportzone = $vnet_cfg->{ids}->{$id}->{transportzone};
-	$vnet_status->{$id}->{transportzone} = $transportzone;
-	$transport_status->{$transportzone}->{status} = 'available' if !defined($transport_status->{$transportzone}->{status});
+	my $zone = $vnet_cfg->{ids}->{$id}->{zone};
+	$vnet_status->{$id}->{zone} = $zone;
+	$transport_status->{$zone}->{status} = 'available' if !defined($transport_status->{$zone}->{status});
 
 	if($err_config) {
 	    $vnet_status->{$id}->{status} = $err_config;
-	    $transport_status->{$transportzone}->{status} = $err_config;
+	    $transport_status->{$zone}->{status} = $err_config;
 	} elsif ($status->{$id}->{status} && $status->{$id}->{status} eq 'pass') {
 	    $vnet_status->{$id}->{status} = 'available';
 	    my $bridgeport = $status->{$id}->{config}->{'bridge-ports'};
 
 	    if ($status->{$bridgeport}->{status} && $status->{$bridgeport}->{status} ne 'pass') {
 		$vnet_status->{$id}->{status} = 'error';
-		$transport_status->{$transportzone}->{status} = 'error';
+		$transport_status->{$zone}->{status} = 'error';
 	    }
 	} else {
 	    $vnet_status->{$id}->{status} = 'error';
-	    $transport_status->{$transportzone}->{status} = 'error';
+	    $transport_status->{$zone}->{status} = 'error';
 	}
     }
     return($transport_status, $vnet_status);

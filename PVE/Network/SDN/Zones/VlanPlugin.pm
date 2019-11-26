@@ -80,7 +80,7 @@ sub on_delete_hook {
     foreach my $id (keys %{$sdn_cfg->{ids}}) {
 	my $sdn = $sdn_cfg->{ids}->{$id};
 	die "transport $transportid is used by vnet $id"
-	    if ($sdn->{type} eq 'vnet' && defined($sdn->{transportzone}) && $sdn->{transportzone} eq $transportid);
+	    if ($sdn->{type} eq 'vnet' && defined($sdn->{zone}) && $sdn->{zone} eq $transportid);
     }
 }
 
@@ -97,7 +97,7 @@ sub on_update_hook {
 	foreach my $id (keys %{$sdn_cfg->{ids}}) {
 	    my $sdn = $sdn_cfg->{ids}->{$id};
 	    if ($sdn->{type} eq 'vnet' && defined($sdn->{tag})) {
-		if(defined($sdn->{transportzone}) && $sdn->{transportzone} eq $transportid) {
+		if(defined($sdn->{zone}) && $sdn->{zone} eq $transportid) {
 		    my $tag = $sdn->{tag};
 		    eval {
 			PVE::Network::SDN::Zones::Plugin::parse_tag_number_or_range($vlanallowed, '4096', $tag);

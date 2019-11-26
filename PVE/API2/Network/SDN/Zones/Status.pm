@@ -25,7 +25,7 @@ __PACKAGE__->register_method ({
     name => 'index',
     path => '',
     method => 'GET',
-    description => "Get status for all transportzones.",
+    description => "Get status for all zones.",
     permissions => {
 	description => "Only list entries where you have 'SDN.Audit'",
 	user => 'all',
@@ -45,7 +45,7 @@ __PACKAGE__->register_method ({
 	    properties => {
 		zone => get_standard_option('pve-sdn-zone-id'),
 		status => {
-		    description => "Status of transportzone",
+		    description => "Status of zone",
 		    type => 'string',
 		},
 	    },
