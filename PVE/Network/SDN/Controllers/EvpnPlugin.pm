@@ -105,8 +105,6 @@ sub generate_controller_config {
 
         @router_config = ();
         #import /32 routes of evpn network from vrf1 to default vrf (for packet return)
-        #frr 7.1 tag is bugged -> works fine with 7.1 stable branch(20190829-02-g6ba76bbc1)
-        #https://github.com/FRRouting/frr/issues/4905
 	foreach my $address (@gatewaypeers) {
 	    push @router_config, "neighbor $address activate";
 	}
@@ -121,7 +119,7 @@ sub generate_controller_config {
 sub generate_controller_transport_config {
     my ($class, $plugin_config, $router, $id, $uplinks, $config) = @_;
 
-    my $vrf = $plugin_config->{'vrf'};
+    my $vrf = $id;
     my $vrfvxlan = $plugin_config->{'vrf-vxlan'};
     my $asn = $router->{asn};
     my $gatewaynodes = $router->{'gateway-nodes'};

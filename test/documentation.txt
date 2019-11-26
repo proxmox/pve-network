@@ -18,7 +18,7 @@ pvesh create /cluster/sdn/controllers/ --controller frrrouter1 --type evpn --upl
 pvesh create /cluster/sdn/zones/ --zone layer2evpnzone --type evpn --uplink-id 1 --controller frrrouter1
 
 #create a layer3 routable vxlan bgpevpn transportzone
-pvesh create /cluster/sdn/zones/ --zone layer3evpnzone --type evpn --uplink-id 1 --controller frrrouter1 --vrf vrf1 --vrf-vxlan 4000
+pvesh create /cluster/sdn/zones/ --zone layer3evpnzone --type evpn --uplink-id 1 --controller frrrouter1 --vrf-vxlan 4000
 
 
 #create a vnet in the transportzone

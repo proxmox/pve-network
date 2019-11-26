@@ -14,10 +14,6 @@ sub type {
 
 sub properties {
     return {
-	'vrf' => {
-	    description => "vrf name.",
-	    type => 'string',  #fixme: format
-	},
 	'vrf-vxlan' => {
 	    type => 'integer',
 	    description => "l3vni.",
@@ -34,7 +30,6 @@ sub options {
     return {
         nodes => { optional => 1},
 	'uplink-id' => { optional => 0 },
-        'vrf' => { optional => 0 },
         'vrf-vxlan' => { optional => 0 },
         'controller' => { optional => 0 },
     };
@@ -51,7 +46,7 @@ sub generate_sdn_config {
     my $mac = $vnet->{mac};
 
     my $uplink = $plugin_config->{'uplink-id'};
-    my $vrf = $plugin_config->{'vrf'};
+    my $vrf = $zoneid;
     my $vrfvxlan = $plugin_config->{'vrf-vxlan'};
 
     die "missing vxlan tag" if !$tag;
@@ -102,7 +97,7 @@ sub generate_sdn_config {
 
 	if ($vrfvxlan) {
 	    #l3vni vxlan interface
-	    my $iface_vxlan = "vxlan$vrf";
+	    my $iface_vxlan = "vxvrf$vrf";
 	    @iface_config = ();
 	    push @iface_config, "vxlan-id $vrfvxlan";
 	    push @iface_config, "vxlan-local-tunnelip $ifaceip" if $ifaceip;
@@ -137,15 +132,7 @@ sub on_update_hook {
 	die "$controller is not a evpn controller type" if $controller_cfg->{ids}->{$controller}->{type} ne 'evpn';
     }
 
-    #vrf && vrf-vxlan need to be defined
-    my $vrf = $zone_cfg->{ids}->{$zoneid}->{vrf};
-
-    # verify that vrf is not already declared in another zone
-    foreach my $id (keys %{$zone_cfg->{ids}}) {
-	next if $id eq $zoneid;
-	die "vrf $vrf is already declared in $id"
-		if (defined($zone_cfg->{ids}->{$id}->{vrf}) && $zone_cfg->{ids}->{$id}->{vrf} eq $vrf);
-    }
+    #vrf-vxlan need to be defined
 
     my $vrfvxlan = $zone_cfg->{ids}->{$zoneid}->{'vrf-vxlan'};
     # verify that vrf-vxlan is not already declared in another zone

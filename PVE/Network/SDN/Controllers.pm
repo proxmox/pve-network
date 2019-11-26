@@ -103,7 +103,7 @@ sub generate_controller_config {
 	my $plugin_config = $transport_cfg->{ids}->{$id};
 	my $controllerid = $plugin_config->{controller};
 	next if !$controllerid;
-	my $controller = $transport_cfg->{ids}->{$controllerid};
+	my $controller = $controller_cfg->{ids}->{$controllerid};
 	if ($controller) {
 	    my $controller_plugin = PVE::Network::SDN::Controllers::Plugin->lookup($controller->{type});
 	    $controller_plugin->generate_controller_transport_config($plugin_config, $controller, $id, $uplinks, $config);
