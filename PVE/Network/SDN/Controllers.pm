@@ -12,10 +12,10 @@ use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 use PVE::Network::SDN::Vnets;
 use PVE::Network::SDN::Zones;
 
-use PVE::Network::SDN::Controllers::FrrEvpnPlugin;
+use PVE::Network::SDN::Controllers::EvpnPlugin;
 use PVE::Network::SDN::Controllers::FaucetPlugin;
 use PVE::Network::SDN::Controllers::Plugin;
-PVE::Network::SDN::Controllers::FrrEvpnPlugin->register();
+PVE::Network::SDN::Controllers::EvpnPlugin->register();
 PVE::Network::SDN::Controllers::FaucetPlugin->register();
 PVE::Network::SDN::Controllers::Plugin->init();
 

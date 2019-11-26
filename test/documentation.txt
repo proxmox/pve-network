@@ -12,7 +12,7 @@ pvesh create /cluster/sdn/zones/ --zone vxlanmulticastzone --type vxlan --uplink
 pvesh create /cluster/sdn/zones/ --zone vxlanunicastzone --type vxlan --uplink-id 1 --unicast-address 192.168.0.1,192.168.0.2,192.168.0.3
 
 #create an controller
-pvesh create /cluster/sdn/controllers/ --controller frrrouter1 --type frrevpn --uplink-id 1 --peers 192.168.0.1,192.168.0.2,192.168.0.3 --asn 1234 --gateway-nodes pxnode1,pxnode2 --gateway-external-peers 192.168.0.253,192.168.0.254
+pvesh create /cluster/sdn/controllers/ --controller frrrouter1 --type evpn --uplink-id 1 --peers 192.168.0.1,192.168.0.2,192.168.0.3 --asn 1234 --gateway-nodes pxnode1,pxnode2 --gateway-external-peers 192.168.0.253,192.168.0.254
 
 #create a layer2 vxlan bgpevpn transportzone
 pvesh create /cluster/sdn/zones/ --zone layer2evpnzone --type evpn --uplink-id 1 --controller frrrouter1

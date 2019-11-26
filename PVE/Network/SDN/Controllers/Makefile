@@ -1,4 +1,4 @@
-SOURCES=Plugin.pm FaucetPlugin.pm FrrEvpnPlugin.pm
+SOURCES=Plugin.pm FaucetPlugin.pm EvpnPlugin.pm
 
 
 PERL5DIR=${DESTDIR}/usr/share/perl5

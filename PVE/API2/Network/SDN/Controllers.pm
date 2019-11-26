@@ -9,7 +9,7 @@ use PVE::Cluster qw(cfs_read_file cfs_write_file);
 use PVE::Network::SDN::Zones;
 use PVE::Network::SDN::Controllers;
 use PVE::Network::SDN::Controllers::Plugin;
-use PVE::Network::SDN::Controllers::FrrEvpnPlugin;
+use PVE::Network::SDN::Controllers::EvpnPlugin;
 use PVE::Network::SDN::Controllers::FaucetPlugin;
 
 use Storable qw(dclone);

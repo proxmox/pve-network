@@ -136,15 +136,15 @@ sub on_update_hook {
     my ($class, $transportid, $sdn_cfg) = @_;
 
     # verify that router exist
-    if (defined($sdn_cfg->{ids}->{$transportid}->{router})) {
-	my $router = $sdn_cfg->{ids}->{$transportid}->{router};
-	if (!defined($sdn_cfg->{ids}->{$router})) {
-	    die "router $router don't exist";
+    if (defined($sdn_cfg->{ids}->{$transportid}->{controller})) {
+	my $controller = $sdn_cfg->{ids}->{$transportid}->{controller};
+	if (!defined($sdn_cfg->{ids}->{$controller})) {
+	    die "controller $controller don't exist";
 	} else {
-	    die "$router is not a router type" if $sdn_cfg->{ids}->{$router}->{type} ne 'frr';
+	    die "$controller is not a evpn controller type" if $sdn_cfg->{ids}->{$controller}->{type} ne 'evpn';
 	}
 
-	#vrf && vrf-vxlan need to be defined with router
+	#vrf && vrf-vxlan need to be defined with controller
 	my $vrf = $sdn_cfg->{ids}->{$transportid}->{vrf};
 	if (!defined($vrf)) {
 	    die "missing vrf option";

@@ -80,11 +80,6 @@ sub on_delete_hook {
     }
 }
 
-sub on_update_hook {
-    my ($class, $transportid, $sdn_cfg) = @_;
-
-}
-
 1;
 
 
