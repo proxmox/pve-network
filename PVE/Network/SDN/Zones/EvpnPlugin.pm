@@ -12,12 +12,6 @@ sub type {
     return 'evpn';
 }
 
-sub plugindata {
-    return {
-        role => 'transport',
-    };
-}
-
 sub properties {
     return {
 	'vrf' => {
@@ -133,41 +127,32 @@ sub generate_sdn_config {
 }
 
 sub on_update_hook {
-    my ($class, $transportid, $sdn_cfg) = @_;
+    my ($class, $zoneid, $zone_cfg, $controller_cfg) = @_;
 
-    # verify that router exist
-    if (defined($sdn_cfg->{ids}->{$transportid}->{controller})) {
-	my $controller = $sdn_cfg->{ids}->{$transportid}->{controller};
-	if (!defined($sdn_cfg->{ids}->{$controller})) {
-	    die "controller $controller don't exist";
-	} else {
-	    die "$controller is not a evpn controller type" if $sdn_cfg->{ids}->{$controller}->{type} ne 'evpn';
-	}
+    # verify that controller exist
+    my $controller = $zone_cfg->{ids}->{$zoneid}->{controller};
+    if (!defined($controller_cfg->{ids}->{$controller})) {
+	die "controller $controller don't exist";
+    } else {
+	die "$controller is not a evpn controller type" if $controller_cfg->{ids}->{$controller}->{type} ne 'evpn';
+    }
 
-	#vrf && vrf-vxlan need to be defined with controller
-	my $vrf = $sdn_cfg->{ids}->{$transportid}->{vrf};
-	if (!defined($vrf)) {
-	    die "missing vrf option";
-	} else {
-	    # verify that vrf is not already declared in another transport
-	    foreach my $id (keys %{$sdn_cfg->{ids}}) {
-		next if $id eq $transportid;
-		die "vrf $vrf is already declared in $id"
-			if (defined($sdn_cfg->{ids}->{$id}->{vrf}) && $sdn_cfg->{ids}->{$id}->{vrf} eq $vrf);
-	    }
-	}
+    #vrf && vrf-vxlan need to be defined
+    my $vrf = $zone_cfg->{ids}->{$zoneid}->{vrf};
 
-	my $vrfvxlan = $sdn_cfg->{ids}->{$transportid}->{'vrf-vxlan'};
-	if (!defined($vrfvxlan)) {
-	    die "missing vrf-vxlan option";
-	} else {
-	    # verify that vrf-vxlan is not already declared in another transport
-	    foreach my $id (keys %{$sdn_cfg->{ids}}) {
-		next if $id eq $transportid;
-		die "vrf-vxlan $vrfvxlan is already declared in $id"
-			if (defined($sdn_cfg->{ids}->{$id}->{'vrf-vxlan'}) && $sdn_cfg->{ids}->{$id}->{'vrf-vxlan'} eq $vrfvxlan);
-	    }
-	}
+    # verify that vrf is not already declared in another zone
+    foreach my $id (keys %{$zone_cfg->{ids}}) {
+	next if $id eq $zoneid;
+	die "vrf $vrf is already declared in $id"
+		if (defined($zone_cfg->{ids}->{$id}->{vrf}) && $zone_cfg->{ids}->{$id}->{vrf} eq $vrf);
+    }
+
+    my $vrfvxlan = $zone_cfg->{ids}->{$zoneid}->{'vrf-vxlan'};
+    # verify that vrf-vxlan is not already declared in another zone
+    foreach my $id (keys %{$zone_cfg->{ids}}) {
+	next if $id eq $zoneid;
+	die "vrf-vxlan $vrfvxlan is already declared in $id"
+		if (defined($zone_cfg->{ids}->{$id}->{'vrf-vxlan'}) && $zone_cfg->{ids}->{$id}->{'vrf-vxlan'} eq $vrfvxlan);
     }
 }
 

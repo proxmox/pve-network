@@ -130,7 +130,7 @@ sub on_delete_hook {
 }
 
 sub on_update_hook {
-    my ($class, $sdnid, $scfg) = @_;
+    my ($class, $zoneid, $zone_cfg, $controller_cfg) = @_;
 
     # do nothing by default
 }

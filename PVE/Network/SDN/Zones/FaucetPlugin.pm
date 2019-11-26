@@ -10,12 +10,6 @@ sub type {
     return 'faucet';
 }
 
-sub plugindata {
-    return {
-	role => 'transport',
-    };
-}
-
 sub properties {
     return {
         'dp-id' => {

@@ -142,17 +142,18 @@ __PACKAGE__->register_method ({
         PVE::Network::SDN::Zones::lock_sdn_zones_config(
 	    sub {
 
-		my $cfg = PVE::Network::SDN::Zones::config();
+		my $zone_cfg = PVE::Network::SDN::Zones::config();
+		my $controller_cfg = PVE::Network::SDN::Controllers::config();
 
 		my $scfg = undef;
-		if ($scfg = PVE::Network::SDN::Zones::sdn_zones_config($cfg, $id, 1)) {
+		if ($scfg = PVE::Network::SDN::Zones::sdn_zones_config($zone_cfg, $id, 1)) {
 		    die "sdn zone object ID '$id' already defined\n";
 		}
 
-		$cfg->{ids}->{$id} = $opts;
-		$plugin->on_update_hook($id, $cfg);
+		$zone_cfg->{ids}->{$id} = $opts;
+		$plugin->on_update_hook($id, $zone_cfg, $controller_cfg);
 
-		PVE::Network::SDN::Zones::write_config($cfg);
+		PVE::Network::SDN::Zones::write_config($zone_cfg);
 
 	    }, "create sdn zone object failed");
 
@@ -201,11 +202,12 @@ __PACKAGE__->register_method ({
         PVE::Network::SDN::Zones::lock_sdn_zones_config(
 	 sub {
 
-	    my $cfg = PVE::Network::SDN::Zones::config();
+	    my $zone_cfg = PVE::Network::SDN::Zones::config();
+	    my $controller_cfg = PVE::Network::SDN::Controllers::config();
 
-	    PVE::SectionConfig::assert_if_modified($cfg, $digest);
+	    PVE::SectionConfig::assert_if_modified($zone_cfg, $digest);
 
-	    my $scfg = PVE::Network::SDN::Zones::sdn_zones_config($cfg, $id);
+	    my $scfg = PVE::Network::SDN::Zones::sdn_zones_config($zone_cfg, $id);
 
 	    my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($scfg->{type});
 	    my $opts = $plugin->check_config($id, $param, 0, 1);
@@ -214,9 +216,9 @@ __PACKAGE__->register_method ({
 		$scfg->{$k} = $opts->{$k};
 	    }
 
-	    $plugin->on_update_hook($id, $cfg);
+	    $plugin->on_update_hook($id, $zone_cfg, $controller_cfg);
 
-	    PVE::Network::SDN::Zones::write_config($cfg);
+	    PVE::Network::SDN::Zones::write_config($zone_cfg);
 
 	    }, "update sdn zone object failed");
 
