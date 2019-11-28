@@ -37,7 +37,7 @@ sub options {
 
 # Plugin implementation
 sub generate_sdn_config {
-    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $uplinks, $controller, $config) = @_;
+    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $controller, $interfaces_config, $config) = @_;
 
     my $tag = $vnet->{tag};
     my $alias = $vnet->{alias};
@@ -54,7 +54,7 @@ sub generate_sdn_config {
     my ($ifaceip, $iface) = PVE::Network::SDN::Controllers::EvpnPlugin::find_local_ip_interface(\@peers);
 
     my $mtu = 1450;
-    $mtu = $uplinks->{$iface}->{mtu} - 50 if $uplinks->{$iface}->{mtu};
+    $mtu = $interfaces_config->{$iface}->{mtu} - 50 if $interfaces_config->{$iface}->{mtu};
     $mtu = $vnet->{mtu} if $vnet->{mtu};
 
     #vxlan interface

@@ -38,7 +38,7 @@ sub options {
 
 # Plugin implementation
 sub generate_sdn_config {
-    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $uplinks, $controller, $config) = @_;
+    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $controller, $interfaces_config, $config) = @_;
 
     my $tag = $vnet->{tag};
     my $zone_tag = $plugin_config->{tag};
@@ -49,6 +49,17 @@ sub generate_sdn_config {
 
     die "missing vlan tag" if !$tag;
     die "missing zone vlan tag" if !$zone_tag;
+
+    #check uplinks
+    my $uplinks = {};
+    foreach my $id (keys %{$interfaces_config->{ifaces}}) {
+	my $interface = $interfaces_config->{ifaces}->{$id};
+	if (my $uplink = $interface->{'uplink-id'}) {
+	    die "uplink-id $uplink is already defined on $uplinks->{$uplink}" if $uplinks->{$uplink};
+	    $interface->{name} = $id;
+	    $uplinks->{$interface->{'uplink-id'}} = $interface;
+	}
+    }
 
     my $iface = $uplinks->{$uplink}->{name};
     $iface = "uplink${uplink}" if !$iface;

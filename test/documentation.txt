@@ -5,11 +5,8 @@ Here a sample of command with pvesh to manage the sdn.
 pvesh create /cluster/sdn/zones/ --zone vlanzone --type vlan --uplink-id 1
 
 
-#create a layer2 vxlan multicast transportzone
-pvesh create /cluster/sdn/zones/ --zone vxlanmulticastzone --type vxlan --uplink-id 1 --multicast-address 239.192.114.23
-
 #create a layer2 vxlan unicast transportzone
-pvesh create /cluster/sdn/zones/ --zone vxlanunicastzone --type vxlan --uplink-id 1 --unicast-address 192.168.0.1,192.168.0.2,192.168.0.3
+pvesh create /cluster/sdn/zones/ --zone vxlanunicastzone --type vxlan --peers 192.168.0.1,192.168.0.2,192.168.0.3
 
 #create an controller
 pvesh create /cluster/sdn/controllers/ --controller frrrouter1 --type evpn --peers 192.168.0.1,192.168.0.2,192.168.0.3 --asn 1234 --gateway-nodes pxnode1,pxnode2 --gateway-external-peers 192.168.0.253,192.168.0.254

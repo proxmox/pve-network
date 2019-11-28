@@ -96,7 +96,7 @@ sub parse_section_header {
 }
 
 sub generate_sdn_config {
-    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $uplinks, $controller, $config) = @_;
+    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $controller, $interfaces_config, $config) = @_;
 
     die "please implement inside plugin";
 }
@@ -177,28 +177,6 @@ sub parse_tag_number_or_range {
     die "tag $tag is not allowed" if $tag && !$allowed;
 
     return (scalar(@elements) > 1);
-}
-
-#to be move to Network.pm helper
-sub get_first_local_ipv4_from_interface {
-    my ($interface) = @_;
-
-    my $cmd = ['/sbin/ip', 'address', 'show', 'dev', $interface];
-
-    my $IP = "";
-
-    my $code = sub {
-	my $line = shift;
-
-	if ($line =~ m!^\s*inet\s+($PVE::Tools::IPRE)(?:/\d+|\s+peer\s+)!) {
-	    $IP = $1;
-	    return;
-	}
-    };
-
-    PVE::Tools::run_command($cmd, outfunc => $code);
-
-    return $IP;
 }
 
 1;

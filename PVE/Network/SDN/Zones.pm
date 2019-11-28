@@ -79,22 +79,7 @@ sub generate_etc_network_config {
     my $controller_cfg = PVE::Cluster::cfs_read_file('sdn/controllers.cfg');
     return if !$vnet_cfg && !$zone_cfg;
 
-    #read main config for physical interfaces
-    my $current_config_file = "/etc/network/interfaces";
-    my $fh = IO::File->new($current_config_file);
-    my $interfaces_config = PVE::INotify::read_etc_network_interfaces(1,$fh);
-    $fh->close();
-
-    #check uplinks
-    my $uplinks = {};
-    foreach my $id (keys %{$interfaces_config->{ifaces}}) {
-	my $interface = $interfaces_config->{ifaces}->{$id};
-	if (my $uplink = $interface->{'uplink-id'}) {
-	    die "uplink-id $uplink is already defined on $uplinks->{$uplink}" if $uplinks->{$uplink};
-	    $interface->{name} = $id;
-	    $uplinks->{$interface->{'uplink-id'}} = $interface;
-	}
-    }
+    my $interfaces_config = PVE::INotify::read_file('interfaces');
 
     #generate configuration
     my $config = {};
@@ -125,7 +110,7 @@ sub generate_etc_network_config {
 	}
 
 	my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
-	$plugin->generate_sdn_config($plugin_config, $zone, $id, $vnet, $uplinks, $controller, $config);
+	$plugin->generate_sdn_config($plugin_config, $zone, $id, $vnet, $controller, $interfaces_config, $config);
     }
 
     my $raw_network_config = "";
