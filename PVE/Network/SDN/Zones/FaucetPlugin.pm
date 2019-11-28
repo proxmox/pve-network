@@ -31,7 +31,7 @@ sub options {
 
 # Plugin implementation
 sub generate_sdn_config {
-    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $uplinks, $config) = @_;
+    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $uplinks, $controller, $config) = @_;
 
     my $mtu = $vnet->{mtu};
     my $uplink = $plugin_config->{'uplink-id'};

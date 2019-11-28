@@ -38,7 +38,7 @@ sub options {
 
 # Plugin implementation
 sub generate_sdn_config {
-    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $uplinks, $config) = @_;
+    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $uplinks, $controller, $config) = @_;
 
     my $tag = $vnet->{tag};
     my $zone_tag = $plugin_config->{tag};

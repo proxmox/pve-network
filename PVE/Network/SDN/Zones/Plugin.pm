@@ -96,7 +96,7 @@ sub parse_section_header {
 }
 
 sub generate_sdn_config {
-    my ($class, $plugin_config, $node, $data, $ctime) = @_;
+    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $uplinks, $controller, $config) = @_;
 
     die "please implement inside plugin";
 }

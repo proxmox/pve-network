@@ -76,6 +76,7 @@ sub generate_etc_network_config {
 
     my $vnet_cfg = PVE::Cluster::cfs_read_file('sdn/vnets.cfg');
     my $zone_cfg = PVE::Cluster::cfs_read_file('sdn/zones.cfg');
+    my $controller_cfg = PVE::Cluster::cfs_read_file('sdn/controllers.cfg');
     return if !$vnet_cfg && !$zone_cfg;
 
     #read main config for physical interfaces
@@ -117,8 +118,14 @@ sub generate_etc_network_config {
 
 	next if defined($plugin_config->{nodes}) && !$plugin_config->{nodes}->{$nodename};
 
+	my $controller = undef;
+	if($plugin_config->{controller}) {
+	    my $controllerid = $plugin_config->{controller};
+	    $controller	= $controller_cfg->{ids}->{$controllerid};
+	}
+
 	my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
-	$plugin->generate_sdn_config($plugin_config, $zone, $id, $vnet, $uplinks, $config);
+	$plugin->generate_sdn_config($plugin_config, $zone, $id, $vnet, $uplinks, $controller, $config);
     }
 
     my $raw_network_config = "";

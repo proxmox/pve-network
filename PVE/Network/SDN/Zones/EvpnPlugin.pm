@@ -5,6 +5,7 @@ use warnings;
 use PVE::Network::SDN::Zones::VxlanPlugin;
 use PVE::Tools qw($IPV4RE);
 use PVE::INotify;
+use PVE::Network::SDN::Controllers::EvpnPlugin;
 
 use base('PVE::Network::SDN::Zones::VxlanPlugin');
 
@@ -29,7 +30,6 @@ sub options {
 
     return {
         nodes => { optional => 1},
-	'uplink-id' => { optional => 0 },
         'vrf-vxlan' => { optional => 0 },
         'controller' => { optional => 0 },
     };
@@ -37,7 +37,7 @@ sub options {
 
 # Plugin implementation
 sub generate_sdn_config {
-    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $uplinks, $config) = @_;
+    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $uplinks, $controller, $config) = @_;
 
     my $tag = $vnet->{tag};
     my $alias = $vnet->{alias};
@@ -45,21 +45,16 @@ sub generate_sdn_config {
     my $ipv6 = $vnet->{ipv6};
     my $mac = $vnet->{mac};
 
-    my $uplink = $plugin_config->{'uplink-id'};
     my $vrf = $zoneid;
     my $vrfvxlan = $plugin_config->{'vrf-vxlan'};
 
     die "missing vxlan tag" if !$tag;
-    my $iface = "uplink$uplink";
-    my $ifaceip = "";
 
-    if($uplinks->{$uplink}->{name}) {
-	$iface = $uplinks->{$uplink}->{name};
-	$ifaceip = PVE::Network::SDN::Zones::Plugin::get_first_local_ipv4_from_interface($iface);
-    }
+    my @peers = split(',', $controller->{'peers'});
+    my ($ifaceip, $iface) = PVE::Network::SDN::Controllers::EvpnPlugin::find_local_ip_interface(\@peers);
 
     my $mtu = 1450;
-    $mtu = $uplinks->{$uplink}->{mtu} - 50 if $uplinks->{$uplink}->{mtu};
+    $mtu = $uplinks->{$iface}->{mtu} - 50 if $uplinks->{$iface}->{mtu};
     $mtu = $vnet->{mtu} if $vnet->{mtu};
 
     #vxlan interface

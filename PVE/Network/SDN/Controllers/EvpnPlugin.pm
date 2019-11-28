@@ -3,7 +3,7 @@ package PVE::Network::SDN::Controllers::EvpnPlugin;
 use strict;
 use warnings;
 use PVE::Network::SDN::Controllers::Plugin;
-use PVE::Tools;
+use PVE::Tools qw(run_command);
 use PVE::INotify;
 use PVE::JSONSchema qw(get_standard_option);
 
@@ -15,11 +15,6 @@ sub type {
 
 sub properties {
     return {
-	'uplink-id' => {
-	    type => 'integer',
-	    minimum => 1, maximum => 4096,
-	    description => 'Uplink interface',
-	},
         'asn' => {
             type => 'integer',
             description => "autonomous system number",
@@ -39,12 +34,51 @@ sub properties {
 sub options {
 
     return {
-	'uplink-id' => { optional => 0 },
         'asn' => { optional => 0 },
         'peers' => { optional => 0 },
 	'gateway-nodes' => { optional => 1 },
 	'gateway-external-peers' => { optional => 1 },
     };
+}
+
+sub get_local_route_ip {
+    my ($targetip) = @_;
+
+    my $ip = undef;
+    my $interface = undef;
+
+    run_command(['/sbin/ip', 'route', 'get', $targetip], outfunc => sub {
+        if ($_[0] =~ m/src ($PVE::Tools::IPRE)/) {
+	    $ip = $1;
+        }
+        if ($_[0] =~ m/dev (\S+)/) {
+	    $interface = $1;
+        }
+
+    });
+    return ($ip, $interface);
+}
+
+sub find_local_ip_interface {
+    my ($peers) = @_;
+
+    my $network_config = PVE::INotify::read_file('interfaces');
+    my $ifaces = $network_config->{ifaces};
+    #is a local ip member of peers list ?
+    foreach my $address (@{$peers}) {
+	while (my $interface = each %$ifaces) {
+	    my $ip = $ifaces->{$interface}->{address};
+	    if ($ip && $ip eq $address) {
+		return ($ip, $interface);
+	    }
+	}
+    }
+
+    #if peer is remote, find source with ip route
+    foreach my $address (@{$peers}) {
+	my ($ip, $interface) = get_local_route_ip($address);
+	return ($ip, $interface);
+    }
 }
 
 # Plugin implementation
@@ -54,19 +88,12 @@ sub generate_controller_config {
     my @peers = split(',', $plugin_config->{'peers'}) if $plugin_config->{'peers'};
 
     my $asn = $plugin_config->{asn};
-    my $uplink = $plugin_config->{'uplink-id'};
     my $gatewaynodes = $plugin_config->{'gateway-nodes'};
     my @gatewaypeers = split(',', $plugin_config->{'gateway-external-peers'}) if $plugin_config->{'gateway-external-peers'};
 
     return if !$asn;
 
-    my $iface = "uplink$uplink";
-    my $ifaceip = "";
-
-    if($uplinks->{$uplink}->{name}) {
-	$iface = $uplinks->{$uplink}->{name};
-        $ifaceip = PVE::Network::SDN::Controllers::Plugin::get_first_local_ipv4_from_interface($iface);
-    }
+    my ($ifaceip, $interface) = find_local_ip_interface(\@peers);
 
     my $is_gateway = undef;
     my $local_node = PVE::INotify::nodename();
