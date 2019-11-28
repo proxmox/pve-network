@@ -139,6 +139,10 @@ __PACKAGE__->register_method ({
 	my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($type);
 	my $opts = $plugin->check_config($id, $param, 1, 1);
 
+        # create /etc/pve/sdn directory
+        PVE::Cluster::check_cfs_quorum();
+        mkdir("/etc/pve/sdn");
+
         PVE::Network::SDN::Zones::lock_sdn_zones_config(
 	    sub {
 

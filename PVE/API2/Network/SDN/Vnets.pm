@@ -112,6 +112,10 @@ __PACKAGE__->register_method ({
 	my $type = extract_param($param, 'type');
 	my $id = extract_param($param, 'vnet');
 
+        # create /etc/pve/sdn directory
+        PVE::Cluster::check_cfs_quorum();
+        mkdir("/etc/pve/sdn");
+
         PVE::Network::SDN::Vnets::lock_sdn_vnets_config(
 	    sub {
 
