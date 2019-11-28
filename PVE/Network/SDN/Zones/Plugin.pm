@@ -179,4 +179,30 @@ sub parse_tag_number_or_range {
     return (scalar(@elements) > 1);
 }
 
+#helper
+
+sub get_uplink_iface {
+    my ($interfaces_config, $uplink) = @_;
+
+    my $iface = undef;
+    foreach my $id (keys %{$interfaces_config->{ifaces}}) {
+        my $interface = $interfaces_config->{ifaces}->{$id};
+        if (my $iface_uplink = $interface->{'uplink-id'}) {
+	    next if $iface_uplink ne $uplink;
+            if($interface->{type} ne 'eth' && $interface->{type} ne 'bond') {
+                warn "uplink $uplink is not a physical or bond interface";
+                next;
+            }
+	    $iface = $id;
+        }
+    }
+
+    #create a dummy uplink interface if no uplink found
+    if(!$iface) {
+        warn "can't find uplink $uplink in physical interface";
+        $iface = "uplink${uplink}";
+    }
+
+    return $iface;
+}
 1;

@@ -48,19 +48,8 @@ sub generate_sdn_config {
 
     die "missing vlan tag" if !$tag;
 
-    #check uplinks
-    my $uplinks = {};
-    foreach my $id (keys %{$interfaces_config->{ifaces}}) {
-	my $interface = $interfaces_config->{ifaces}->{$id};
-	if (my $uplink = $interface->{'uplink-id'}) {
-	    die "uplink-id $uplink is already defined on $uplinks->{$uplink}" if $uplinks->{$uplink};
-	    $interface->{name} = $id;
-	    $uplinks->{$interface->{'uplink-id'}} = $interface;
-        }
-    }
+    my $iface = PVE::Network::SDN::Zones::Plugin::get_uplink_iface($interfaces_config, $uplink);
 
-    my $iface = $uplinks->{$uplink}->{name};
-    $iface = "uplink${uplink}" if !$iface;
     $iface .= ".$tag";
 
     #tagged interface
