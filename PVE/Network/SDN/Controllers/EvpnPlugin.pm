@@ -3,10 +3,10 @@ package PVE::Network::SDN::Controllers::EvpnPlugin;
 use strict;
 use warnings;
 use PVE::Network::SDN::Controllers::Plugin;
-use PVE::Tools qw(run_command);
+use PVE::Tools;
 use PVE::INotify;
 use PVE::JSONSchema qw(get_standard_option);
-
+use PVE::Network::SDN::Zones::Plugin;
 use base('PVE::Network::SDN::Controllers::Plugin');
 
 sub type {
@@ -41,46 +41,6 @@ sub options {
     };
 }
 
-sub get_local_route_ip {
-    my ($targetip) = @_;
-
-    my $ip = undef;
-    my $interface = undef;
-
-    run_command(['/sbin/ip', 'route', 'get', $targetip], outfunc => sub {
-        if ($_[0] =~ m/src ($PVE::Tools::IPRE)/) {
-	    $ip = $1;
-        }
-        if ($_[0] =~ m/dev (\S+)/) {
-	    $interface = $1;
-        }
-
-    });
-    return ($ip, $interface);
-}
-
-sub find_local_ip_interface {
-    my ($peers) = @_;
-
-    my $network_config = PVE::INotify::read_file('interfaces');
-    my $ifaces = $network_config->{ifaces};
-    #is a local ip member of peers list ?
-    foreach my $address (@{$peers}) {
-	while (my $interface = each %$ifaces) {
-	    my $ip = $ifaces->{$interface}->{address};
-	    if ($ip && $ip eq $address) {
-		return ($ip, $interface);
-	    }
-	}
-    }
-
-    #if peer is remote, find source with ip route
-    foreach my $address (@{$peers}) {
-	my ($ip, $interface) = get_local_route_ip($address);
-	return ($ip, $interface);
-    }
-}
-
 # Plugin implementation
 sub generate_controller_config {
     my ($class, $plugin_config, $controller, $id, $uplinks, $config) = @_;
@@ -93,7 +53,7 @@ sub generate_controller_config {
 
     return if !$asn;
 
-    my ($ifaceip, $interface) = find_local_ip_interface(\@peers);
+    my ($ifaceip, $interface) = PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers);
 
     my $is_gateway = undef;
     my $local_node = PVE::INotify::nodename();

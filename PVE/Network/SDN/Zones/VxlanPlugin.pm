@@ -53,7 +53,7 @@ sub generate_sdn_config {
 
     die "missing vxlan tag" if !$tag;
 
-    my ($ifaceip, $iface) = PVE::Network::SDN::Controllers::EvpnPlugin::find_local_ip_interface(\@peers);
+    my ($ifaceip, $iface) = PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers);
 
     my $mtu = 1450;
     $mtu = $interfaces_config->{$iface}->{mtu} - 50 if $interfaces_config->{$iface}->{mtu};

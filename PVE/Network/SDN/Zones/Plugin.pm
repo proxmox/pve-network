@@ -3,7 +3,7 @@ package PVE::Network::SDN::Zones::Plugin;
 use strict;
 use warnings;
 
-use PVE::Tools;
+use PVE::Tools qw(run_command);
 use PVE::JSONSchema;
 use PVE::Cluster;
 
@@ -205,4 +205,46 @@ sub get_uplink_iface {
 
     return $iface;
 }
+
+sub get_local_route_ip {
+    my ($targetip) = @_;
+
+    my $ip = undef;
+    my $interface = undef;
+
+    run_command(['/sbin/ip', 'route', 'get', $targetip], outfunc => sub {
+        if ($_[0] =~ m/src ($PVE::Tools::IPRE)/) {
+            $ip = $1;
+        }
+        if ($_[0] =~ m/dev (\S+)/) {
+            $interface = $1;
+        }
+
+    });
+    return ($ip, $interface);
+}
+
+
+sub find_local_ip_interface_peers {
+    my ($peers) = @_;
+
+    my $network_config = PVE::INotify::read_file('interfaces');
+    my $ifaces = $network_config->{ifaces};
+    #is a local ip member of peers list ?
+    foreach my $address (@{$peers}) {
+	while (my $interface = each %$ifaces) {
+	    my $ip = $ifaces->{$interface}->{address};
+	    if ($ip && $ip eq $address) {
+		return ($ip, $interface);
+	    }
+	}
+    }
+
+    #if peer is remote, find source with ip route
+    foreach my $address (@{$peers}) {
+	my ($ip, $interface) = get_local_route_ip($address);
+	return ($ip, $interface);
+    }
+}
+
 1;
