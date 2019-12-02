@@ -1,3 +1,13 @@
+libpve-network-perl (0.3-3) pve; urgency=medium
+
+  * evpn: remove uplink-id, auto find interfaces instead
+
+  * zones: vxlan : remove uplink-id (autofind) and multicast (not really used)
+
+  * ensure /etc/pve/sdn directory is created when writing to configuration
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 02 Dec 2019 09:50:39 +0100
+
 libpve-network-perl (0.3-2) pve; urgency=medium
 
   * add faucet, evpn, qinq Plugins
