@@ -16,7 +16,7 @@ sub sdn_vnets_config {
     die "no sdn vnet ID specified\n" if !$id;
 
     my $scfg = $cfg->{ids}->{$id};
-    die "sdn vnet '$id' does not exists\n" if (!$noerr && !$scfg);
+    die "sdn vnet '$id' does not exist\n" if (!$noerr && !$scfg);
 
     return $scfg;
 }

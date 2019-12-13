@@ -26,7 +26,7 @@ sub sdn_controllers_config {
     die "no sdn controller ID specified\n" if !$id;
 
     my $scfg = $cfg->{ids}->{$id};
-    die "sdn '$id' does not exists\n" if (!$noerr && !$scfg);
+    die "sdn '$id' does not exist\n" if (!$noerr && !$scfg);
 
     return $scfg;
 }

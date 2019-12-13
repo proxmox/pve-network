@@ -31,7 +31,7 @@ sub sdn_zones_config {
     die "no sdn zone ID specified\n" if !$id;
 
     my $scfg = $cfg->{ids}->{$id};
-    die "sdn '$id' does not exists\n" if (!$noerr && !$scfg);
+    die "sdn '$id' does not exist\n" if (!$noerr && !$scfg);
 
     return $scfg;
 }
