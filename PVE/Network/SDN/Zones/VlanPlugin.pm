@@ -50,16 +50,16 @@ sub generate_sdn_config {
 
     my $iface = PVE::Network::SDN::Zones::Plugin::get_uplink_iface($interfaces_config, $uplink);
 
-    $iface .= ".$tag";
-
     #tagged interface
     my @iface_config = ();
     push @iface_config, "mtu $mtu" if $mtu;
-    push(@{$config->{$iface}}, @iface_config) if !$config->{$iface};
+    push @iface_config, "vlan-raw-device $iface";
+    push @iface_config, "vlan-id $tag";
+    push(@{$config->{"vlan$vnetid"}}, @iface_config) if !$config->{$iface};
 
     #vnet bridge
     @iface_config = ();
-    push @iface_config, "bridge_ports $iface";
+    push @iface_config, "bridge_ports vlan$vnetid";
     push @iface_config, "bridge_stp off";
     push @iface_config, "bridge_fd 0";
     push @iface_config, "mtu $mtu" if $mtu;
