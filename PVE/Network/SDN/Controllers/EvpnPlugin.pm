@@ -262,7 +262,18 @@ sub write_controller_config {
     push @{$final_config}, "hostname $nodename";
     push @{$final_config}, "!";
 
-    generate_frr_recurse($final_config, $config->{frr}, undef, 0);
+    if (-e "/etc/frr/frr.conf.local") {
+	open my $fh, '<', '/etc/frr/frr.conf.local' or die "Can't open file $!";
+	generate_frr_recurse($final_config, $config->{frr}->{vrf}, "vrf", 1);
+	push @{$final_config}, "!";
+
+	while (my $line = <$fh>) {
+	    chomp ($line);
+	    push @{$final_config}, $line;
+	}
+    } else {
+	generate_frr_recurse($final_config, $config->{frr}, undef, 0);
+    }
 
     push @{$final_config}, "!";
     push @{$final_config}, "line vty";
