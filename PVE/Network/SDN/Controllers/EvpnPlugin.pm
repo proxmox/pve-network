@@ -15,27 +15,26 @@ sub type {
 
 sub properties {
     return {
-        'asn' => {
-            type => 'integer',
-            description => "autonomous system number",
-        },
-        'peers' => {
-            description => "peers address list.",
-            type => 'string', format => 'ip-list'
-        },
+	asn => {
+	    type => 'integer',
+	    description => "autonomous system number",
+	},
+	peers => {
+	    description => "peers address list.",
+	    type => 'string', format => 'ip-list'
+	},
 	'gateway-nodes' => get_standard_option('pve-node-list'),
-        'gateway-external-peers' => {
-            description => "upstream bgp peers address list.",
-            type => 'string', format => 'ip-list'
-        },
+	'gateway-external-peers' => {
+	    description => "upstream bgp peers address list.",
+	    type => 'string', format => 'ip-list'
+	},
     };
 }
 
 sub options {
-
     return {
-        'asn' => { optional => 0 },
-        'peers' => { optional => 0 },
+	'asn' => { optional => 0 },
+	'peers' => { optional => 0 },
 	'gateway-nodes' => { optional => 1 },
 	'gateway-external-peers' => { optional => 1 },
     };
@@ -53,20 +52,22 @@ sub generate_controller_config {
 
     return if !$asn;
 
+    my $bgp = $config->{frr}->{router}->{"bgp $asn"} //= {};
+
     my ($ifaceip, $interface) = PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers);
 
     my $is_gateway = undef;
     my $local_node = PVE::INotify::nodename();
 
     foreach my $gatewaynode (PVE::Tools::split_list($gatewaynodes)) {
-        $is_gateway = 1 if $gatewaynode eq $local_node;
+	$is_gateway = 1 if $gatewaynode eq $local_node;
     }
 
-    my @controller_config = ();
-
-    push @controller_config, "bgp router-id $ifaceip";
-    push @controller_config, "no bgp default ipv4-unicast";
-    push @controller_config, "coalesce-time 1000";
+    my @controller_config = (
+	"bgp router-id $ifaceip",
+	"no bgp default ipv4-unicast",
+	"coalesce-time 1000",
+    );
 
     foreach my $address (@peers) {
 	next if $address eq $ifaceip;
@@ -78,7 +79,7 @@ sub generate_controller_config {
 	    push @controller_config, "neighbor $address remote-as external";
 	}
     }
-    push(@{$config->{frr}->{router}->{"bgp $asn"}->{""}}, @controller_config);
+    push(@{$bgp->{""}}, @controller_config);
 
     @controller_config = ();
     foreach my $address (@peers) {
@@ -86,18 +87,14 @@ sub generate_controller_config {
 	push @controller_config, "neighbor $address activate";
     }
     push @controller_config, "advertise-all-vni";
-    push(@{$config->{frr}->{router}->{"bgp $asn"}->{"address-family"}->{"l2vpn evpn"}}, @controller_config);
+    push(@{$bgp->{"address-family"}->{"l2vpn evpn"}}, @controller_config);
 
     if ($is_gateway) {
+	# import /32 routes of evpn network from vrf1 to default vrf (for packet return)
+	@controller_config = map { "neighbor $_ activate" } @gatewaypeers;
 
-        @controller_config = ();
-        #import /32 routes of evpn network from vrf1 to default vrf (for packet return)
-	foreach my $address (@gatewaypeers) {
-	    push @controller_config, "neighbor $address activate";
-	}
-        push(@{$config->{frr}->{router}->{"bgp $asn"}->{"address-family"}->{"ipv4 unicast"}}, @controller_config);
-        push(@{$config->{frr}->{router}->{"bgp $asn"}->{"address-family"}->{"ipv6 unicast"}}, @controller_config);
-
+	push(@{$bgp->{"address-family"}->{"ipv4 unicast"}}, @controller_config);
+	push(@{$bgp->{"address-family"}->{"ipv6 unicast"}}, @controller_config);
     }
 
     return $config;
@@ -113,22 +110,16 @@ sub generate_controller_zone_config {
 
     return if !$vrf || !$vrfvxlan || !$asn;
 
-    #vrf
+    # vrf
     my @controller_config = ();
     push @controller_config, "vni $vrfvxlan";
     push(@{$config->{frr}->{vrf}->{"$vrf"}}, @controller_config);
 
     push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{""}}, "!");
 
-    @controller_config = ();
-
-    my $is_gateway = undef;
     my $local_node = PVE::INotify::nodename();
 
-    foreach my $gatewaynode (PVE::Tools::split_list($gatewaynodes)) {
-	$is_gateway = 1 if $gatewaynode eq $local_node;
-    }
-
+    my $is_gateway = grep { $_ eq $local_node } PVE::Tools::split_list($gatewaynodes);
     if ($is_gateway) {
 
 	@controller_config = ();
@@ -158,9 +149,9 @@ sub on_delete_hook {
 
     # verify that zone is associated to this controller
     foreach my $id (keys %{$zone_cfg->{ids}}) {
-        my $zone = $zone_cfg->{ids}->{$id};
-        die "controller $controllerid is used by $id"
-            if (defined($zone->{controller}) && $zone->{controller} eq $controllerid);
+	my $zone = $zone_cfg->{ids}->{$id};
+	die "controller $controllerid is used by $id"
+	    if (defined($zone->{controller}) && $zone->{controller} eq $controllerid);
     }
 }
 
@@ -171,8 +162,8 @@ sub on_update_hook {
 
     foreach my $id (keys %{$controller_cfg->{ids}}) {
 	next if $id eq $controllerid;
-        my $controller = $controller_cfg->{ids}->{$id};
-        die "only 1 evpn controller can be defined" if $controller->{type} eq "evpn";
+	my $controller = $controller_cfg->{ids}->{$id};
+	die "only 1 evpn controller can be defined" if $controller->{type} eq "evpn";
     }
 }
 
@@ -190,11 +181,11 @@ sub sort_frr_config {
     $a_val = $order->{$a} if defined($order->{$a});
     $b_val = $order->{$b} if defined($order->{$b});
 
-    if($a =~ /bgp (\d+)$/) {
+    if ($a =~ /bgp (\d+)$/) {
 	$a_val = 2;
     }
 
-    if($b =~ /bgp (\d+)$/) {
+    if ($b =~ /bgp (\d+)$/) {
 	$b_val = 2;
     }
 
@@ -213,24 +204,24 @@ sub generate_frr_recurse{
    $exitkeylist->{vrf} = 1;
    $exitkeylist->{'address-family'} = 1;
 
-   #fix me, make this generic
+   # FIXME: make this generic
    my $paddinglevel = undef;
-   if($level == 1 || $level == 2) {
-     $paddinglevel = $level - 1;
+   if ($level == 1 || $level == 2) {
+	$paddinglevel = $level - 1;
    } elsif ($level == 3 || $level ==  4) {
-     $paddinglevel = $level - 2;
+	$paddinglevel = $level - 2;
    }
 
    my $padding = "";
    $padding = ' ' x ($paddinglevel) if $paddinglevel;
 
-   if (ref $content eq ref {}) {
+   if (ref $content eq  'HASH') {
 	foreach my $key (sort sort_frr_config keys %$content) {
 	    if ($parentkey && defined($keylist->{$parentkey})) {
-	 	    push @{$final_config}, $padding."!";
-	 	    push @{$final_config}, $padding."$parentkey $key";
-	    } else {
-	 	    push @{$final_config}, $padding."$key" if $key ne '' && !defined($keylist->{$key});
+		push @{$final_config}, $padding."!";
+		push @{$final_config}, $padding."$parentkey $key";
+	    } elsif ($key ne '' && !defined($keylist->{$key})) {
+		push @{$final_config}, $padding."$key";
 	    }
 
 	    my $option = $content->{$key};
@@ -241,9 +232,7 @@ sub generate_frr_recurse{
     }
 
     if (ref $content eq 'ARRAY') {
-	foreach my $value (@$content) {
-	    push @{$final_config}, $padding."$value";
-	}
+	push @{$final_config}, map { $padding . "$_" } @$content;
     }
 }
 
