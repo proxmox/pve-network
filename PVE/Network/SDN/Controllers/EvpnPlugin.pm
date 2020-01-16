@@ -2,11 +2,14 @@ package PVE::Network::SDN::Controllers::EvpnPlugin;
 
 use strict;
 use warnings;
-use PVE::Network::SDN::Controllers::Plugin;
-use PVE::Tools;
+
 use PVE::INotify;
 use PVE::JSONSchema qw(get_standard_option);
+use PVE::Tools qw(run_command file_set_contents file_get_contents);
+
+use PVE::Network::SDN::Controllers::Plugin;
 use PVE::Network::SDN::Zones::Plugin;
+
 use base('PVE::Network::SDN::Controllers::Plugin');
 
 sub type {
@@ -251,14 +254,12 @@ sub write_controller_config {
     push @{$final_config}, "!";
 
     if (-e "/etc/frr/frr.conf.local") {
-	open my $fh, '<', '/etc/frr/frr.conf.local' or die "Can't open file $!";
 	generate_frr_recurse($final_config, $config->{frr}->{vrf}, "vrf", 1);
 	push @{$final_config}, "!";
 
-	while (my $line = <$fh>) {
-	    chomp ($line);
-	    push @{$final_config}, $line;
-	}
+	my $local_conf = file_get_contents("/etc/frr/frr.conf.local");
+	chomp ($local_conf);
+	push @{$final_config}, $local_conf;
     } else {
 	generate_frr_recurse($final_config, $config->{frr}, undef, 0);
     }
@@ -269,15 +270,10 @@ sub write_controller_config {
 
     my $rawconfig = join("\n", @{$final_config});
 
-
     return if !$rawconfig;
     return if !-d "/etc/frr";
 
-    my $frr_config_file = "/etc/frr/frr.conf";
-
-    my $writefh = IO::File->new($frr_config_file,">");
-    print $writefh $rawconfig;
-    $writefh->close();
+    file_set_contents("/etc/frr/frr.conf", $rawconfig);
 }
 
 sub reload_controller {
@@ -299,7 +295,7 @@ sub reload_controller {
     };
 
     if (-e $conf_file && -e $bin_path) {
-	PVE::Tools::run_command([$bin_path, '--stdout', '--reload', $conf_file], outfunc => {}, errfunc => $err);
+	run_command([$bin_path, '--stdout', '--reload', $conf_file], outfunc => {}, errfunc => $err);
     }
 }
 
