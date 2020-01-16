@@ -167,13 +167,12 @@ sub on_delete_hook {
 sub on_update_hook {
     my ($class, $controllerid, $controller_cfg) = @_;
 
-    # verify that asn is not already used by another controller
-    my $asn = $controller_cfg->{ids}->{$controllerid}->{asn};
+    # we can only have 1 evpn controller / 1 asn by server
+
     foreach my $id (keys %{$controller_cfg->{ids}}) {
 	next if $id eq $controllerid;
         my $controller = $controller_cfg->{ids}->{$id};
-        die "asn $asn is already used by $id"
-            if (defined($controller->{asn}) && $controller->{asn} eq $asn);
+        die "only 1 evpn controller can be defined" if $controller->{type} eq "evpn";
     }
 }
 
