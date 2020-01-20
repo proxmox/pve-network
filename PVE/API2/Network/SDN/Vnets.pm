@@ -183,12 +183,8 @@ __PACKAGE__->register_method ({
 
 	    PVE::SectionConfig::assert_if_modified($cfg, $digest);
 
-	    my $scfg = PVE::Network::SDN::Vnets::sdn_vnets_config($cfg, $id);
 	    my $opts = PVE::Network::SDN::VnetPlugin->check_config($id, $param, 0, 1);
-
-	    foreach my $k (%$opts) {
-		$scfg->{$k} = $opts->{$k};
-	    }
+	    $cfg->{ids}->{$id} = $opts;
 
 	    PVE::Network::SDN::VnetPlugin->on_update_hook($id, $cfg);
 
