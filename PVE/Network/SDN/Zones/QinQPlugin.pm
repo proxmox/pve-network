@@ -82,6 +82,21 @@ sub status {
     }
 }
 
+sub get_bridge_vlan {
+    my ($class, $plugin_config, $zoneid, $vnetid, $tag) = @_;
+
+    my $bridge = $plugin_config->{bridge};
+    die "bridge $bridge is missing" if !-d "/sys/class/net/$bridge/";
+
+    my $vlan_aware = PVE::Tools::file_read_firstline("/sys/class/net/$bridge/bridge/vlan_filtering");
+    my $is_ovs = 1 if !-d "/sys/class/net/$bridge/brif";
+
+    die "ovs $bridge is not supported by qinq" if $is_ovs;
+    die "bridge $bridge is not vlan aware" if !$vlan_aware;
+
+    return ($bridge, $tag);
+}
+
 1;
 
 

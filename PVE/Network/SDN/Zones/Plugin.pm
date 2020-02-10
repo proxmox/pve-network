@@ -206,6 +206,19 @@ sub status {
     }
 }
 
+
+sub get_bridge_vlan {
+    my ($class, $plugin_config, $zoneid, $vnetid, $tag) = @_;
+
+    my $bridge = $plugin_config->{bridge};
+    die "bridge $bridge is missing" if !-d "/sys/class/net/$bridge/";
+
+    $bridge = $vnetid;
+    $tag = undef;
+
+    return ($bridge, $tag);
+}
+
 #helper
 
 sub get_uplink_iface {

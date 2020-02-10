@@ -214,5 +214,25 @@ sub status {
     return($zone_status, $vnet_status);
 }
 
+sub get_bridge_vlan {
+    my ($vnetid) = @_;
+
+    my $vnet_cfg = PVE::Cluster::cfs_read_file('sdn/vnets.cfg');
+    my $zone_cfg = PVE::Cluster::cfs_read_file('sdn/zones.cfg');
+    my $nodename = PVE::INotify::nodename();
+
+    my $vnet = $vnet_cfg->{ids}->{$vnetid};
+    return if !$vnet;
+
+    my $zoneid = $vnet->{zone};
+    my $tag = $vnet->{tag};
+
+    die "vnet $vnetid is not allowed on this node" if defined($zone_cfg->{ids}->{$zoneid}->{nodes}) && !$zone_cfg->{ids}->{$zoneid}->{nodes}->{$nodename};
+
+    my $plugin_config = $zone_cfg->{ids}->{$zoneid};
+    my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
+    return $plugin->get_bridge_vlan($plugin_config, $zoneid, $vnetid, $tag);
+}
+
 1;
 
