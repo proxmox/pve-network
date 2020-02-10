@@ -179,6 +179,33 @@ sub parse_tag_number_or_range {
     return (scalar(@elements) > 1);
 }
 
+sub status {
+    my ($class, $plugin_config, $zone, $id, $vnet, $err_config, $status, $vnet_status, $zone_status) = @_;
+
+    $vnet_status->{$id}->{zone} = $zone;
+    $zone_status->{$zone}->{status} = 'available' if !defined($zone_status->{$zone}->{status});
+
+    if($err_config) {
+	$vnet_status->{$id}->{status} = 'pending';
+	$vnet_status->{$id}->{statusmsg} = $err_config;
+	$zone_status->{$zone}->{status} = 'pending';
+    } elsif ($status->{$id}->{status} && $status->{$id}->{status} eq 'pass') {
+	$vnet_status->{$id}->{status} = 'available';
+	my $bridgeport = $status->{$id}->{config}->{'bridge-ports'};
+
+	if ($bridgeport && $status->{$bridgeport}->{status} && $status->{$bridgeport}->{status} ne 'pass') {
+	    $vnet_status->{$id}->{status} = 'error';
+	    $vnet_status->{$id}->{statusmsg} = 'configuration not fully applied';
+	    $zone_status->{$zone}->{status} = 'error';
+	}
+
+    } else {
+	$vnet_status->{$id}->{status} = 'error';
+	$vnet_status->{$id}->{statusmsg} = 'missing';
+	$zone_status->{$zone}->{status} = 'error';
+    }
+}
+
 #helper
 
 sub get_uplink_iface {

@@ -195,35 +195,22 @@ sub status {
     my $zone_cfg = PVE::Cluster::cfs_read_file('sdn/zones.cfg');
     my $nodename = PVE::INotify::nodename();
 
+
     my $vnet_status = {};
     my $zone_status = {};
 
     foreach my $id (keys %{$vnet_cfg->{ids}}) {
-	my $zone = $vnet_cfg->{ids}->{$id}->{zone};
-	next if defined($zone_cfg->{ids}->{$zone}->{nodes}) && !$zone_cfg->{ids}->{$zone}->{nodes}->{$nodename};
+        my $vnet = $vnet_cfg->{ids}->{$id};
+        my $zone = $vnet->{zone};
 
-	$vnet_status->{$id}->{zone} = $zone;
-	$zone_status->{$zone}->{status} = 'available' if !defined($zone_status->{$zone}->{status});
+	next if !$zone;
+        my $plugin_config = $zone_cfg->{ids}->{$zone};
+        next if defined($plugin_config->{nodes}) && !$plugin_config->{nodes}->{$nodename};
 
-	if($err_config) {
-	    $vnet_status->{$id}->{status} = 'pending';
-	    $vnet_status->{$id}->{statusmsg} = $err_config;
-	    $zone_status->{$zone}->{status} = 'pending';
-	} elsif ($status->{$id}->{status} && $status->{$id}->{status} eq 'pass') {
-	    $vnet_status->{$id}->{status} = 'available';
-	    my $bridgeport = $status->{$id}->{config}->{'bridge-ports'};
-
-	    if ($status->{$bridgeport}->{status} && $status->{$bridgeport}->{status} ne 'pass') {
-		$vnet_status->{$id}->{status} = 'error';
-		$vnet_status->{$id}->{statusmsg} = 'configuration not fully applied';
-		$zone_status->{$zone}->{status} = 'error';
-	    }
-	} else {
-	    $vnet_status->{$id}->{status} = 'error';
-	    $vnet_status->{$id}->{statusmsg} = 'missing';
-	    $zone_status->{$zone}->{status} = 'error';
-	}
+        my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
+        $plugin->status($plugin_config, $zone, $id, $vnet, $err_config, $status, $vnet_status, $zone_status);
     }
+
     return($zone_status, $vnet_status);
 }
 
