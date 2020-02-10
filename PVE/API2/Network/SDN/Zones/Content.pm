@@ -75,7 +75,7 @@ __PACKAGE__->register_method ({
 	    if ($vnet_status->{$id}->{zone} eq $zoneid) {
 		my $item->{vnet} = $id;
 		$item->{status} = $vnet_status->{$id}->{'status'};
-		$item->{status} = $vnet_status->{$id}->{'statusmsg'};
+		$item->{statusmsg} = $vnet_status->{$id}->{'statusmsg'};
 		push @$res,$item;
 	    }
         }
