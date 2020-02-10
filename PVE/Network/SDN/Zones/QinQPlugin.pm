@@ -16,13 +16,6 @@ sub properties {
             type => 'integer',
             description => "vlan tag",
         },
-	'vlan-protocol' => {
-	    type => 'string',
-            enum => ['802.1q', '802.1ad'],
-	    default => '802.1q',
-	    optional => 1,
-	    description => "vlan protocol",
-	}
     };
 }
 
@@ -30,9 +23,8 @@ sub options {
 
     return {
         nodes => { optional => 1},
-	'uplink-id' => { optional => 0 },
 	'tag' => { optional => 0 },
-	'vlan-protocol' => { optional => 1 },
+	'bridge' => { optional => 0 },
     };
 }
 
@@ -40,43 +32,28 @@ sub options {
 sub generate_sdn_config {
     my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $controller, $interfaces_config, $config) = @_;
 
-    my $tag = $vnet->{tag};
-    my $zone_tag = $plugin_config->{tag};
-    my $mtu = $vnet->{mtu};
-    my $alias = $vnet->{alias};
-    my $vlanprotocol = $plugin_config->{'vlan-protocol'};
-    my $uplink = $plugin_config->{'uplink-id'};
+    my $tag = $plugin_config->{tag};
+    my $mtu = $plugin_config->{mtu};
+    my $bridge = $plugin_config->{'bridge'};
 
     die "missing vlan tag" if !$tag;
-    die "missing zone vlan tag" if !$zone_tag;
 
-    my $iface = PVE::Network::SDN::Zones::Plugin::get_uplink_iface($interfaces_config, $uplink);
+    if (!$config->{$zoneid}) {
+	#zone vlan bridge
+	my @iface_config = ();
+	push @iface_config, "mtu $mtu" if $mtu;
+	push @iface_config, "bridge-stp off";
+	push @iface_config, "bridge-fd 0";
+	push @iface_config, "bridge-vlan-aware yes";
+	push @iface_config, "bridge-vids 2-4094";
+	push(@{$config->{$zoneid}}, @iface_config);
 
-    #service vlan
-    my @iface_config = ();
-    push @iface_config, "vlan-raw-device $iface";
-    push @iface_config, "vlan-id $zone_tag";
-    push @iface_config, "vlan-protocol $vlanprotocol" if $vlanprotocol;
-    push @iface_config, "mtu $mtu" if $mtu;
-    push(@{$config->{"qinq$zoneid"}}, @iface_config) if !$config->{$iface};
-
-    #customer vlan
-    @iface_config = ();
-    push @iface_config, "vlan-raw-device qinq$zoneid";
-    push @iface_config, "vlan-id $tag";
-    push @iface_config, "mtu $mtu" if $mtu;
-    push(@{$config->{"vlan$vnetid"}}, @iface_config) if !$config->{$iface};
-
-    #vnet bridge
-    @iface_config = ();
-    push @iface_config, "bridge_ports vlan$vnetid";
-    push @iface_config, "bridge_stp off";
-    push @iface_config, "bridge_fd 0";
-    push @iface_config, "mtu $mtu" if $mtu;
-    push @iface_config, "alias $alias" if $alias;
-    push(@{$config->{$vnetid}}, @iface_config) if !$config->{$vnetid};
-
-    return $config;
+	#main bridge. ifupdown2 will merge it
+	@iface_config = ();
+	push @iface_config, "bridge-ports $zoneid.$tag";
+	push(@{$config->{$bridge}}, @iface_config);
+	return $config;
+    }
 }
 
 1;
