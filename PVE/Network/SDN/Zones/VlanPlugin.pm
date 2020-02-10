@@ -41,6 +41,26 @@ sub generate_sdn_config {
     return "";
 }
 
+sub status {
+    my ($class, $plugin_config, $zone, $id, $vnet, $err_config, $status, $vnet_status, $zone_status) = @_;
+
+    my $bridge = $plugin_config->{bridge};
+    $vnet_status->{$id}->{zone} = $zone;
+    $zone_status->{$zone}->{status} = 'available' if !defined($zone_status->{$zone}->{status});
+
+    if($err_config) {
+	$vnet_status->{$id}->{status} = 'pending';
+	$vnet_status->{$id}->{statusmsg} = $err_config;
+	$zone_status->{$zone}->{status} = 'pending';
+    } elsif ($status->{$bridge}->{status} && $status->{$bridge}->{status} eq 'pass') {
+	$vnet_status->{$id}->{status} = 'available';
+    } else {
+	$vnet_status->{$id}->{status} = 'error';
+	$vnet_status->{$id}->{statusmsg} = 'missing bridge';
+	$zone_status->{$zone}->{status} = 'error';
+    }
+}
+
 1;
 
 
