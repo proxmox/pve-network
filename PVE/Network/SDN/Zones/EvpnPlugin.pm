@@ -32,6 +32,7 @@ sub options {
         nodes => { optional => 1},
         'vrf-vxlan' => { optional => 0 },
         'controller' => { optional => 0 },
+	mtu => { optional => 1 },
     };
 }
 
@@ -55,7 +56,7 @@ sub generate_sdn_config {
 
     my $mtu = 1450;
     $mtu = $interfaces_config->{$iface}->{mtu} - 50 if $interfaces_config->{$iface}->{mtu};
-    $mtu = $vnet->{mtu} if $vnet->{mtu};
+    $mtu = $vnet->{mtu} if $plugin_config->{mtu};
 
     #vxlan interface
     my @iface_config = ();

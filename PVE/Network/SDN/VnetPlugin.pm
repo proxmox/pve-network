@@ -66,11 +66,6 @@ sub properties {
             description => "alias name of the vnet",
 	    optional => 1,
         },
-        mtu => {
-            type => 'integer',
-            description => "mtu",
-	    optional => 1,
-        },
         ipv4 => {
             description => "Anycast router ipv4 address.",
             type => 'string', format => 'CIDRv4',
@@ -96,7 +91,6 @@ sub options {
         alias => { optional => 1 },
         ipv4 => { optional => 1 },
         ipv6 => { optional => 1 },
-        mtu => { optional => 1 },
         mac => { optional => 1 },
     };
 }

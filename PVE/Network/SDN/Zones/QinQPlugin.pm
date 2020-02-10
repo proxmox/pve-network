@@ -16,6 +16,11 @@ sub properties {
             type => 'integer',
             description => "vlan tag",
         },
+	mtu => {
+	    type => 'integer',
+	    description => "mtu",
+	    optional => 1,
+	},
     };
 }
 
@@ -25,6 +30,7 @@ sub options {
         nodes => { optional => 1},
 	'tag' => { optional => 0 },
 	'bridge' => { optional => 0 },
+	'mtu' => { optional => 1 },
     };
 }
 
