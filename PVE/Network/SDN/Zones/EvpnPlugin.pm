@@ -56,7 +56,7 @@ sub generate_sdn_config {
 
     my $mtu = 1450;
     $mtu = $interfaces_config->{$iface}->{mtu} - 50 if $interfaces_config->{$iface}->{mtu};
-    $mtu = $vnet->{mtu} if $plugin_config->{mtu};
+    $mtu = $plugin_config->{mtu} if $plugin_config->{mtu};
 
     #vxlan interface
     my @iface_config = ();
