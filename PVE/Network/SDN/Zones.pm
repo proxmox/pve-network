@@ -8,6 +8,7 @@ use JSON;
 
 use PVE::Tools qw(extract_param dir_glob_regex run_command);
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
+use PVE::Network;
 
 use PVE::Network::SDN::Vnets;
 use PVE::Network::SDN::Zones::VlanPlugin;
@@ -217,21 +218,80 @@ sub status {
 sub get_bridge_vlan {
     my ($vnetid) = @_;
 
-    my $vnet_cfg = PVE::Cluster::cfs_read_file('sdn/vnets.cfg');
-    my $zone_cfg = PVE::Cluster::cfs_read_file('sdn/zones.cfg');
-    my $nodename = PVE::INotify::nodename();
+    my $vnet = PVE::Network::SDN::Vnets::get_vnet($vnetid);
 
-    my $vnet = $vnet_cfg->{ids}->{$vnetid};
-    return if !$vnet;
+    #fallback if classic bridge
+    return ($vnetid, undef) if !$vnet;
 
+    my $zone_cfg = PVE::Network::SDN::Zones::config();
     my $zoneid = $vnet->{zone};
     my $tag = $vnet->{tag};
 
-    die "vnet $vnetid is not allowed on this node" if defined($zone_cfg->{ids}->{$zoneid}->{nodes}) && !$zone_cfg->{ids}->{$zoneid}->{nodes}->{$nodename};
+    my $plugin_config = $zone_cfg->{ids}->{$zoneid};
+    my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
+    return $plugin->get_bridge_vlan($plugin_config, $vnetid, $tag);
+}
+
+sub tap_create {
+    my ($iface, $bridge) = @_;
+
+    my $vnet = PVE::Network::SDN::Vnets::get_vnet($bridge);
+
+    #fallback if classic bridge
+    if(!$vnet) {
+	PVE::Network::tap_create($iface, $bridge);
+        return;
+    }
+
+    my $zone_cfg = PVE::Network::SDN::Zones::config();
+    my $zoneid = $vnet->{zone};
 
     my $plugin_config = $zone_cfg->{ids}->{$zoneid};
     my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
-    return $plugin->get_bridge_vlan($plugin_config, $zoneid, $vnetid, $tag);
+    $plugin->tap_create($plugin_config, $vnet, $iface, $bridge);
+}
+
+sub veth_create {
+    my ($veth, $vethpeer, $bridge, $hwaddr) = @_;
+
+    my $vnet = PVE::Network::SDN::Vnets::get_vnet($bridge);
+
+    #fallback if classic bridge
+    if(!$vnet) {
+	PVE::Network::veth_create($veth, $vethpeer, $bridge, $hwaddr);
+        return;
+    }
+
+    my $zone_cfg = PVE::Network::SDN::Zones::config();
+    my $zoneid = $vnet->{zone};
+
+    my $plugin_config = $zone_cfg->{ids}->{$zoneid};
+    my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
+    $plugin->veth_create($plugin_config, $vnet, $veth, $vethpeer, $bridge, $hwaddr);
+}
+
+sub tap_plug {
+    my ($iface, $bridge, $tag, $firewall, $trunks, $rate) = @_;
+
+    my $vnet = PVE::Network::SDN::Vnets::get_vnet($bridge);
+
+    #fallback if classic bridge
+    if(!$vnet) {
+	PVE::Network::tap_plug($iface, $bridge, $tag, $firewall, $trunks, $rate);
+	return;
+    }
+
+    my $zone_cfg = PVE::Network::SDN::Zones::config();
+    my $nodename = PVE::INotify::nodename();
+
+    my $zoneid = $vnet->{zone};
+    $tag = $vnet->{tag};
+
+    die "vnet $bridge is not allowed on this node" if defined($zone_cfg->{ids}->{$zoneid}->{nodes}) && !$zone_cfg->{ids}->{$zoneid}->{nodes}->{$nodename};
+
+    my $plugin_config = $zone_cfg->{ids}->{$zoneid};
+    my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
+    $plugin->tap_plug($plugin_config, $vnet, $iface, $bridge, $firewall, $rate);
 }
 
 1;

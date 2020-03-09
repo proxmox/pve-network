@@ -56,4 +56,12 @@ sub complete_sdn_vnet {
     return  $cmdname eq 'add' ? [] : [ PVE::Network::SDN::Vnets::sdn_vnet_ids($cfg) ];
 }
 
+sub get_vnet {
+    my ($vnetid) = @_;
+
+    my $cfg = PVE::Network::SDN::Vnets::config();
+    my $vnet = PVE::Network::SDN::Vnets::sdn_vnets_config($cfg, $vnetid, 1);
+    return $vnet;
+}
+
 1;

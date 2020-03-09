@@ -6,6 +6,7 @@ use warnings;
 use PVE::Tools qw(run_command);
 use PVE::JSONSchema;
 use PVE::Cluster;
+use PVE::Network;
 
 use Data::Dumper;
 use PVE::JSONSchema qw(get_standard_option);
@@ -208,15 +209,43 @@ sub status {
 
 
 sub get_bridge_vlan {
-    my ($class, $plugin_config, $zoneid, $vnetid, $tag) = @_;
+    my ($class, $plugin_config, $vnetid, $tag) = @_;
 
-    my $bridge = $plugin_config->{bridge};
-    die "bridge $bridge is missing" if !-d "/sys/class/net/$bridge/";
-
-    $bridge = $vnetid;
+    my $bridge = $vnetid;
     $tag = undef;
 
+    die "bridge $bridge is missing" if !-d "/sys/class/net/$bridge/";
+
     return ($bridge, $tag);
+}
+
+sub tap_create {
+    my ($class, $plugin_config, $vnet, $iface, $vnetid) = @_;
+
+    my ($bridge, undef) = $class->get_bridge_vlan($plugin_config, $vnetid);
+    die "unable to get bridge setting\n" if !$bridge;
+
+    PVE::Network::tap_create($iface, $bridge);
+}
+
+sub veth_create {
+    my ($class, $plugin_config, $vnet, $veth, $vethpeer, $vnetid, $hwaddr) = @_;
+
+    my ($bridge, undef) = $class->get_bridge_vlan($plugin_config, $vnetid);
+    die "unable to get bridge setting\n" if !$bridge;
+
+    PVE::Network::veth_create($veth, $vethpeer, $bridge, $hwaddr);
+}
+
+sub tap_plug {
+    my ($class, $plugin_config, $vnet, $iface, $vnetid, $firewall, $rate) = @_;
+
+    my $tag = $vnet->{tag};
+
+    ($vnetid, $tag) = $class->get_bridge_vlan($plugin_config, $vnetid, $tag);
+    my $trunks = undef;
+
+    PVE::Network::tap_plug($iface, $vnetid, $tag, $firewall, $trunks, $rate);
 }
 
 #helper
