@@ -1,3 +1,27 @@
+libpve-network-perl (0.4-1) pve; urgency=medium
+
+  * vlan/qinq: use vlan-raw-device to support long predictable interfaces name
+
+  * evpn: add support for local frr.config
+
+  * controller : evpn : only allow 1 evpn controller
+
+  * API2: Vnets: fix update
+
+  * vlan/qinq: use bridge option instead uplink-id
+
+  * move status code to zone plugin
+
+  * qinq, vlanplugin: add status
+
+  * move mtu properties to zone
+
+  * add get_bridge_vlan
+
+  * add tap|veth create|plug
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 10 Mar 2020 19:01:54 +0100
+
 libpve-network-perl (0.3-3) pve; urgency=medium
 
   * evpn: remove uplink-id, auto find interfaces instead
