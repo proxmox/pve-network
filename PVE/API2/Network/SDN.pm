@@ -17,23 +17,23 @@ use PVE::API2::Network::SDN::Controllers;
 use base qw(PVE::RESTHandler);
 
 __PACKAGE__->register_method ({
-    subclass => "PVE::API2::Network::SDN::Vnets",  
+    subclass => "PVE::API2::Network::SDN::Vnets",
     path => 'vnets',
-			      });
+});
 
 __PACKAGE__->register_method ({
-    subclass => "PVE::API2::Network::SDN::Zones",  
+    subclass => "PVE::API2::Network::SDN::Zones",
     path => 'zones',
-			      });
+});
 
 __PACKAGE__->register_method ({
-    subclass => "PVE::API2::Network::SDN::Controllers",  
+    subclass => "PVE::API2::Network::SDN::Controllers",
     path => 'controllers',
 });
 
 __PACKAGE__->register_method({
-    name => 'index', 
-    path => '', 
+    name => 'index',
+    path => '',
     method => 'GET',
     description => "Directory index.",
     permissions => {
@@ -56,7 +56,7 @@ __PACKAGE__->register_method({
     code => sub {
 	my ($param) = @_;
 
-	my $res = [ 
+	my $res = [
 	    { id => 'vnets' },
 	    { id => 'zones' },
 	    { id => 'controllers' },
