@@ -1,4 +1,4 @@
-libpve-network-perl (0.4-1) pve; urgency=medium
+libpve-network-perl (0.4-2) pve; urgency=medium
 
   * vlan/qinq: use vlan-raw-device to support long predictable interfaces name
 
@@ -20,7 +20,9 @@ libpve-network-perl (0.4-1) pve; urgency=medium
 
   * add tap|veth create|plug
 
- -- Proxmox Support Team <support@proxmox.com>  Tue, 10 Mar 2020 19:01:54 +0100
+  * add get_local_vnets
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 08 Apr 2020 19:58:10 +0200
 
 libpve-network-perl (0.3-3) pve; urgency=medium
 
