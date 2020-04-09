@@ -177,7 +177,7 @@ sub status {
     if (!-e $local_sdn_file) {
 
 	$err_config = "local sdn network configuration is not yet generated, please reload";
-	warn $err_config;
+	warn "$err_config\n";
     } else {
 	# fixme : use some kind of versioning info?
 	my $cluster_vnet_timestamp = (stat($cluster_vnet_file))[9];
@@ -186,8 +186,8 @@ sub status {
 
 	if ($local_sdn_timestamp < $cluster_vnet_timestamp || $local_sdn_timestamp < $cluster_zone_timestamp) {
 	    $err_config = "local sdn network configuration is too old, please reload";
-	    warn $err_config;
-        }
+	    warn "$err_config\n";
+	}
     }
 
     my $status = ifquery_check();
