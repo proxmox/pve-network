@@ -43,6 +43,13 @@ sub config {
     return $config;
 }
 
+sub get_plugin_config {
+    my ($vnet) = @_;
+    my $zoneid = $vnet->{zone};
+    my $zone_cfg = PVE::Network::SDN::Zones::config();
+    return $zone_cfg->{ids}->{$zoneid};
+}
+
 sub write_config {
     my ($cfg) = @_;
 
@@ -223,13 +230,9 @@ sub get_bridge_vlan {
     #fallback if classic bridge
     return ($vnetid, undef) if !$vnet;
 
-    my $zone_cfg = PVE::Network::SDN::Zones::config();
-    my $zoneid = $vnet->{zone};
-    my $tag = $vnet->{tag};
-
-    my $plugin_config = $zone_cfg->{ids}->{$zoneid};
+    my $plugin_config = get_plugin_config($vnet);
     my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
-    return $plugin->get_bridge_vlan($plugin_config, $vnetid, $tag);
+    return $plugin->get_bridge_vlan($plugin_config, $vnetid, $vnet->{tag});
 }
 
 sub tap_create {
@@ -243,10 +246,7 @@ sub tap_create {
         return;
     }
 
-    my $zone_cfg = PVE::Network::SDN::Zones::config();
-    my $zoneid = $vnet->{zone};
-
-    my $plugin_config = $zone_cfg->{ids}->{$zoneid};
+    my $plugin_config = get_plugin_config($vnet);
     my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
     $plugin->tap_create($plugin_config, $vnet, $iface, $bridge);
 }
@@ -262,10 +262,7 @@ sub veth_create {
         return;
     }
 
-    my $zone_cfg = PVE::Network::SDN::Zones::config();
-    my $zoneid = $vnet->{zone};
-
-    my $plugin_config = $zone_cfg->{ids}->{$zoneid};
+    my $plugin_config = get_plugin_config($vnet);
     my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
     $plugin->veth_create($plugin_config, $vnet, $veth, $vethpeer, $bridge, $hwaddr);
 }
@@ -281,15 +278,12 @@ sub tap_plug {
 	return;
     }
 
-    my $zone_cfg = PVE::Network::SDN::Zones::config();
+    my $plugin_config = get_plugin_config($vnet);
     my $nodename = PVE::INotify::nodename();
 
-    my $zoneid = $vnet->{zone};
-    $tag = $vnet->{tag};
+    die "vnet $bridge is not allowed on this node\n"
+	if $plugin_config->{nodes} && !defined($plugin_config->{nodes}->{$nodename});
 
-    die "vnet $bridge is not allowed on this node" if defined($zone_cfg->{ids}->{$zoneid}->{nodes}) && !$zone_cfg->{ids}->{$zoneid}->{nodes}->{$nodename};
-
-    my $plugin_config = $zone_cfg->{ids}->{$zoneid};
     my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
     $plugin->tap_plug($plugin_config, $vnet, $iface, $bridge, $firewall, $rate);
 }
