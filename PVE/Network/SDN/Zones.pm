@@ -200,16 +200,16 @@ sub status {
     my $vnet_status = {};
     my $zone_status = {};
 
-    foreach my $id (keys %{$vnet_cfg->{ids}}) {
-        my $vnet = $vnet_cfg->{ids}->{$id};
-        my $zone = $vnet->{zone};
-
+    foreach my $id (sort keys %{$vnet_cfg->{ids}}) {
+	my $vnet = $vnet_cfg->{ids}->{$id};
+	my $zone = $vnet->{zone};
 	next if !$zone;
-        my $plugin_config = $zone_cfg->{ids}->{$zone};
-        next if defined($plugin_config->{nodes}) && !$plugin_config->{nodes}->{$nodename};
 
-        my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
-        $plugin->status($plugin_config, $zone, $id, $vnet, $err_config, $status, $vnet_status, $zone_status);
+	my $plugin_config = $zone_cfg->{ids}->{$zone};
+	next if defined($plugin_config->{nodes}) && !$plugin_config->{nodes}->{$nodename};
+
+	my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
+	$plugin->status($plugin_config, $zone, $id, $vnet, $err_config, $status, $vnet_status, $zone_status);
     }
 
     return($zone_status, $vnet_status);
