@@ -122,7 +122,7 @@ sub generate_etc_network_config {
     }
 
     my $raw_network_config = "";
-    foreach my $iface (keys %$config) {
+    foreach my $iface (sort keys %$config) {
 	$raw_network_config .= "\n";
 	$raw_network_config .= "auto $iface\n";
 	$raw_network_config .= "iface $iface\n";
