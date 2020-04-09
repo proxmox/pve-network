@@ -227,8 +227,7 @@ sub get_bridge_vlan {
 
     my $vnet = PVE::Network::SDN::Vnets::get_vnet($vnetid);
 
-    #fallback if classic bridge
-    return ($vnetid, undef) if !$vnet;
+    return ($vnetid, undef) if !$vnet; # fallback for classic bridge
 
     my $plugin_config = get_plugin_config($vnet);
     my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
@@ -239,11 +238,9 @@ sub tap_create {
     my ($iface, $bridge) = @_;
 
     my $vnet = PVE::Network::SDN::Vnets::get_vnet($bridge);
-
-    #fallback if classic bridge
-    if(!$vnet) {
+    if (!$vnet) { # fallback for classic bridge
 	PVE::Network::tap_create($iface, $bridge);
-        return;
+	return;
     }
 
     my $plugin_config = get_plugin_config($vnet);
@@ -255,11 +252,9 @@ sub veth_create {
     my ($veth, $vethpeer, $bridge, $hwaddr) = @_;
 
     my $vnet = PVE::Network::SDN::Vnets::get_vnet($bridge);
-
-    #fallback if classic bridge
-    if(!$vnet) {
+    if (!$vnet) { # fallback for classic bridge
 	PVE::Network::veth_create($veth, $vethpeer, $bridge, $hwaddr);
-        return;
+	return;
     }
 
     my $plugin_config = get_plugin_config($vnet);
@@ -271,9 +266,7 @@ sub tap_plug {
     my ($iface, $bridge, $tag, $firewall, $trunks, $rate) = @_;
 
     my $vnet = PVE::Network::SDN::Vnets::get_vnet($bridge);
-
-    #fallback if classic bridge
-    if(!$vnet) {
+    if (!$vnet) { # fallback for classic bridge
 	PVE::Network::tap_plug($iface, $bridge, $tag, $firewall, $trunks, $rate);
 	return;
     }
