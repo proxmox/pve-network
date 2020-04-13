@@ -172,27 +172,19 @@ sub ifquery_check {
 # improve me : move status code inside plugins ?
 sub status {
 
-    my $cluster_vnet_file = "/etc/pve/sdn/vnets.cfg";
-    my $cluster_zone_file = "/etc/pve/sdn/zones.cfg";
-    my $local_sdn_file = "/etc/network/interfaces.d/sdn";
     my $err_config = undef;
 
-    return if !-e $cluster_vnet_file && !-e $cluster_zone_file;
+    my $local_version = PVE::Network::SDN::Zones::read_etc_network_config_version();
+    my $sdn_version = PVE::Cluster::cfs_read_file('sdn/.version');
 
-    if (!-e $local_sdn_file) {
+    return if !$sdn_version;
 
+    if (!$local_version) {
 	$err_config = "local sdn network configuration is not yet generated, please reload";
 	warn "$err_config\n";
-    } else {
-	# fixme : use some kind of versioning info?
-	my $cluster_vnet_timestamp = (stat($cluster_vnet_file))[9];
-	my $cluster_zone_timestamp = (stat($cluster_zone_file))[9];
-	my $local_sdn_timestamp = (stat($local_sdn_file))[9];
-
-	if ($local_sdn_timestamp < $cluster_vnet_timestamp || $local_sdn_timestamp < $cluster_zone_timestamp) {
-	    $err_config = "local sdn network configuration is too old, please reload";
-	    warn "$err_config\n";
-	}
+    } elsif ($local_version < $sdn_version) {
+	$err_config = "local sdn network configuration is too old, please reload";
+	warn "$err_config\n";
     }
 
     my $status = ifquery_check();
