@@ -22,21 +22,19 @@ sub sdn_vnets_config {
 }
 
 sub config {
-    my $config = cfs_read_file("sdn/vnets.cfg.new");
-    $config = cfs_read_file("sdn/vnets.cfg") if !keys %{$config->{ids}};
-    return $config;
+    my $config = cfs_read_file("sdn/vnets.cfg");
 }
 
 sub write_config {
     my ($cfg) = @_;
 
-    cfs_write_file("sdn/vnets.cfg.new", $cfg);
+    cfs_write_file("sdn/vnets.cfg", $cfg);
 }
 
 sub lock_sdn_vnets_config {
     my ($code, $errmsg) = @_;
 
-    cfs_lock_file("sdn/vnets.cfg.new", undef, $code);
+    cfs_lock_file("sdn/vnets.cfg", undef, $code);
     if (my $err = $@) {
         $errmsg ? die "$errmsg: $err" : die $err;
     }

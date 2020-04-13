@@ -138,28 +138,6 @@ __PACKAGE__->register_method ({
     }});
 
 __PACKAGE__->register_method ({
-    name => 'revert_configuration',
-    protected => 1,
-    path => '',
-    method => 'DELETE',
-    description => "Revert sdn vnet changes.",
-    permissions => {
-	check => ['perm', '/sdn/vnets', ['SDN.Allocate']],
-    },
-    parameters => {
-	additionalProperties => 0,
-    },
-    returns => { type => 'null' },
-    code => sub {
-	my ($param) = @_;
-
-	die "no sdn vnets changes to revert" if !-e "/etc/pve/sdn/vnets.cfg.new";
-	unlink "/etc/pve/sdn/vnets.cfg.new";
-
-	return undef;
-    }});
-
-__PACKAGE__->register_method ({
     name => 'update',
     protected => 1,
     path => '{vnet}',

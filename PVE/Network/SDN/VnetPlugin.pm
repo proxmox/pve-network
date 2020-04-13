@@ -8,9 +8,6 @@ use base qw(PVE::SectionConfig);
 use PVE::JSONSchema qw(get_standard_option);
 
 PVE::Cluster::cfs_register_file('sdn/vnets.cfg',
-                                 sub { __PACKAGE__->parse_config(@_); });
-
-PVE::Cluster::cfs_register_file('sdn/vnets.cfg.new',
                                  sub { __PACKAGE__->parse_config(@_); },
                                  sub { __PACKAGE__->write_config(@_); });
 

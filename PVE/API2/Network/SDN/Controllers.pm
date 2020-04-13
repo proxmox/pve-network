@@ -157,28 +157,6 @@ __PACKAGE__->register_method ({
     }});
 
 __PACKAGE__->register_method ({
-    name => 'revert_configuration',
-    protected => 1,
-    path => '',
-    method => 'DELETE',
-    description => "Revert sdn controller changes.",
-    permissions => {
-	check => ['perm', '/sdn/controllers', ['SDN.Allocate']],
-    },
-    parameters => {
-	additionalProperties => 0,
-    },
-    returns => { type => 'null' },
-    code => sub {
-	my ($param) = @_;
-
-	die "no sdn controllers changes to revert" if !-e "/etc/pve/sdn/controllers.cfg.new";
-	unlink "/etc/pve/sdn/controllers.cfg.new";
-
-	return undef;
-    }});
-
-__PACKAGE__->register_method ({
     name => 'update',
     protected => 1,
     path => '{controller}',

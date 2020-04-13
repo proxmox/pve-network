@@ -97,21 +97,6 @@ __PACKAGE__->register_method ({
         my $rpcenv = PVE::RPCEnvironment::get();
         my $authuser = $rpcenv->get_user();
 
-	if (-e "/etc/pve/sdn/controllers.cfg.new") {
-	    rename("/etc/pve/sdn/controllers.cfg.new", "/etc/pve/sdn/controllers.cfg")
-		|| die "applying sdn/controllers.cfg changes failed - $!\n";
-	}
-
-	if (-e "/etc/pve/sdn/zones.cfg.new") {
-	    rename("/etc/pve/sdn/zones.cfg.new", "/etc/pve/sdn/zones.cfg")
-		|| die "applying sdn/zones.cfg changes failed - $!\n";
-	}
-
-	if (-e "/etc/pve/sdn/vnets.cfg.new") {
-	    rename("/etc/pve/sdn/vnets.cfg.new", "/etc/pve/sdn/vnets.cfg")
-		|| die "applying sdn/vnets.cfg changes failed - $!\n";
-	}
-
         my $code = sub {
             $rpcenv->{type} = 'priv'; # to start tasks in background
 	    PVE::Cluster::check_cfs_quorum();

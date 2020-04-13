@@ -32,7 +32,7 @@ sub sdn_controllers_config {
 }
 
 sub config {
-    my $config = cfs_read_file("sdn/controllers.cfg.new");
+    my $config = cfs_read_file("sdn/controllers.cfg");
     $config = cfs_read_file("sdn/controllers.cfg") if !keys %{$config->{ids}};
     return $config;
 }
@@ -40,13 +40,13 @@ sub config {
 sub write_config {
     my ($cfg) = @_;
 
-    cfs_write_file("sdn/controllers.cfg.new", $cfg);
+    cfs_write_file("sdn/controllers.cfg", $cfg);
 }
 
 sub lock_sdn_controllers_config {
     my ($code, $errmsg) = @_;
 
-    cfs_lock_file("sdn/controllers.cfg.new", undef, $code);
+    cfs_lock_file("sdn/controllers.cfg", undef, $code);
     if (my $err = $@) {
         $errmsg ? die "$errmsg: $err" : die $err;
     }

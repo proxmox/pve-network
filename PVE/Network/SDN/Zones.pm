@@ -38,8 +38,7 @@ sub sdn_zones_config {
 }
 
 sub config {
-    my $config = cfs_read_file("sdn/zones.cfg.new");
-    $config = cfs_read_file("sdn/zones.cfg") if !keys %{$config->{ids}};
+    my $config = cfs_read_file("sdn/zones.cfg");
     return $config;
 }
 
@@ -53,13 +52,13 @@ sub get_plugin_config {
 sub write_config {
     my ($cfg) = @_;
 
-    cfs_write_file("sdn/zones.cfg.new", $cfg);
+    cfs_write_file("sdn/zones.cfg", $cfg);
 }
 
 sub lock_sdn_zones_config {
     my ($code, $errmsg) = @_;
 
-    cfs_lock_file("sdn/zones.cfg.new", undef, $code);
+    cfs_lock_file("sdn/zones.cfg", undef, $code);
     if (my $err = $@) {
         $errmsg ? die "$errmsg: $err" : die $err;
     }
