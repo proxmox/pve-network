@@ -55,15 +55,6 @@ sub write_config {
     cfs_write_file("sdn/zones.cfg", $cfg);
 }
 
-sub lock_sdn_zones_config {
-    my ($code, $errmsg) = @_;
-
-    cfs_lock_file("sdn/zones.cfg", undef, $code);
-    if (my $err = $@) {
-        $errmsg ? die "$errmsg: $err" : die $err;
-    }
-}
-
 sub sdn_zones_ids {
     my ($cfg) = @_;
 

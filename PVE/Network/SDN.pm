@@ -12,6 +12,28 @@ use PVE::Network::SDN::Zones;
 use PVE::Tools qw(extract_param dir_glob_regex run_command);
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 
+
+my $version_cfg = "sdn/.version";
+
+my $parse_version_cfg = sub {
+    my ($filename, $raw) = @_;
+
+    warn "invalid sdn version" if $raw !~ m/\d+$/;
+
+    return $raw,
+};
+
+my $write_version_cfg = sub {
+    my ($filename, $version) = @_;
+
+    warn "invalid sdn version" if $version !~ m/\d+$/;
+
+    return $version;
+};
+
+PVE::Cluster::cfs_register_file($version_cfg, $parse_version_cfg, $write_version_cfg);
+
+
 # improve me : move status code inside plugins ?
 
 sub ifquery_check {
@@ -44,6 +66,30 @@ sub status {
 
     my ($zone_status, $vnet_status) = PVE::Network::SDN::Zones::status();
     return($zone_status, $vnet_status);
+}
+
+
+sub increase_version {
+
+    my $version = cfs_read_file($version_cfg);
+
+    if($version) {
+	$version++;
+    } else {
+	$version = 1;
+    }
+
+    cfs_write_file($version_cfg, $version);
+}
+
+sub lock_sdn_config {
+    my ($code, $errmsg) = @_;
+
+    cfs_lock_file($version_cfg, undef, $code);
+
+    if (my $err = $@) {
+        $errmsg ? die "$errmsg: $err" : die $err;
+    }
 }
 
 sub get_local_vnets {

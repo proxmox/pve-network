@@ -31,15 +31,6 @@ sub write_config {
     cfs_write_file("sdn/vnets.cfg", $cfg);
 }
 
-sub lock_sdn_vnets_config {
-    my ($code, $errmsg) = @_;
-
-    cfs_lock_file("sdn/vnets.cfg", undef, $code);
-    if (my $err = $@) {
-        $errmsg ? die "$errmsg: $err" : die $err;
-    }
-}
-
 sub sdn_vnets_ids {
     my ($cfg) = @_;
 

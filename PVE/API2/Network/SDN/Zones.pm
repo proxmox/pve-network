@@ -6,6 +6,7 @@ use warnings;
 use PVE::SafeSyslog;
 use PVE::Tools qw(extract_param);
 use PVE::Cluster qw(cfs_read_file cfs_write_file);
+use PVE::Network::SDN;
 use PVE::Network::SDN::Vnets;
 use PVE::Network::SDN::Zones;
 use PVE::Network::SDN::Zones::Plugin;
@@ -143,7 +144,7 @@ __PACKAGE__->register_method ({
         PVE::Cluster::check_cfs_quorum();
         mkdir("/etc/pve/sdn");
 
-        PVE::Network::SDN::Zones::lock_sdn_zones_config(
+        PVE::Network::SDN::lock_sdn_config(
 	    sub {
 
 		my $zone_cfg = PVE::Network::SDN::Zones::config();
@@ -158,6 +159,8 @@ __PACKAGE__->register_method ({
 		$plugin->on_update_hook($id, $zone_cfg, $controller_cfg);
 
 		PVE::Network::SDN::Zones::write_config($zone_cfg);
+
+		PVE::Network::SDN::increase_version();
 
 	    }, "create sdn zone object failed");
 
@@ -181,7 +184,7 @@ __PACKAGE__->register_method ({
 	my $id = extract_param($param, 'zone');
 	my $digest = extract_param($param, 'digest');
 
-        PVE::Network::SDN::Zones::lock_sdn_zones_config(
+        PVE::Network::SDN::lock_sdn_config(
 	 sub {
 
 	    my $zone_cfg = PVE::Network::SDN::Zones::config();
@@ -201,6 +204,8 @@ __PACKAGE__->register_method ({
 	    $plugin->on_update_hook($id, $zone_cfg, $controller_cfg);
 
 	    PVE::Network::SDN::Zones::write_config($zone_cfg);
+
+	    PVE::Network::SDN::increase_version();
 
 	    }, "update sdn zone object failed");
 
@@ -230,7 +235,7 @@ __PACKAGE__->register_method ({
 
 	my $id = extract_param($param, 'zone');
 
-        PVE::Network::SDN::Zones::lock_sdn_zones_config(
+        PVE::Network::SDN::lock_sdn_config(
 	    sub {
 
 		my $cfg = PVE::Network::SDN::Zones::config();
@@ -245,6 +250,8 @@ __PACKAGE__->register_method ({
 
 		delete $cfg->{ids}->{$id};
 		PVE::Network::SDN::Zones::write_config($cfg);
+
+		PVE::Network::SDN::increase_version();
 
 	    }, "delete sdn zone object failed");
 
