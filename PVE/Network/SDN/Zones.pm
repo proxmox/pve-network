@@ -25,6 +25,7 @@ PVE::Network::SDN::Zones::EvpnPlugin->register();
 PVE::Network::SDN::Zones::FaucetPlugin->register();
 PVE::Network::SDN::Zones::Plugin->init();
 
+my $local_network_sdn_file = "/etc/network/interfaces.d/sdn";
 
 sub sdn_zones_config {
     my ($cfg, $id, $noerr) = @_;
@@ -72,6 +73,7 @@ sub complete_sdn_zone {
 
 sub generate_etc_network_config {
 
+    my $version = PVE::Cluster::cfs_read_file('sdn/.version');
     my $vnet_cfg = PVE::Cluster::cfs_read_file('sdn/vnets.cfg');
     my $zone_cfg = PVE::Cluster::cfs_read_file('sdn/zones.cfg');
     my $controller_cfg = PVE::Cluster::cfs_read_file('sdn/controllers.cfg');
@@ -111,7 +113,7 @@ sub generate_etc_network_config {
 	$plugin->generate_sdn_config($plugin_config, $zone, $id, $vnet, $controller, $interfaces_config, $config);
     }
 
-    my $raw_network_config = "";
+    my $raw_network_config = "\#version:$version\n";
     foreach my $iface (sort keys %$config) {
 	$raw_network_config .= "\n";
 	$raw_network_config .= "auto $iface\n";
@@ -128,11 +130,17 @@ sub write_etc_network_config {
     my ($rawconfig) = @_;
 
     return if !$rawconfig;
-    my $sdn_interfaces_file = "/etc/network/interfaces.d/sdn";
 
-    my $writefh = IO::File->new($sdn_interfaces_file,">");
+    my $writefh = IO::File->new($local_network_sdn_file,">");
     print $writefh $rawconfig;
     $writefh->close();
+}
+
+sub read_etc_network_config_version {
+    my $versionstr = PVE::Tools::file_read_firstline($local_network_sdn_file);
+    if ($versionstr =~ m/^\#version:(\d+)$/) {
+	return $1;
+    }
 }
 
 sub ifquery_check {
