@@ -1,3 +1,9 @@
+libpve-network-perl (0.4-3) pve; urgency=medium
+
+  * use .version and global lock instead of .new files
+
+ -- Proxmox Support Team <support@proxmox.com>  Sat, 02 May 2020 19:20:33 +0200
+
 libpve-network-perl (0.4-2) pve; urgency=medium
 
   * vlan/qinq: use vlan-raw-device to support long predictable interfaces name
