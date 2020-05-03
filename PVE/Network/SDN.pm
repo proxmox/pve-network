@@ -18,7 +18,9 @@ my $version_cfg = "sdn/.version";
 my $parse_version_cfg = sub {
     my ($filename, $raw) = @_;
 
-    warn "invalid sdn version" if $raw !~ m/\d+$/;
+    return 0 if !defined($raw) || $raw eq '';
+
+    warn "invalid sdn version '$raw'" if $raw !~ m/\d+$/;
 
     return $raw,
 };
