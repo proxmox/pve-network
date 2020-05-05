@@ -138,6 +138,9 @@ sub write_etc_network_config {
 
 sub read_etc_network_config_version {
     my $versionstr = PVE::Tools::file_read_firstline($local_network_sdn_file);
+
+    return if !defined($versionstr);
+
     if ($versionstr =~ m/^\#version:(\d+)$/) {
 	return $1;
     }
