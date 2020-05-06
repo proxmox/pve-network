@@ -85,28 +85,27 @@ sub generate_etc_network_config {
     my $config = {};
     my $nodename = PVE::INotify::nodename();
 
-    foreach my $id (keys %{$vnet_cfg->{ids}}) {
+    for my $id (sort keys %{$vnet_cfg->{ids}}) {
 	my $vnet = $vnet_cfg->{ids}->{$id};
 	my $zone = $vnet->{zone};
 
-	if(!$zone) {
-	    warn "can't generate vnet $vnet : zone $zone don't exist";
+	if (!$zone) {
+	    warn "can't generate vnet '$id': no zone assigned!\n";
 	    next;
 	}
 
 	my $plugin_config = $zone_cfg->{ids}->{$zone};
 
 	if (!defined($plugin_config)) {
-	    warn "can't generate vnet $vnet : zone $zone don't exist";
+	    warn "can't generate vnet '$id': zone $zone don't exist\n";
 	    next;
 	}
 
 	next if defined($plugin_config->{nodes}) && !$plugin_config->{nodes}->{$nodename};
 
-	my $controller = undef;
-	if($plugin_config->{controller}) {
-	    my $controllerid = $plugin_config->{controller};
-	    $controller	= $controller_cfg->{ids}->{$controllerid};
+	my $controller;
+	if (my $controllerid = $plugin_config->{controller}) {
+	    $controller = $controller_cfg->{ids}->{$controllerid};
 	}
 
 	my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
