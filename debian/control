@@ -4,8 +4,8 @@ Priority: optional
 Maintainer: Proxmox Support Team <support@proxmox.com>
 Build-Depends: debhelper (>= 11~),
                lintian,
-               perl (>= 5.10.0-19),
-               pve-cluster (>= 5.0-32),
+               perl,
+               pve-cluster (>= 6.0~),
                pve-doc-generator (>= 5.3-3),
 Standards-Version: 4.3.0
 Homepage: http://www.proxmox.com
@@ -18,5 +18,6 @@ Depends: libpve-common-perl (>= 5.0-45),
          pve-cluster (>= 5.0-32),
          ${misc:Depends},
          ${perl:Depends},
+Recommends: frr-pythontools, ifupdown2
 Description: Proxmox VE storage management library
  This package contains the storage management library used by Proxmox VE.
