@@ -219,7 +219,8 @@ sub get_bridge_vlan {
 sub tap_create {
     my ($class, $plugin_config, $vnet, $iface, $vnetid) = @_;
 
-    my ($bridge, undef) = $class->get_bridge_vlan($plugin_config, $vnetid);
+    my $tag = $vnet->{tag};
+    my ($bridge, undef) = $class->get_bridge_vlan($plugin_config, $vnetid, $tag);
     die "unable to get bridge setting\n" if !$bridge;
 
     PVE::Network::tap_create($iface, $bridge);
@@ -228,7 +229,8 @@ sub tap_create {
 sub veth_create {
     my ($class, $plugin_config, $vnet, $veth, $vethpeer, $vnetid, $hwaddr) = @_;
 
-    my ($bridge, undef) = $class->get_bridge_vlan($plugin_config, $vnetid);
+    my $tag = $vnet->{tag};
+    my ($bridge, undef) = $class->get_bridge_vlan($plugin_config, $vnetid, $tag);
     die "unable to get bridge setting\n" if !$bridge;
 
     PVE::Network::veth_create($veth, $vethpeer, $bridge, $hwaddr);
