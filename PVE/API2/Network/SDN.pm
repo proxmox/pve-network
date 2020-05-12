@@ -3,16 +3,17 @@ package PVE::API2::Network::SDN;
 use strict;
 use warnings;
 
-use PVE::SafeSyslog;
-use PVE::Tools;
 use PVE::Cluster qw(cfs_lock_file cfs_read_file cfs_write_file);
+use PVE::Exception qw(raise_param_exc);
+use PVE::JSONSchema qw(get_standard_option);
 use PVE::RESTHandler;
 use PVE::RPCEnvironment;
-use PVE::JSONSchema qw(get_standard_option);
-use PVE::Exception qw(raise_param_exc);
+use PVE::SafeSyslog;
+use PVE::Tools qw(run_command);
+
+use PVE::API2::Network::SDN::Controllers;
 use PVE::API2::Network::SDN::Vnets;
 use PVE::API2::Network::SDN::Zones;
-use PVE::API2::Network::SDN::Controllers;
 
 use base qw(PVE::RESTHandler);
 
@@ -68,8 +69,14 @@ __PACKAGE__->register_method({
 my $create_reload_network_worker = sub {
     my ($nodename) = @_;
 
-    #fixme: how to proxy to final node ?
-    my $upid = PVE::Tools::run_command(['pvesh', 'set', "/nodes/$nodename/network"]);
+    # FIXME: how to proxy to final node ?
+    my $upid;
+    run_command(['pvesh', 'set', "/nodes/$nodename/network"], outfunc => sub {
+	my $line = shift;
+	if ($line =~ /^["']?(UPID:[^\s"']+)["']?$/) {
+	    $upid = $1;
+	}
+    });
     #my $upid = PVE::API2::Network->reload_network_config(node => $nodename});
     my $res = PVE::Tools::upid_decode($upid);
 
@@ -101,13 +108,14 @@ __PACKAGE__->register_method ({
             $rpcenv->{type} = 'priv'; # to start tasks in background
 	    PVE::Cluster::check_cfs_quorum();
 	    my $nodelist = PVE::Cluster::get_nodelist();
-	    foreach my $node (@$nodelist) {
-
-		my $pid;
-		eval { $pid = &$create_reload_network_worker($node); };
+	    for my $node (@$nodelist) {
+		my $pid = eval { $create_reload_network_worker->($node) };
 		warn $@ if $@;
-		next if !$pid;
 	    }
+
+	    # FIXME: use libpve-apiclient (like in cluster join) to create
+	    # tasks and moitor the tasks.
+
 	    return;
         };
 
