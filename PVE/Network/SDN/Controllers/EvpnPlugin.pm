@@ -106,7 +106,7 @@ sub generate_controller_config {
 sub generate_controller_zone_config {
     my ($class, $plugin_config, $controller, $id, $uplinks, $config) = @_;
 
-    my $vrf = $id;
+    my $vrf = "vrf_$id";
     my $vrfvxlan = $plugin_config->{'vrf-vxlan'};
     my $asn = $controller->{asn};
     my $gatewaynodes = $controller->{'gateway-nodes'};
