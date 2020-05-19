@@ -1,3 +1,15 @@
+libpve-network-perl (0.4-5) pve; urgency=medium
+
+  * api: fix reload-all UPID handling
+
+  * restrict zone and vnet names to 8 characters
+
+  * VLAN, QinQ: avoid tagging VM/CT ports directly
+
+  * VXLAN, EVPN: prefix internal interface names
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 19 May 2020 21:23:01 +0200
+
 libpve-network-perl (0.4-4) pve; urgency=medium
 
   * only parse version if local sdn file exists
