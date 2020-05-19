@@ -51,6 +51,7 @@ sub generate_sdn_config {
     my $mac = $vnet->{mac};
     my $multicastaddress = $plugin_config->{'multicast-address'};
     my @peers = split(',', $plugin_config->{'peers'}) if $plugin_config->{'peers'};
+    my $vxlan_iface = "vxlan_$vnetid";
 
     die "missing vxlan tag" if !$tag;
 
@@ -69,15 +70,16 @@ sub generate_sdn_config {
 	push @iface_config, "vxlan_remoteip $address";
     }
 
+
     push @iface_config, "mtu $mtu" if $mtu;
-    push(@{$config->{"vxlan$vnetid"}}, @iface_config) if !$config->{"vxlan$vnetid"};
+    push(@{$config->{$vxlan_iface}}, @iface_config) if !$config->{$vxlan_iface};
 
     #vnet bridge
     @iface_config = ();
     push @iface_config, "address $ipv4" if $ipv4;
     push @iface_config, "address $ipv6" if $ipv6;
     push @iface_config, "hwaddress $mac" if $mac;
-    push @iface_config, "bridge_ports vxlan$vnetid";
+    push @iface_config, "bridge_ports $vxlan_iface";
     push @iface_config, "bridge_stp off";
     push @iface_config, "bridge_fd 0";
     push @iface_config, "mtu $mtu" if $mtu;
