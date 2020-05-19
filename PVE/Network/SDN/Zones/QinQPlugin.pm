@@ -12,13 +12,14 @@ sub type {
 
 sub properties {
     return {
-        tag => {
-            type => 'integer',
-            description => "vlan tag",
-        },
+	tag => {
+	    type => 'integer',
+	    minimum => 0,
+	    description => "Service-VLAN Tag",
+	},
 	mtu => {
 	    type => 'integer',
-	    description => "mtu",
+	    description => "MTU",
 	    optional => 1,
 	},
        'vlan-protocol' => {
