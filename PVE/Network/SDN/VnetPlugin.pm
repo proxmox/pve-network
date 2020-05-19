@@ -24,7 +24,7 @@ sub parse_sdn_vnet_id {
         return undef if $noerr;
         die "vnet ID '$id' contains illegal characters\n";
     }
-    die "vnet ID '$id' can't be more length than 10 characters\n" if length($id) > 10;
+    die "vnet ID '$id' can't be more length than 8 characters\n" if length($id) > 8;
     return $id;
 }
 
