@@ -66,8 +66,12 @@ sub generate_sdn_config {
 	} else {
 	    push @iface_config, "ovs_options tag=$tag";
 	}
-
 	push(@{$config->{$vnet_uplink}}, @iface_config) if !$config->{$vnet_uplink};
+
+	#redefine main ovs bridge, ifupdown2 will merge ovs_ports
+	@iface_config = ();
+	push @iface_config, "ovs_ports $vnet_uplink";
+	push(@{$config->{$bridge}}, @iface_config);
 
 	@iface_config = ();
 	push @iface_config, "ovs_type OVSBridge";
