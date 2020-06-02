@@ -109,7 +109,13 @@ sub generate_etc_network_config {
 	}
 
 	my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
-	$plugin->generate_sdn_config($plugin_config, $zone, $id, $vnet, $controller, $interfaces_config, $config);
+	eval {
+	    $plugin->generate_sdn_config($plugin_config, $zone, $id, $vnet, $controller, $interfaces_config, $config);
+	};
+	if($@) {
+	    warn "zone $zone : vnet $id : $@";
+	    next;
+	}
     }
 
     my $raw_network_config = "\#version:$version\n";

@@ -41,6 +41,8 @@ sub generate_sdn_config {
     my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $controller, $interfaces_config, $config) = @_;
 
     my $bridge = $plugin_config->{bridge};
+    die "can't find bridge $bridge" if !-d "/sys/class/net/$bridge";
+
     my $vlan_aware = PVE::Tools::file_read_firstline("/sys/class/net/$bridge/bridge/vlan_filtering");
     my $is_ovs = 1 if !-d "/sys/class/net/$bridge/brif";
 
