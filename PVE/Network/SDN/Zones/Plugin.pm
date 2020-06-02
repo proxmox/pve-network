@@ -205,44 +205,23 @@ sub status {
 }
 
 
-sub get_bridge_vlan {
-    my ($class, $plugin_config, $vnetid, $tag) = @_;
-
-    my $bridge = $vnetid;
-    $tag = undef;
-
-    die "bridge $bridge is missing" if !-d "/sys/class/net/$bridge/";
-
-    return ($bridge, $tag);
-}
-
 sub tap_create {
     my ($class, $plugin_config, $vnet, $iface, $vnetid) = @_;
 
-    my $tag = $vnet->{tag};
-    my ($bridge, undef) = $class->get_bridge_vlan($plugin_config, $vnetid, $tag);
-    die "unable to get bridge setting\n" if !$bridge;
-
-    PVE::Network::tap_create($iface, $bridge);
+    PVE::Network::tap_create($iface, $vnetid);
 }
 
 sub veth_create {
     my ($class, $plugin_config, $vnet, $veth, $vethpeer, $vnetid, $hwaddr) = @_;
 
-    my $tag = $vnet->{tag};
-    my ($bridge, undef) = $class->get_bridge_vlan($plugin_config, $vnetid, $tag);
-    die "unable to get bridge setting\n" if !$bridge;
-
-    PVE::Network::veth_create($veth, $vethpeer, $bridge, $hwaddr);
+    PVE::Network::veth_create($veth, $vethpeer, $vnetid, $hwaddr);
 }
 
 sub tap_plug {
-    my ($class, $plugin_config, $vnet, $iface, $vnetid, $firewall, $rate) = @_;
+    my ($class, $plugin_config, $vnet, $tag, $iface, $vnetid, $firewall, $trunks, $rate) = @_;
 
-    my $tag = $vnet->{tag};
-
-    ($vnetid, $tag) = $class->get_bridge_vlan($plugin_config, $vnetid, $tag);
-    my $trunks = undef;
+    my $vlan_aware = PVE::Tools::file_read_firstline("/sys/class/net/$vnetid/bridge/vlan_filtering");
+    die "vm vlans are not allowed on vnet $vnetid" if !$vlan_aware && ($tag || $trunks);
 
     PVE::Network::tap_plug($iface, $vnetid, $tag, $firewall, $trunks, $rate);
 }

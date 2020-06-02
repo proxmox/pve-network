@@ -214,18 +214,6 @@ sub status {
     return($zone_status, $vnet_status);
 }
 
-sub get_bridge_vlan {
-    my ($vnetid) = @_;
-
-    my $vnet = PVE::Network::SDN::Vnets::get_vnet($vnetid);
-
-    return ($vnetid, undef) if !$vnet; # fallback for classic bridge
-
-    my $plugin_config = get_plugin_config($vnet);
-    my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
-    return $plugin->get_bridge_vlan($plugin_config, $vnetid, $vnet->{tag});
-}
-
 sub tap_create {
     my ($iface, $bridge) = @_;
 
@@ -270,7 +258,7 @@ sub tap_plug {
 	if $plugin_config->{nodes} && !defined($plugin_config->{nodes}->{$nodename});
 
     my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
-    $plugin->tap_plug($plugin_config, $vnet, $iface, $bridge, $firewall, $rate);
+    $plugin->tap_plug($plugin_config, $vnet, $tag, $iface, $bridge, $firewall, $trunks, $rate);
 }
 
 1;

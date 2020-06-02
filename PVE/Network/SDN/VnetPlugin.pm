@@ -58,6 +58,10 @@ sub properties {
             type => 'integer',
             description => "vlan or vxlan id",
 	},
+	vlanaware => {
+	    type => 'boolean',
+	    description => 'Allow vm VLANs to pass through this vnet.',
+	},
         alias => {
             type => 'string',
             description => "alias name of the vnet",
@@ -89,6 +93,7 @@ sub options {
         ipv4 => { optional => 1 },
         ipv6 => { optional => 1 },
         mac => { optional => 1 },
+        vlanaware => { optional => 1 },
     };
 }
 

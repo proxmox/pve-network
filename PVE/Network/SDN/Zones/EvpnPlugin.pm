@@ -50,6 +50,7 @@ sub generate_sdn_config {
     my $vrfvxlan = $plugin_config->{'vrf-vxlan'};
 
     die "missing vxlan tag" if !$tag;
+    warn "vlan-aware vnet can't be enabled with evpn plugin" if $vnet->{vlanaware};
 
     my @peers = split(',', $controller->{'peers'});
     my ($ifaceip, $iface) = PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers);

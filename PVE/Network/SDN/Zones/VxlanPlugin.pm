@@ -82,6 +82,10 @@ sub generate_sdn_config {
     push @iface_config, "bridge_ports $vxlan_iface";
     push @iface_config, "bridge_stp off";
     push @iface_config, "bridge_fd 0";
+    if($vnet->{vlanaware}) {
+        push @iface_config, "bridge-vlan-aware yes";
+        push @iface_config, "bridge-vids 2-4094";
+    }
     push @iface_config, "mtu $mtu" if $mtu;
     push @iface_config, "alias $alias" if $alias;
     push(@{$config->{$vnetid}}, @iface_config) if !$config->{$vnetid};
