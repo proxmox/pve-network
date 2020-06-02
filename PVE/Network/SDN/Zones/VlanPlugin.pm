@@ -65,7 +65,7 @@ sub generate_sdn_config {
 	push @iface_config, "ovs_bridge $bridge";
 	push @iface_config, "ovs_mtu $mtu" if $mtu;
 	if($vnet->{vlanaware}) {
-	    push @iface_config, "ovs_options vlan_mode=dot1q-tunnel tag=$tag";
+	    push @iface_config, "ovs_options vlan_mode=dot1q-tunnel other_config:qinq-ethtype=802.1q tag=$tag";
 	} else {
 	    push @iface_config, "ovs_options tag=$tag";
 	}
