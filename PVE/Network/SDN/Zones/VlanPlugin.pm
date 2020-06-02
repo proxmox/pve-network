@@ -61,7 +61,12 @@ sub generate_sdn_config {
 	@iface_config = ();
 	push @iface_config, "ovs_type OVSIntPort";
 	push @iface_config, "ovs_bridge $bridge";
-	push @iface_config, "ovs_options tag=$tag";
+	if($vnet->{vlanaware}) {
+	    push @iface_config, "ovs_options vlan_mode=dot1q-tunnel tag=$tag";
+	} else {
+	    push @iface_config, "ovs_options tag=$tag";
+	}
+
 	push(@{$config->{$vnet_uplink}}, @iface_config) if !$config->{$vnet_uplink};
 
 	@iface_config = ();
