@@ -72,6 +72,7 @@ sub generate_sdn_config {
 	@iface_config = ();
 	push @iface_config, "ovs_type OVSIntPort";
 	push @iface_config, "ovs_bridge $bridge";
+	push @iface_config, "ovs_mtu $mtu" if $mtu;
 	push @iface_config, "ovs_options vlan_mode=dot1q-tunnel tag=$stag other_config:qinq-ethtype=$vlanprotocol";
 	push(@{$config->{$svlan_iface}}, @iface_config) if !$config->{$svlan_iface};
 
