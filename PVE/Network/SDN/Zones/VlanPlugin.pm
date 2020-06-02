@@ -76,11 +76,6 @@ sub generate_sdn_config {
 	push @iface_config, "ovs_ports $vnet_uplink";
 	push(@{$config->{$bridge}}, @iface_config);
 
-	@iface_config = ();
-	push @iface_config, "ovs_type OVSBridge";
-	push @iface_config, "ovs_ports $vnet_uplink";
-	push(@{$config->{$bridge}}, @iface_config) if !$config->{$bridge};
-
     } elsif ($vlan_aware) {
         # eth0----vlanaware bridge vmbr0--(vmbr0.X tag)---->vnet---->vm
 	$vnet_uplink = "$bridge.$tag";       
