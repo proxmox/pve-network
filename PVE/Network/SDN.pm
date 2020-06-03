@@ -74,8 +74,7 @@ sub status {
 sub increase_version {
 
     my $version = cfs_read_file($version_cfg);
-
-    if($version) {
+    if ($version) {
 	$version++;
     } else {
 	$version = 1;
@@ -125,6 +124,20 @@ sub get_local_vnets {
     }
 
     return $vnets;
+}
+
+sub generate_zone_config {
+    my $raw_config = PVE::Network::SDN::Zones::generate_etc_network_config();
+    PVE::Network::SDN::Zones::write_etc_network_config($raw_config);
+}
+
+sub generate_controller_config {
+    my ($reload) = @_;
+
+    my $raw_config = PVE::Network::SDN::Controllers::generate_controller_config();
+    PVE::Network::SDN::Controllers::write_controller_config($raw_config);
+
+    PVE::Network::SDN::Controllers::reload_controller() if $reload;
 }
 
 1;
