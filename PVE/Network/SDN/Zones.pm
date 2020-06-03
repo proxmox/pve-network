@@ -112,8 +112,8 @@ sub generate_etc_network_config {
 	eval {
 	    $plugin->generate_sdn_config($plugin_config, $zone, $id, $vnet, $controller, $interfaces_config, $config);
 	};
-	if($@) {
-	    warn "zone $zone : vnet $id : $@";
+	if (my $err = $@) {
+	    warn "zone $zone : vnet $id : $err\n";
 	    next;
 	}
     }
