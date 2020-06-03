@@ -1,3 +1,15 @@
+libpve-network-perl (0.4-6) pve; urgency=medium
+
+  * add vnet vlan-aware option for layer2 plugins
+
+  * vlan: ovs: use dot1q-tunnel with 802.1q when vlanaware is enabled
+
+  * qinq|vlan: ovs: add ovsint interfaces to ovs-ports list
+
+  * vlan|qinq: add mtu to ovsint link port
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 03 Jun 2020 14:15:42 +0200
+
 libpve-network-perl (0.4-5) pve; urgency=medium
 
   * api: fix reload-all UPID handling
