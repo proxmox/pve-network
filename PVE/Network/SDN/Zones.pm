@@ -177,6 +177,7 @@ sub ifquery_check {
     return $interfaces;
 }
 
+my $warned_about_reload;
 # improve me : move status code inside plugins ?
 sub status {
 
@@ -189,10 +190,18 @@ sub status {
 
     if (!$local_version) {
 	$err_config = "local sdn network configuration is not yet generated, please reload";
-	warn "$err_config\n";
+	if (!$warned_about_reload) {
+	    $warned_about_reload = 1;
+	    warn "$err_config\n";
+	}
     } elsif ($local_version < $sdn_version) {
 	$err_config = "local sdn network configuration is too old, please reload";
-	warn "$err_config\n";
+	if (!$warned_about_reload) {
+	    $warned_about_reload = 1;
+	    warn "$err_config\n";
+	}
+    } else {
+	$warned_about_reload = 0;
     }
 
     my $status = ifquery_check();
