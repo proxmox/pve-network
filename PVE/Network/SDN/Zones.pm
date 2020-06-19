@@ -178,7 +178,7 @@ sub ifquery_check {
 }
 
 my $warned_about_reload;
-# improve me : move status code inside plugins ?
+
 sub status {
 
     my $err_config = undef;
@@ -210,9 +210,16 @@ sub status {
     my $zone_cfg = PVE::Cluster::cfs_read_file('sdn/zones.cfg');
     my $nodename = PVE::INotify::nodename();
 
-
-    my $vnet_status = {};
+    my $vnet_status = {}; 
     my $zone_status = {};
+
+    foreach my $id (sort keys %{$zone_cfg->{ids}}) {
+	$zone_status->{$id}->{status} = 'available';
+	if($err_config) {
+	    $zone_status->{$id}->{status} = 'pending';
+	    next;
+	}
+    }
 
     foreach my $id (sort keys %{$vnet_cfg->{ids}}) {
 	my $vnet = $vnet_cfg->{ids}->{$id};
@@ -222,8 +229,22 @@ sub status {
 	my $plugin_config = $zone_cfg->{ids}->{$zone};
 	next if defined($plugin_config->{nodes}) && !$plugin_config->{nodes}->{$nodename};
 
+	$vnet_status->{$id}->{zone} = $zone;
+	$vnet_status->{$id}->{status} = 'available';
+
+	if($err_config) {
+	    $vnet_status->{$id}->{status} = 'pending';
+	    $vnet_status->{$id}->{statusmsg} = $err_config;
+	    next;
+	}
+
 	my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
-	$plugin->status($plugin_config, $zone, $id, $vnet, $err_config, $status, $vnet_status, $zone_status);
+	my $err_msg = $plugin->status($plugin_config, $zone, $id, $vnet, $status);
+	if (@{$err_msg} > 0) {
+	    $vnet_status->{$id}->{status} = 'error';
+	    $vnet_status->{$id}->{statusmsg} = join(',', @{$err_msg});
+	    $zone_status->{$id}->{status} = 'error';
+	} 
     }
 
     return($zone_status, $vnet_status);

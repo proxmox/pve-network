@@ -166,23 +166,48 @@ sub generate_sdn_config {
 }
 
 sub status {
-    my ($class, $plugin_config, $zone, $id, $vnet, $err_config, $status, $vnet_status, $zone_status) = @_;
+    my ($class, $plugin_config, $zone, $vnetid, $vnet, $status) = @_;
 
     my $bridge = $plugin_config->{bridge};
-    $vnet_status->{$id}->{zone} = $zone;
-    $zone_status->{$zone}->{status} = 'available' if !defined($zone_status->{$zone}->{status});
+    my $err_msg = [];
 
-    if($err_config) {
-	$vnet_status->{$id}->{status} = 'pending';
-	$vnet_status->{$id}->{statusmsg} = $err_config;
-	$zone_status->{$zone}->{status} = 'pending';
-    } elsif ($status->{$bridge}->{status} && $status->{$bridge}->{status} eq 'pass') {
-	$vnet_status->{$id}->{status} = 'available';
-    } else {
-	$vnet_status->{$id}->{status} = 'error';
-	$vnet_status->{$id}->{statusmsg} = 'missing bridge';
-	$zone_status->{$zone}->{status} = 'error';
+    if (!-d "/sys/class/net/$bridge") {
+        push @$err_msg, "missing $bridge";
+        return $err_msg;
     }
+
+    my $vlan_aware = PVE::Tools::file_read_firstline("/sys/class/net/$bridge/bridge/vlan_filtering");
+    my $is_ovs = 1 if !-d "/sys/class/net/$bridge/brif";
+
+    my $tag = $vnet->{tag};
+    my $vnet_uplink = "ln_".$vnetid;
+    my $vnet_uplinkpeer = "pr_".$vnetid;
+
+    # ifaces to check
+    my $ifaces = [ $vnetid, $bridge ];
+    if($is_ovs) {
+	my $svlan_iface = "sv_".$zone;
+	my $zonebridge = "z_$zone";
+	push @$ifaces, $svlan_iface;
+	push @$ifaces, $zonebridge;
+    } elsif ($vlan_aware) {
+	my $zonebridge = "z_$zone";
+	push @$ifaces, $zonebridge;
+    } else {
+	my $svlan_iface = "sv_$vnetid";
+	my $cvlan_iface = "cv_$vnetid";
+	push @$ifaces, $svlan_iface;
+	push @$ifaces, $cvlan_iface;
+    }
+
+    foreach my $iface (@{$ifaces}) {
+	if (!$status->{$iface}->{status}) {
+	    push @$err_msg, "missing $iface";
+        } elsif ($status->{$iface}->{status} ne 'pass') {
+	    push @$err_msg, "error $iface";
+	}
+    }
+    return $err_msg;
 }
 
 1;

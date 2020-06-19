@@ -178,30 +178,21 @@ sub parse_tag_number_or_range {
 }
 
 sub status {
-    my ($class, $plugin_config, $zone, $id, $vnet, $err_config, $status, $vnet_status, $zone_status) = @_;
+    my ($class, $plugin_config, $zone, $vnetid, $vnet, $status) = @_;
 
-    $vnet_status->{$id}->{zone} = $zone;
-    $zone_status->{$zone}->{status} = 'available' if !defined($zone_status->{$zone}->{status});
+    my $err_msg = [];
 
-    if($err_config) {
-	$vnet_status->{$id}->{status} = 'pending';
-	$vnet_status->{$id}->{statusmsg} = $err_config;
-	$zone_status->{$zone}->{status} = 'pending';
-    } elsif ($status->{$id}->{status} && $status->{$id}->{status} eq 'pass') {
-	$vnet_status->{$id}->{status} = 'available';
-	my $bridgeport = $status->{$id}->{config}->{'bridge-ports'};
+    # ifaces to check
+    my $ifaces = [ $vnetid ];
 
-	if ($bridgeport && $status->{$bridgeport}->{status} && $status->{$bridgeport}->{status} ne 'pass') {
-	    $vnet_status->{$id}->{status} = 'error';
-	    $vnet_status->{$id}->{statusmsg} = 'configuration not fully applied';
-	    $zone_status->{$zone}->{status} = 'error';
-	}
-
-    } else {
-	$vnet_status->{$id}->{status} = 'error';
-	$vnet_status->{$id}->{statusmsg} = 'missing';
-	$zone_status->{$zone}->{status} = 'error';
+    foreach my $iface (@{$ifaces}) {
+        if (!$status->{$iface}->{status}) {
+	    push @$err_msg, "missing $iface";
+        } elsif ($status->{$iface}->{status} ne 'pass') {
+	    push @$err_msg, "error $iface";
+        }
     }
+    return $err_msg;
 }
 
 
