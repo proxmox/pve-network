@@ -79,7 +79,7 @@ sub generate_sdn_config {
 	#redefine main ovs bridge, ifupdown2 will merge ovs_ports
 	@iface_config = ();
 	push @iface_config, "ovs_ports $svlan_iface";
-	push(@{$config->{$bridge}}, @iface_config); 
+	push(@{$config->{$bridge}}, @iface_config);
 
 	#zone vlan aware bridge
 	@iface_config = ();

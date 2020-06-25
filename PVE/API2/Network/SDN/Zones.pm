@@ -64,7 +64,7 @@ __PACKAGE__->register_method ({
 	type => 'array',
 	items => {
 	    type => "object",
-	    properties => { zone => { type => 'string'}, 
+	    properties => { zone => { type => 'string'},
 			    type => { type => 'string'},
 			  },
 	},

@@ -64,7 +64,7 @@ sub decode_value {
         }
 
         return $res;
-    } 
+    }
 
    return $value;
 }

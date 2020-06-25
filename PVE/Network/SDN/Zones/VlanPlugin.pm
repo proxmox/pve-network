@@ -78,7 +78,7 @@ sub generate_sdn_config {
 
     } elsif ($vlan_aware) {
         # eth0----vlanaware bridge vmbr0--(vmbr0.X tag)---->vnet---->vm
-	$vnet_uplink = "$bridge.$tag";       
+	$vnet_uplink = "$bridge.$tag";
     } else {
 
         # keep vmbrXvY for compatibility with existing network
@@ -165,7 +165,7 @@ sub status {
         } elsif ($status->{$iface}->{status} ne 'pass') {
 	    push @$err_msg, "error iface $iface";
 	}
-    }    
+    }
     return $err_msg;
 }
 

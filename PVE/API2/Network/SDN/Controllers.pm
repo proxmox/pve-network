@@ -57,7 +57,7 @@ __PACKAGE__->register_method ({
 	type => 'array',
 	items => {
 	    type => "object",
-	    properties => { controller => { type => 'string'}, 
+	    properties => { controller => { type => 'string'},
 			    type => { type => 'string'},
 			  },
 	},

@@ -210,7 +210,7 @@ sub status {
     my $zone_cfg = PVE::Cluster::cfs_read_file('sdn/zones.cfg');
     my $nodename = PVE::INotify::nodename();
 
-    my $vnet_status = {}; 
+    my $vnet_status = {};
     my $zone_status = {};
 
     foreach my $id (sort keys %{$zone_cfg->{ids}}) {
@@ -244,7 +244,7 @@ sub status {
 	    $vnet_status->{$id}->{status} = 'error';
 	    $vnet_status->{$id}->{statusmsg} = join(',', @{$err_msg});
 	    $zone_status->{$id}->{status} = 'error';
-	} 
+	}
     }
 
     return($zone_status, $vnet_status);
