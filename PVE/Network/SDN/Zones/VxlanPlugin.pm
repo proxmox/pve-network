@@ -50,7 +50,7 @@ sub generate_sdn_config {
     my $ipv6 = $vnet->{ipv6};
     my $mac = $vnet->{mac};
     my $multicastaddress = $plugin_config->{'multicast-address'};
-    my @peers = split(',', $plugin_config->{'peers'}) if $plugin_config->{'peers'};
+    my @peers = PVE::Tools::split_list($plugin_config->{'peers'}) if $plugin_config->{'peers'};
     my $vxlan_iface = "vxlan_$vnetid";
 
     die "missing vxlan tag" if !$tag;
