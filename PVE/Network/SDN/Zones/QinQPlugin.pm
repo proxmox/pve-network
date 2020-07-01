@@ -55,7 +55,7 @@ sub generate_sdn_config {
     die "can't find bridge $bridge" if !-d "/sys/class/net/$bridge";
 
     my $vlan_aware = PVE::Tools::file_read_firstline("/sys/class/net/$bridge/bridge/vlan_filtering");
-    my $is_ovs = 1 if !-d "/sys/class/net/$bridge/brif";
+    my $is_ovs = !-d "/sys/class/net/$bridge/brif";
 
     my @iface_config = ();
     my $vnet_bridge_ports = "";
@@ -177,7 +177,7 @@ sub status {
     }
 
     my $vlan_aware = PVE::Tools::file_read_firstline("/sys/class/net/$bridge/bridge/vlan_filtering");
-    my $is_ovs = 1 if !-d "/sys/class/net/$bridge/brif";
+    my $is_ovs = !-d "/sys/class/net/$bridge/brif";
 
     my $tag = $vnet->{tag};
     my $vnet_uplink = "ln_".$vnetid;
