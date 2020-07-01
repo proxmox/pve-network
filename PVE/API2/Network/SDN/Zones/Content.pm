@@ -6,7 +6,6 @@ use Data::Dumper;
 
 use PVE::SafeSyslog;
 use PVE::Cluster;
-use PVE::Storage;
 use PVE::INotify;
 use PVE::Exception qw(raise_param_exc);
 use PVE::RPCEnvironment;

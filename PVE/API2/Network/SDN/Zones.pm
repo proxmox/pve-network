@@ -35,7 +35,7 @@ my $api_sdn_zones_config = sub {
     $scfg->{digest} = $cfg->{digest};
 
     if ($scfg->{nodes}) {
-        $scfg->{nodes} = PVE::Storage::Plugin->encode_value($scfg->{type}, 'nodes', $scfg->{nodes});
+        $scfg->{nodes} = PVE::Network::SDN::Zones::Plugin->encode_value($scfg->{type}, 'nodes', $scfg->{nodes});
     }
 
     return $scfg;
