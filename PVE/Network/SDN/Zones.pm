@@ -16,6 +16,7 @@ use PVE::Network::SDN::Zones::QinQPlugin;
 use PVE::Network::SDN::Zones::VxlanPlugin;
 use PVE::Network::SDN::Zones::EvpnPlugin;
 use PVE::Network::SDN::Zones::FaucetPlugin;
+use PVE::Network::SDN::Zones::SimplePlugin;
 use PVE::Network::SDN::Zones::Plugin;
 
 PVE::Network::SDN::Zones::VlanPlugin->register();
@@ -23,6 +24,7 @@ PVE::Network::SDN::Zones::QinQPlugin->register();
 PVE::Network::SDN::Zones::VxlanPlugin->register();
 PVE::Network::SDN::Zones::EvpnPlugin->register();
 PVE::Network::SDN::Zones::FaucetPlugin->register();
+PVE::Network::SDN::Zones::SimplePlugin->register();
 PVE::Network::SDN::Zones::Plugin->init();
 
 my $local_network_sdn_file = "/etc/network/interfaces.d/sdn";

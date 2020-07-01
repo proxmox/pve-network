@@ -15,6 +15,7 @@ use PVE::Network::SDN::Zones::QinQPlugin;
 use PVE::Network::SDN::Zones::VxlanPlugin;
 use PVE::Network::SDN::Zones::EvpnPlugin;
 use PVE::Network::SDN::Zones::FaucetPlugin;
+use PVE::Network::SDN::Zones::SimplePlugin;
 
 use Storable qw(dclone);
 use PVE::JSONSchema qw(get_standard_option);
