@@ -3,6 +3,7 @@ package PVE::Network::SDN::Zones::SimplePlugin;
 use strict;
 use warnings;
 use PVE::Network::SDN::Zones::Plugin;
+use PVE::Exception qw(raise raise_param_exc);
 
 use base('PVE::Network::SDN::Zones::Plugin');
 
@@ -63,6 +64,12 @@ sub status {
 	}
     }
     return $err_msg;
+}
+
+sub verify_tag {
+    my ($class, $tag) = @_;
+
+    raise_param_exc({ tag => "vlan tag is not allowed on simple bridge"}) if defined($tag);
 }
 
 1;

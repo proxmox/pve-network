@@ -6,6 +6,7 @@ use PVE::Network::SDN::Zones::Plugin;
 use PVE::Tools qw($IPV4RE);
 use PVE::INotify;
 use PVE::Network::SDN::Controllers::EvpnPlugin;
+use PVE::Exception qw(raise raise_param_exc);
 
 use base('PVE::Network::SDN::Zones::Plugin');
 
@@ -92,6 +93,13 @@ sub generate_sdn_config {
     push(@{$config->{$vnetid}}, @iface_config) if !$config->{$vnetid};
 
     return $config;
+}
+
+sub verify_tag {
+    my ($class, $tag) = @_;
+
+    raise_param_exc({ tag => "missing vxlan tag"}) if !defined($tag);
+    raise_param_exc({ tag => "vxlan tag max value is 16777216"}) if $tag > 16777216;
 }
 
 1;

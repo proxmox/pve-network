@@ -7,6 +7,8 @@ use PVE::SafeSyslog;
 use PVE::Tools qw(extract_param);
 use PVE::Cluster qw(cfs_read_file cfs_write_file);
 use PVE::Network::SDN;
+use PVE::Network::SDN::Zones;
+use PVE::Network::SDN::Zones::Plugin;
 use PVE::Network::SDN::Vnets;
 use PVE::Network::SDN::VnetPlugin;
 
@@ -129,6 +131,13 @@ __PACKAGE__->register_method ({
 		}
 
 		$cfg->{ids}->{$id} = $opts;
+
+		my $zone_cfg = PVE::Network::SDN::Zones::config();
+		my $zoneid = $cfg->{ids}->{$id}->{zone};
+		my $plugin_config = $zone_cfg->{ids}->{$zoneid};
+		my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
+		$plugin->verify_tag($opts->{tag});
+
 		PVE::Network::SDN::VnetPlugin->on_update_hook($id, $cfg);
 
 		PVE::Network::SDN::Vnets::write_config($cfg);
@@ -168,6 +177,12 @@ __PACKAGE__->register_method ({
 	    my $opts = PVE::Network::SDN::VnetPlugin->check_config($id, $param, 0, 1);
 	    $cfg->{ids}->{$id} = $opts;
 
+	    my $zone_cfg = PVE::Network::SDN::Zones::config();
+	    my $zoneid = $cfg->{ids}->{$id}->{zone};
+            my $plugin_config = $zone_cfg->{ids}->{$zoneid};
+            my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
+	    $plugin->verify_tag($opts->{tag});
+ 
 	    PVE::Network::SDN::VnetPlugin->on_update_hook($id, $cfg);
 
 	    PVE::Network::SDN::Vnets::write_config($cfg);

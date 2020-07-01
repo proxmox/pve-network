@@ -139,6 +139,11 @@ sub on_update_hook {
     # do nothing by default
 }
 
+sub verify_tag {
+    my ($class, $tag) = @_;
+    # do nothing by default
+}
+
 #helpers
 sub parse_tag_number_or_range {
     my ($str, $max, $tag) = @_;

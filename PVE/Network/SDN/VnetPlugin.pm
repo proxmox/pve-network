@@ -6,6 +6,7 @@ use warnings;
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 use base qw(PVE::SectionConfig);
 use PVE::JSONSchema qw(get_standard_option);
+use PVE::Exception qw(raise raise_param_exc);
 
 PVE::Cluster::cfs_register_file('sdn/vnets.cfg',
                                  sub { __PACKAGE__->parse_config(@_); },
@@ -88,7 +89,7 @@ sub properties {
 sub options {
     return {
         zone => { optional => 0},
-        tag => { optional => 0},
+        tag => { optional => 1},
         alias => { optional => 1 },
         ipv4 => { optional => 1 },
         ipv6 => { optional => 1 },
@@ -112,7 +113,7 @@ sub on_update_hook {
 	    next if $id eq $vnetid;
 	    my $vnet = $vnet_cfg->{ids}->{$id};
 	    if ($vnet->{type} eq 'vnet' && defined($vnet->{tag})) {
-		die "tag $tag already exist in vnet $id" if $tag eq $vnet->{tag};
+		raise_param_exc({ tag => "tag $tag already exist in vnet $id"}) if $tag eq $vnet->{tag};
 	    }
 	}
     }

@@ -140,6 +140,13 @@ sub on_update_hook {
     }
 }
 
+sub verify_tag {
+    my ($class, $tag) = @_;
+
+    raise_param_exc({ tag => "missing vxlan tag"}) if !defined($tag);
+    raise_param_exc({ tag => "vxlan tag max value is 16777216"}) if $tag > 16777216;
+}
+
 1;
 
 
