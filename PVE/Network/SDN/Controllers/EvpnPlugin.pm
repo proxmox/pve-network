@@ -47,11 +47,13 @@ sub options {
 sub generate_controller_config {
     my ($class, $plugin_config, $controller, $id, $uplinks, $config) = @_;
 
-    my @peers = PVE::Tools::split_list($plugin_config->{'peers'}) if $plugin_config->{'peers'};
+    my @peers;
+    @peers = PVE::Tools::split_list($plugin_config->{'peers'}) if $plugin_config->{'peers'};
 
     my $asn = $plugin_config->{asn};
     my $gatewaynodes = $plugin_config->{'gateway-nodes'};
-    my @gatewaypeers = PVE::Tools::split_list($plugin_config->{'gateway-external-peers'}) if $plugin_config->{'gateway-external-peers'};
+    my @gatewaypeers;
+    @gatewaypeers = PVE::Tools::split_list($plugin_config->{'gateway-external-peers'}) if $plugin_config->{'gateway-external-peers'};
 
     return if !$asn;
 
