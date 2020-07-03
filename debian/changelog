@@ -1,3 +1,15 @@
+libpve-network-perl (0.4-7) pve; urgency=medium
+
+  * improve status API
+
+  * use more flexible split_list for ip lists to allow various common separators
+
+  * vnet: make tag optional and verify value in zone plugins
+
+  * add a 'simple' plugin
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 03 Jul 2020 14:14:48 +0200
+
 libpve-network-perl (0.4-6) pve; urgency=medium
 
   * add vnet vlan-aware option for layer2 plugins
