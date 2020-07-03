@@ -213,12 +213,8 @@ sub status {
     my $vnet_status = {};
     my $zone_status = {};
 
-    foreach my $id (sort keys %{$zone_cfg->{ids}}) {
-	$zone_status->{$id}->{status} = 'available';
-	if($err_config) {
-	    $zone_status->{$id}->{status} = 'pending';
-	    next;
-	}
+    for my $id (sort keys %{$zone_cfg->{ids}}) {
+	$zone_status->{$id}->{status} = $err_config ? 'pending' : 'available';
     }
 
     foreach my $id (sort keys %{$vnet_cfg->{ids}}) {
@@ -232,7 +228,7 @@ sub status {
 	$vnet_status->{$id}->{zone} = $zone;
 	$vnet_status->{$id}->{status} = 'available';
 
-	if($err_config) {
+	if ($err_config) {
 	    $vnet_status->{$id}->{status} = 'pending';
 	    $vnet_status->{$id}->{statusmsg} = $err_config;
 	    next;
@@ -247,7 +243,7 @@ sub status {
 	}
     }
 
-    return($zone_status, $vnet_status);
+    return ($zone_status, $vnet_status);
 }
 
 sub tap_create {
