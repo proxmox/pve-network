@@ -5,7 +5,6 @@ use warnings;
 
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 
-
 use PVE::Network::SDN::VnetPlugin;
 PVE::Network::SDN::VnetPlugin->register();
 PVE::Network::SDN::VnetPlugin->init();
@@ -22,7 +21,7 @@ sub sdn_vnets_config {
 }
 
 sub config {
-    my $config = cfs_read_file("sdn/vnets.cfg");
+    return cfs_read_file("sdn/vnets.cfg");
 }
 
 sub write_config {
