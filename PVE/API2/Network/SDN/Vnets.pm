@@ -36,11 +36,12 @@ __PACKAGE__->register_method ({
     method => 'GET',
     description => "SDN vnets index.",
     permissions => {
-	description => "Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/vnets/<vnet>'",
+	description => "Only list entries where you have 'SDN.Audit' or 'SDN.Allocate'"
+	    ." permissions on '/sdn/vnets/<vnet>'",
 	user => 'all',
     },
     parameters => {
-    	additionalProperties => 0,
+	additionalProperties => 0,
     },
     returns => {
 	type => 'array',
@@ -55,7 +56,6 @@ __PACKAGE__->register_method ({
 
 	my $rpcenv = PVE::RPCEnvironment::get();
 	my $authuser = $rpcenv->get_user();
-
 
 	my $cfg = PVE::Network::SDN::Vnets::config();
 
@@ -80,14 +80,13 @@ __PACKAGE__->register_method ({
     permissions => {
 	check => ['perm', '/sdn/vnets/{vnet}', ['SDN.Allocate']],
    },
-
     parameters => {
-        additionalProperties => 0,
-        properties => {
-            vnet => get_standard_option('pve-sdn-vnet-id', {
-                completion => \&PVE::Network::SDN::Vnets::complete_sdn_vnets,
-            }),
-        },
+	additionalProperties => 0,
+	properties => {
+	    vnet => get_standard_option('pve-sdn-vnet-id', {
+		completion => \&PVE::Network::SDN::Vnets::complete_sdn_vnets,
+	    }),
+	},
     },
     returns => { type => 'object' },
     code => sub {
@@ -95,7 +94,7 @@ __PACKAGE__->register_method ({
 
 	my $cfg = PVE::Network::SDN::Vnets::config();
 
-	return &$api_sdn_vnets_config($cfg, $param->{vnet});
+	return $api_sdn_vnets_config->($cfg, $param->{vnet});
     }});
 
 __PACKAGE__->register_method ({
@@ -115,37 +114,30 @@ __PACKAGE__->register_method ({
 	my $type = extract_param($param, 'type');
 	my $id = extract_param($param, 'vnet');
 
-        # create /etc/pve/sdn directory
-        PVE::Cluster::check_cfs_quorum();
-        mkdir("/etc/pve/sdn");
+	PVE::Cluster::check_cfs_quorum();
+	mkdir("/etc/pve/sdn");
 
-        PVE::Network::SDN::lock_sdn_config(
-	    sub {
+        PVE::Network::SDN::lock_sdn_config(sub {
+	    my $cfg = PVE::Network::SDN::Vnets::config();
+	    my $opts = PVE::Network::SDN::VnetPlugin->check_config($id, $param, 1, 1);
 
-		my $cfg = PVE::Network::SDN::Vnets::config();
-		my $opts = PVE::Network::SDN::VnetPlugin->check_config($id, $param, 1, 1);
+	    if (PVE::Network::SDN::Vnets::sdn_vnets_config($cfg, $id, 1)) {
+		die "sdn vnet object ID '$id' already defined\n";
+	    }
+	    $cfg->{ids}->{$id} = $opts;
 
-		my $scfg = undef;
-		if ($scfg = PVE::Network::SDN::Vnets::sdn_vnets_config($cfg, $id, 1)) {
-		    die "sdn vnet object ID '$id' already defined\n";
-		}
+	    my $zone_cfg = PVE::Network::SDN::Zones::config();
+	    my $zoneid = $cfg->{ids}->{$id}->{zone};
+	    my $plugin_config = $zone_cfg->{ids}->{$zoneid};
+	    my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
+	    $plugin->verify_tag($opts->{tag});
 
-		$cfg->{ids}->{$id} = $opts;
+	    PVE::Network::SDN::VnetPlugin->on_update_hook($id, $cfg);
 
-		my $zone_cfg = PVE::Network::SDN::Zones::config();
-		my $zoneid = $cfg->{ids}->{$id}->{zone};
-		my $plugin_config = $zone_cfg->{ids}->{$zoneid};
-		my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
-		$plugin->verify_tag($opts->{tag});
+	    PVE::Network::SDN::Vnets::write_config($cfg);
+	    PVE::Network::SDN::increase_version();
 
-		PVE::Network::SDN::VnetPlugin->on_update_hook($id, $cfg);
-
-		PVE::Network::SDN::Vnets::write_config($cfg);
-
-		PVE::Network::SDN::increase_version();
-
-
-	    }, "create sdn vnet object failed");
+	}, "create sdn vnet object failed");
 
 	return undef;
     }});
@@ -167,9 +159,7 @@ __PACKAGE__->register_method ({
 	my $id = extract_param($param, 'vnet');
 	my $digest = extract_param($param, 'digest');
 
-        PVE::Network::SDN::lock_sdn_config(
-	 sub {
-
+	PVE::Network::SDN::lock_sdn_config(sub {
 	    my $cfg = PVE::Network::SDN::Vnets::config();
 
 	    PVE::SectionConfig::assert_if_modified($cfg, $digest);
@@ -179,20 +169,20 @@ __PACKAGE__->register_method ({
 
 	    my $zone_cfg = PVE::Network::SDN::Zones::config();
 	    my $zoneid = $cfg->{ids}->{$id}->{zone};
-            my $plugin_config = $zone_cfg->{ids}->{$zoneid};
-            my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
+	    my $plugin_config = $zone_cfg->{ids}->{$zoneid};
+	    my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
 	    $plugin->verify_tag($opts->{tag});
- 
+
 	    PVE::Network::SDN::VnetPlugin->on_update_hook($id, $cfg);
 
 	    PVE::Network::SDN::Vnets::write_config($cfg);
-
 	    PVE::Network::SDN::increase_version();
 
-	    }, "update sdn vnet object failed");
+	}, "update sdn vnet object failed");
 
 	return undef;
-    }});
+    }
+});
 
 __PACKAGE__->register_method ({
     name => 'delete',
@@ -204,11 +194,11 @@ __PACKAGE__->register_method ({
 	check => ['perm', '/sdn/vnets', ['SDN.Allocate']],
     },
     parameters => {
-    	additionalProperties => 0,
+	additionalProperties => 0,
 	properties => {
 	    vnet => get_standard_option('pve-sdn-vnet-id', {
-                completion => \&PVE::Network::SDN::Vnets::complete_sdn_vnets,
-            }),
+		completion => \&PVE::Network::SDN::Vnets::complete_sdn_vnets,
+	    }),
 	},
     },
     returns => { type => 'null' },
@@ -217,26 +207,22 @@ __PACKAGE__->register_method ({
 
 	my $id = extract_param($param, 'vnet');
 
-        PVE::Network::SDN::lock_sdn_config(
-	    sub {
+        PVE::Network::SDN::lock_sdn_config(sub {
+	    my $cfg = PVE::Network::SDN::Vnets::config();
+	    my $scfg = PVE::Network::SDN::Vnets::sdn_vnets_config($cfg, $id); # check if exists
+	    my $vnet_cfg = PVE::Network::SDN::Vnets::config();
 
-		my $cfg = PVE::Network::SDN::Vnets::config();
+	    PVE::Network::SDN::VnetPlugin->on_delete_hook($id, $vnet_cfg);
 
-		my $scfg = PVE::Network::SDN::Vnets::sdn_vnets_config($cfg, $id);
+	    delete $cfg->{ids}->{$id};
+	    PVE::Network::SDN::Vnets::write_config($cfg);
+	    PVE::Network::SDN::increase_version();
 
-		my $vnet_cfg = PVE::Network::SDN::Vnets::config();
-
-		PVE::Network::SDN::VnetPlugin->on_delete_hook($id, $vnet_cfg);
-
-		delete $cfg->{ids}->{$id};
-		PVE::Network::SDN::Vnets::write_config($cfg);
-
-		PVE::Network::SDN::increase_version();
-
-	    }, "delete sdn vnet object failed");
+	}, "delete sdn vnet object failed");
 
 
 	return undef;
-    }});
+    }
+});
 
 1;
