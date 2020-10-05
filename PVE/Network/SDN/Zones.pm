@@ -61,7 +61,7 @@ sub write_config {
 sub sdn_zones_ids {
     my ($cfg) = @_;
 
-    return keys %{$cfg->{ids}};
+    return sort keys %{$cfg->{ids}};
 }
 
 sub complete_sdn_zone {

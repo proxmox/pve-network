@@ -37,7 +37,7 @@ sub write_config {
 sub sdn_subnets_ids {
     my ($cfg) = @_;
 
-    return keys %{$cfg->{ids}};
+    return sort keys %{$cfg->{ids}};
 }
 
 sub complete_sdn_subnet {
@@ -202,7 +202,7 @@ sub next_free_ip {
 sub add_ip {
     my ($zone, $subnetid, $subnet, $ip, $hostname) = @_;
 
-    return if !$subnet;
+    return if !$subnet || !$ip; 
 
     my $ipamid = $zone->{ipam};
     my $dns = $zone->{dns};
