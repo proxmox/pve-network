@@ -141,7 +141,9 @@ sub on_update_hook {
 	    warn if $@;
 	}
         if(!$old_gateway || $gateway && $gateway ne $old_gateway) {
-	    PVE::Network::SDN::Subnets::add_ip($zone, $subnetid, $subnet, $gateway);
+	    my $hostname = "$vnetid-gw";
+	    my $description = "$vnetid gw";
+	    PVE::Network::SDN::Subnets::add_ip($zone, $subnetid, $subnet, $gateway, $hostname, $description, 1);
 	}
 
 	#delete old gateway after update

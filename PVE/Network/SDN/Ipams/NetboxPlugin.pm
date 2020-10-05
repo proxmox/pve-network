@@ -77,7 +77,7 @@ sub del_subnet {
 }
 
 sub add_ip {
-    my ($class, $plugin_config, $subnetid, $subnet, $ip, $is_gateway) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $description, $is_gateway) = @_;
 
     my $mask = $subnet->{mask};
     my $url = $plugin_config->{url};
@@ -85,7 +85,7 @@ sub add_ip {
     my $section = $plugin_config->{section};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Authorization' => "token $token"];
 
-    my $params = { address => "$ip/$mask" };
+    my $params = { address => "$ip/$mask", dns_name => $hostname, description => $description };
 
     eval {
 	PVE::Network::SDN::Ipams::Plugin::api_request("POST", "$url/ipam/ip-addresses/", $headers, $params);
@@ -97,7 +97,7 @@ sub add_ip {
 }
 
 sub add_next_freeip {
-    my ($class, $plugin_config, $subnetid, $subnet) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $hostname, $description) = @_;
 
     my $cidr = $subnet->{cidr};
 
@@ -107,7 +107,7 @@ sub add_next_freeip {
 
     my $internalid = get_prefix_id($url, $cidr, $headers);
 
-    my $params = {};
+    my $params = { dns_name => $hostname, description => $description };
 
     my $ip = undef;
     eval {

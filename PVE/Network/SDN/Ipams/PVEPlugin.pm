@@ -81,7 +81,7 @@ sub del_subnet {
 }
 
 sub add_ip {
-    my ($class, $plugin_config, $subnetid, $subnet, $ip, $is_gateway) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $description, $is_gateway) = @_;
 
     my $cidr = $subnet->{cidr};
     my $zone = $subnet->{zone};
@@ -97,7 +97,10 @@ sub add_ip {
 
 	die "IP '$ip' already exist\n" if defined($dbsubnet->{ips}->{$ip});
 
-	$dbsubnet->{ips}->{$ip} = 1;
+	$dbsubnet->{ips}->{$ip} = {
+	    hostname => $hostname,
+	    description => $description,
+	};
 
 	write_db($db);
     });
@@ -105,7 +108,7 @@ sub add_ip {
 }
 
 sub add_next_freeip {
-    my ($class, $plugin_config, $subnetid, $subnet) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $hostname, $description) = @_;
 
     my $cidr = $subnet->{cidr};
     my $network = $subnet->{network};
@@ -140,7 +143,11 @@ sub add_next_freeip {
 
 	die "can't find free ip in subnet '$cidr'\n" if !$freeip;
 
-	$dbsubnet->{ips}->{$freeip} = 1;
+	$dbsubnet->{ips}->{$freeip} = {
+	    hostname => $hostname,
+	    description => $description,
+	};
+
 	write_db($db);
     });
     die "$@" if $@;

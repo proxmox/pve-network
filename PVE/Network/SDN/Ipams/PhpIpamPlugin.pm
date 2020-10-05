@@ -95,7 +95,7 @@ sub del_subnet {
 }
 
 sub add_ip {
-    my ($class, $plugin_config, $subnetid, $subnet, $ip, $is_gateway) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $description, $is_gateway) = @_;
 
     my $cidr = $subnet->{cidr};
     my $url = $plugin_config->{url};
@@ -108,6 +108,8 @@ sub add_ip {
     my $params = { ip => $ip,
 		   subnetId => $internalid,
 		   is_gateway => $is_gateway,
+		   hostname => $hostname,
+		   description => $description,
 		  };
 
     eval {
@@ -120,7 +122,7 @@ sub add_ip {
 }
 
 sub add_next_freeip {
-    my ($class, $plugin_config, $subnetid, $subnet, $internalid, $hostname) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $hostname, $description) = @_;
 
     my $cidr = $subnet->{cidr};  
     my $mask = $subnet->{mask};  
@@ -129,9 +131,11 @@ sub add_next_freeip {
     my $section = $plugin_config->{section};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Token' => $token];
 
-    $internalid = get_internalid($url, $cidr, $headers) if !$internalid;
+    my $internalid = get_internalid($url, $cidr, $headers);
 
-    my $params = {};
+    my $params = { hostname => $hostname,
+		   description => $description,
+		  };
 
     my $ip = undef;
     eval {
