@@ -60,11 +60,11 @@ sub properties {
             type => 'boolean',
             description => "enable masquerade for this subnet if pve-firewall",
         },
-	#cloudinit, dhcp options
-        routes => {
-            type => 'string',
-            description => "static routes [network=<network>:gateway=<ip>,network=<network>:gateway=<ip>,... ]",
-        },
+#	#cloudinit, dhcp options
+#        routes => {
+#            type => 'string',
+#            description => "static routes [network=<network>:gateway=<ip>,network=<network>:gateway=<ip>,... ]",
+#        },
         dns => {
             type => 'string',
             description => "dns api server",
@@ -74,15 +74,15 @@ sub properties {
             description => "reverse dns api server",
         },
         dnszone => {
-            type => 'string',
+            type => 'string', format => 'dns-name',
             description => "dns domain zone  ex: mydomain.com",
         },
         reversednszone => {
-            type => 'string',
+            type => 'string', format => 'dns-name',
             description => "reverse dns zone ex: 0.168.192.in-addr.arpa",
         },
         dnszoneprefix => {
-            type => 'string',
+            type => 'string', format => 'dns-name',
             description => "dns domain zone prefix  ex: 'adm' -> <hostname>.adm.mydomain.com",
         },
         ipam => {
@@ -95,7 +95,7 @@ sub properties {
 sub options {
     return {
 	gateway => { optional => 1 },
-	routes => { optional => 1 },
+#	routes => { optional => 1 },
 	snat => { optional => 1 },
 	dns => { optional => 1 },
 	reversedns => { optional => 1 },
