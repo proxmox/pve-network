@@ -161,8 +161,6 @@ __PACKAGE__->register_method ({
 
 		PVE::Network::SDN::Zones::write_config($zone_cfg);
 
-		PVE::Network::SDN::increase_version();
-
 	    }, "create sdn zone object failed");
 
 	return undef;
@@ -205,8 +203,6 @@ __PACKAGE__->register_method ({
 	    $plugin->on_update_hook($id, $zone_cfg, $controller_cfg);
 
 	    PVE::Network::SDN::Zones::write_config($zone_cfg);
-
-	    PVE::Network::SDN::increase_version();
 
 	    }, "update sdn zone object failed");
 
@@ -251,8 +247,6 @@ __PACKAGE__->register_method ({
 
 		delete $cfg->{ids}->{$id};
 		PVE::Network::SDN::Zones::write_config($cfg);
-
-		PVE::Network::SDN::increase_version();
 
 	    }, "delete sdn zone object failed");
 

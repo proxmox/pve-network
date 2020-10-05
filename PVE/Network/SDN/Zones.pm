@@ -11,7 +11,6 @@ use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 use PVE::Network;
 
 use PVE::Network::SDN::Vnets;
-use PVE::Network::SDN::Subnets;
 use PVE::Network::SDN::Zones::VlanPlugin;
 use PVE::Network::SDN::Zones::QinQPlugin;
 use PVE::Network::SDN::Zones::VxlanPlugin;
@@ -76,11 +75,13 @@ sub complete_sdn_zone {
 
 sub generate_etc_network_config {
 
-    my $version = PVE::Cluster::cfs_read_file('sdn/.version');
-    my $vnet_cfg = PVE::Cluster::cfs_read_file('sdn/vnets.cfg');
-    my $zone_cfg = PVE::Cluster::cfs_read_file('sdn/zones.cfg');
-    my $subnet_cfg = PVE::Network::SDN::Subnets::config();
-    my $controller_cfg = PVE::Cluster::cfs_read_file('sdn/controllers.cfg');
+    my $cfg = PVE::Network::SDN::config();
+
+    my $version = $cfg->{version};
+    my $vnet_cfg = $cfg->{vnets};
+    my $zone_cfg = $cfg->{zones};
+    my $subnet_cfg = $cfg->{subnets};
+    my $controller_cfg = $cfg->{controllers};
     return if !$vnet_cfg && !$zone_cfg;
 
     my $interfaces_config = PVE::INotify::read_file('interfaces');
@@ -188,7 +189,8 @@ sub status {
     my $err_config = undef;
 
     my $local_version = PVE::Network::SDN::Zones::read_etc_network_config_version();
-    my $sdn_version = PVE::Cluster::cfs_read_file('sdn/.version');
+    my $cfg = PVE::Network::SDN::config();
+    my $sdn_version = $cfg->{version};
 
     return if !$sdn_version;
 
@@ -210,8 +212,9 @@ sub status {
 
     my $status = ifquery_check();
 
-    my $vnet_cfg = PVE::Cluster::cfs_read_file('sdn/vnets.cfg');
-    my $zone_cfg = PVE::Cluster::cfs_read_file('sdn/zones.cfg');
+    
+    my $vnet_cfg = $cfg->{vnets};
+    my $zone_cfg = $cfg->{zones};
     my $nodename = PVE::INotify::nodename();
 
     my $vnet_status = {};
@@ -253,7 +256,7 @@ sub status {
 sub tap_create {
     my ($iface, $bridge) = @_;
 
-    my $vnet = PVE::Network::SDN::Vnets::get_vnet($bridge);
+    my $vnet = PVE::Network::SDN::Vnets::get_vnet($bridge, 1);
     if (!$vnet) { # fallback for classic bridge
 	PVE::Network::tap_create($iface, $bridge);
 	return;
@@ -267,7 +270,7 @@ sub tap_create {
 sub veth_create {
     my ($veth, $vethpeer, $bridge, $hwaddr) = @_;
 
-    my $vnet = PVE::Network::SDN::Vnets::get_vnet($bridge);
+    my $vnet = PVE::Network::SDN::Vnets::get_vnet($bridge, 1);
     if (!$vnet) { # fallback for classic bridge
 	PVE::Network::veth_create($veth, $vethpeer, $bridge, $hwaddr);
 	return;
@@ -281,7 +284,7 @@ sub veth_create {
 sub tap_plug {
     my ($iface, $bridge, $tag, $firewall, $trunks, $rate) = @_;
 
-    my $vnet = PVE::Network::SDN::Vnets::get_vnet($bridge);
+    my $vnet = PVE::Network::SDN::Vnets::get_vnet($bridge, 1);
     if (!$vnet) { # fallback for classic bridge
 	PVE::Network::tap_plug($iface, $bridge, $tag, $firewall, $trunks, $rate);
 	return;

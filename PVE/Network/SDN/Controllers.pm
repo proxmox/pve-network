@@ -68,9 +68,11 @@ sub complete_sdn_controller {
 
 sub generate_controller_config {
 
-    my $vnet_cfg = PVE::Cluster::cfs_read_file('sdn/vnets.cfg');
-    my $zone_cfg = PVE::Cluster::cfs_read_file('sdn/zones.cfg');
-    my $controller_cfg = PVE::Cluster::cfs_read_file('sdn/controllers.cfg');
+    my $cfg = PVE::Network::SDN::config();
+    my $vnet_cfg = $cfg->{vnets};
+    my $zone_cfg = $cfg->{zones};
+    my $controller_cfg = $cfg->{controllers};
+
     return if !$vnet_cfg && !$zone_cfg && !$controller_cfg;
 
     #read main config for physical interfaces
@@ -131,7 +133,9 @@ sub generate_controller_config {
 
 sub reload_controller {
 
-    my $controller_cfg = PVE::Cluster::cfs_read_file('sdn/controllers.cfg');
+    my $cfg = PVE::Network::SDN::config();
+    my $controller_cfg = $cfg->{controllers};
+
     return if !$controller_cfg;
 
     foreach my $id (keys %{$controller_cfg->{ids}}) {

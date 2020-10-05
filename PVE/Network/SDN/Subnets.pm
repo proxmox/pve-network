@@ -49,9 +49,16 @@ sub complete_sdn_subnet {
 }
 
 sub get_subnet {
-    my ($subnetid) = @_;
+    my ($subnetid, $running) = @_;
 
-    my $cfg = PVE::Network::SDN::Subnets::config();
+    my $cfg = {};
+    if($running) {
+	my $cfg = PVE::Network::SDN::config();
+	$cfg = $cfg->{subnets};
+    } else {
+	$cfg = PVE::Network::SDN::Subnets::config();
+    }
+
     my $subnet = PVE::Network::SDN::Subnets::sdn_subnets_config($cfg, $subnetid, 1);
     return $subnet;
 }

@@ -8,32 +8,39 @@ use JSON;
 
 use PVE::Network::SDN::Vnets;
 use PVE::Network::SDN::Zones;
+use PVE::Network::SDN::Controllers;
+use PVE::Network::SDN::Subnets;
 
 use PVE::Tools qw(extract_param dir_glob_regex run_command);
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 
 
-my $version_cfg = "sdn/.version";
+my $running_cfg = "sdn/.running-config";
 
-my $parse_version_cfg = sub {
+my $parse_running_cfg = sub {
     my ($filename, $raw) = @_;
 
-    return 0 if !defined($raw) || $raw eq '';
+    my $cfg = {};
 
-    warn "invalid sdn version '$raw'" if $raw !~ m/\d+$/;
+    return $cfg if !defined($raw) || $raw eq '';
 
-    return $raw,
+    eval {
+	$cfg = from_json($raw);
+    };
+    return {} if $@;
+
+    return $cfg;
 };
 
-my $write_version_cfg = sub {
-    my ($filename, $version) = @_;
+my $write_running_cfg = sub {
+    my ($filename, $cfg) = @_;
 
-    warn "invalid sdn version" if $version !~ m/\d+$/;
+    my $json = to_json($cfg);
 
-    return $version;
+    return $json;
 };
 
-PVE::Cluster::cfs_register_file($version_cfg, $parse_version_cfg, $write_version_cfg);
+PVE::Cluster::cfs_register_file($running_cfg, $parse_running_cfg, $write_running_cfg);
 
 
 # improve me : move status code inside plugins ?
@@ -70,23 +77,40 @@ sub status {
     return($zone_status, $vnet_status);
 }
 
+sub config {
+    return cfs_read_file($running_cfg);
+}
 
-sub increase_version {
+sub commit_config {
 
-    my $version = cfs_read_file($version_cfg);
+    my $cfg = cfs_read_file($running_cfg);
+    my $version = $cfg->{version};
+
     if ($version) {
 	$version++;
     } else {
 	$version = 1;
     }
 
-    cfs_write_file($version_cfg, $version);
+    my $vnets_cfg = PVE::Network::SDN::Vnets::config();
+    my $zones_cfg = PVE::Network::SDN::Zones::config();
+    my $controllers_cfg = PVE::Network::SDN::Controllers::config();
+    my $subnets_cfg = PVE::Network::SDN::Subnets::config();
+
+    my $vnets = { ids => $vnets_cfg->{ids} };
+    my $zones = { ids => $zones_cfg->{ids} };
+    my $controllers = { ids => $controllers_cfg->{ids} };
+    my $subnets = { ids => $subnets_cfg->{ids} };
+
+     $cfg = { version => $version, vnets => $vnets, zones => $zones, controllers => $controllers, subnets => $subnets };
+
+    cfs_write_file($running_cfg, $cfg);
 }
 
 sub lock_sdn_config {
     my ($code, $errmsg) = @_;
 
-    cfs_lock_file($version_cfg, undef, $code);
+    cfs_lock_file($running_cfg, undef, $code);
 
     if (my $err = $@) {
         $errmsg ? die "$errmsg: $err" : die $err;
@@ -101,8 +125,9 @@ sub get_local_vnets {
 
     my $nodename = PVE::INotify::nodename();
 
-    my $vnets_cfg = PVE::Network::SDN::Vnets::config();
-    my $zones_cfg = PVE::Network::SDN::Zones::config();
+    my $cfg = PVE::Network::SDN::config();
+    my $vnets_cfg = $cfg->{vnets};
+    my $zones_cfg = $cfg->{zones};
 
     my @vnetids = PVE::Network::SDN::Vnets::sdn_vnets_ids($vnets_cfg);
 

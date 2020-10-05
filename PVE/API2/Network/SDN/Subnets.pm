@@ -147,7 +147,6 @@ __PACKAGE__->register_method ({
 		PVE::Network::SDN::SubnetPlugin->on_update_hook($id, $opts);
 
 		PVE::Network::SDN::Subnets::write_config($cfg);
-		PVE::Network::SDN::increase_version();
 
 	    }, "create sdn subnet object failed");
 
@@ -187,7 +186,6 @@ __PACKAGE__->register_method ({
 	    PVE::Network::SDN::SubnetPlugin->on_update_hook($id, $opts, $scfg);
 
 	    PVE::Network::SDN::Subnets::write_config($cfg);
-	    PVE::Network::SDN::increase_version();
 
 	    }, "update sdn subnet object failed");
 
@@ -241,7 +239,6 @@ __PACKAGE__->register_method ({
 		delete $cfg->{ids}->{$id};
 
 		PVE::Network::SDN::Subnets::write_config($cfg);
-		PVE::Network::SDN::increase_version();
 
 	    }, "delete sdn subnet object failed");
 

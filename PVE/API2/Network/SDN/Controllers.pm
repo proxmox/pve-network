@@ -152,8 +152,6 @@ __PACKAGE__->register_method ({
 
 		PVE::Network::SDN::Controllers::write_config($controller_cfg);
 
-		PVE::Network::SDN::increase_version();
-
 	    }, "create sdn controller object failed");
 
 	return undef;
@@ -195,8 +193,6 @@ __PACKAGE__->register_method ({
 	    $plugin->on_update_hook($id, $controller_cfg);
 
 	    PVE::Network::SDN::Controllers::write_config($controller_cfg);
-
-	    PVE::Network::SDN::increase_version();
 
 
 	    }, "update sdn controller object failed");
@@ -242,8 +238,6 @@ __PACKAGE__->register_method ({
 
 		delete $cfg->{ids}->{$id};
 		PVE::Network::SDN::Controllers::write_config($cfg);
-
-		PVE::Network::SDN::increase_version();
 
 	    }, "delete sdn controller object failed");
 

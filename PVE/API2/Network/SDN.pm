@@ -10,6 +10,7 @@ use PVE::RESTHandler;
 use PVE::RPCEnvironment;
 use PVE::SafeSyslog;
 use PVE::Tools qw(run_command);
+use PVE::Network::SDN;
 
 use PVE::API2::Network::SDN::Controllers;
 use PVE::API2::Network::SDN::Vnets;
@@ -117,6 +118,8 @@ __PACKAGE__->register_method ({
 
         my $rpcenv = PVE::RPCEnvironment::get();
         my $authuser = $rpcenv->get_user();
+
+	PVE::Network::SDN::commit_config();
 
         my $code = sub {
             $rpcenv->{type} = 'priv'; # to start tasks in background
