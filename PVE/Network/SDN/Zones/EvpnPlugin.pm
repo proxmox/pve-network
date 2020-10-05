@@ -181,10 +181,24 @@ sub on_update_hook {
 
 
 sub vnet_update_hook {
-    my ($class, $vnet) = @_;
+    my ($class, $vnet_cfg, $vnetid, $zone_cfg) = @_;
 
-    raise_param_exc({ tag => "missing vxlan tag"}) if !defined($vnet->{tag});
-    raise_param_exc({ tag => "vxlan tag max value is 16777216"}) if $vnet->{tag} > 16777216;
+    my $vnet = $vnet_cfg->{ids}->{$vnetid};
+    my $tag = $vnet->{tag};
+
+    raise_param_exc({ tag => "missing vxlan tag"}) if !defined($tag);
+    raise_param_exc({ tag => "vxlan tag max value is 16777216"}) if $tag > 16777216;
+
+    # verify that tag is not already defined globally (vxlan-id are unique)
+    foreach my $id (keys %{$vnet_cfg->{ids}}) {
+	next if $id eq $vnetid;
+	my $othervnet = $vnet_cfg->{ids}->{$id};
+	my $other_tag = $othervnet->{tag};
+	my $other_zoneid = $othervnet->{zone};
+	my $other_zone = $zone_cfg->{ids}->{$other_zoneid};
+	next if $other_zone->{type} ne 'vxlan' && $other_zone->{type} ne 'evpn';
+	raise_param_exc({ tag => "vxlan tag $tag already exist in vnet $id in zone $other_zoneid "}) if $other_tag && $tag eq $other_tag;
+    }
 
     if (!defined($vnet->{mac})) {
 	my $dc = PVE::Cluster::cfs_read_file('datacenter.cfg');

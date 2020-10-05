@@ -118,9 +118,12 @@ sub status {
 
 
 sub vnet_update_hook {
-    my ($class, $vnet) = @_;
+    my ($class, $vnet_cfg, $vnetid, $zone_cfg) = @_;
 
-    raise_param_exc({ tag => "vlan tag is not allowed on simple bridge"}) if defined($vnet->{tag});
+    my $vnet = $vnet_cfg->{ids}->{$vnetid};
+    my $tag = $vnet->{tag};
+
+    raise_param_exc({ tag => "vlan tag is not allowed on simple zone"}) if defined($tag);
 
     if (!defined($vnet->{mac})) {
         my $dc = PVE::Cluster::cfs_read_file('datacenter.cfg');

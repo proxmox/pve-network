@@ -192,7 +192,7 @@ __PACKAGE__->register_method ({
 	    my $zoneid = $cfg->{ids}->{$id}->{zone};
 	    my $plugin_config = $zone_cfg->{ids}->{$zoneid};
 	    my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
-            $plugin->vnet_update_hook($cfg->{ids}->{$id});
+            $plugin->vnet_update_hook($cfg, $id, $zone_cfg);
 
 	    PVE::Network::SDN::VnetPlugin->on_update_hook($id, $cfg);
 
@@ -237,7 +237,7 @@ __PACKAGE__->register_method ({
 	    my $zoneid = $cfg->{ids}->{$id}->{zone};
 	    my $plugin_config = $zone_cfg->{ids}->{$zoneid};
 	    my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
-	    $plugin->vnet_update_hook($cfg->{ids}->{$id});
+	    $plugin->vnet_update_hook($cfg, $id, $zone_cfg);
 
 	    PVE::Network::SDN::VnetPlugin->on_update_hook($id, $cfg);
 

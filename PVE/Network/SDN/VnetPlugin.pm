@@ -106,15 +106,6 @@ sub on_update_hook {
 	my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid);
 	raise_param_exc({ vlanaware => "vlanaware vnet is not compatible with subnets"}) if $subnets;
     }
-
-    # verify that tag is not already defined in another vnet
-    if (defined($tag)) {
-	foreach my $id (keys %{$vnet_cfg->{ids}}) {
-	    next if $id eq $vnetid;
-	    my $othervnettag = $vnet_cfg->{ids}->{$id}->{tag};
-	    raise_param_exc({ tag => "tag $tag already exist in vnet $id"}) if $othervnettag && $tag eq $othervnettag;
-	}
-    }
 }
 
 1;

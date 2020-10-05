@@ -144,7 +144,7 @@ sub on_update_hook {
 }
 
 sub vnet_update_hook {
-    my ($class, $vnet) = @_;
+    my ($class, $vnet_cfg, $vnetid, $zone_cfg) = @_;
 
     # do nothing by default
 }

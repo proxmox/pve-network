@@ -175,10 +175,22 @@ sub status {
 }
 
 sub vnet_update_hook {
-    my ($class, $vnet) = @_;
+    my ($class, $vnet_cfg, $vnetid, $zone_cfg) = @_;
+
+    my $vnet = $vnet_cfg->{ids}->{$vnetid};
+    my $tag = $vnet->{tag};
 
     raise_param_exc({ tag => "missing vlan tag"}) if !defined($vnet->{tag});
     raise_param_exc({ tag => "vlan tag max value is 4096"}) if $vnet->{tag} > 4096;
+
+    # verify that tag is not already defined in another vnet on same zone
+    foreach my $id (keys %{$vnet_cfg->{ids}}) {
+	next if $id eq $vnetid;
+	my $othervnet = $vnet_cfg->{ids}->{$id};
+	my $other_tag = $othervnet->{tag};
+	next if $vnet->{zone} ne $othervnet->{zone};
+	raise_param_exc({ tag => "tag $tag already exist in vnet $id"}) if $other_tag && $tag eq $other_tag;
+    }
 }
 
 1;
