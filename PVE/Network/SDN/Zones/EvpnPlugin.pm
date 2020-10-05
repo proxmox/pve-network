@@ -5,6 +5,9 @@ use warnings;
 use PVE::Network::SDN::Zones::VxlanPlugin;
 use PVE::Tools qw($IPV4RE);
 use PVE::INotify;
+use PVE::Cluster;
+use PVE::Tools;
+
 use PVE::Network::SDN::Controllers::EvpnPlugin;
 
 use base('PVE::Network::SDN::Zones::VxlanPlugin');
@@ -143,14 +146,22 @@ sub on_update_hook {
 	die "vrf-vxlan $vrfvxlan is already declared in $id"
 		if (defined($zone_cfg->{ids}->{$id}->{'vrf-vxlan'}) && $zone_cfg->{ids}->{$id}->{'vrf-vxlan'} eq $vrfvxlan);
     }
+
 }
 
-sub verify_tag {
-    my ($class, $tag) = @_;
 
-    raise_param_exc({ tag => "missing vxlan tag"}) if !defined($tag);
-    raise_param_exc({ tag => "vxlan tag max value is 16777216"}) if $tag > 16777216;
+sub vnet_update_hook {
+    my ($class, $vnet) = @_;
+
+    raise_param_exc({ tag => "missing vxlan tag"}) if !defined($vnet->{tag});
+    raise_param_exc({ tag => "vxlan tag max value is 16777216"}) if $vnet->{tag} > 16777216;
+
+    if (!defined($vnet->{mac})) {
+	my $dc = PVE::Cluster::cfs_read_file('datacenter.cfg');
+	$vnet->{mac} = PVE::Tools::random_ether_addr($dc->{mac_prefix});
+    }
 }
+
 
 1;
 

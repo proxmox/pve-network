@@ -170,11 +170,11 @@ sub status {
     return $err_msg;
 }
 
-sub verify_tag {
-    my ($class, $tag) = @_;
+sub vnet_update_hook {
+    my ($class, $vnet) = @_;
 
-    raise_param_exc({ tag => "missing vlan tag"}) if !defined($tag);
-    raise_param_exc({ tag => "vlan tag max value is 4096"}) if $tag > 4096;
+    raise_param_exc({ tag => "missing vlan tag"}) if !defined($vnet->{tag});
+    raise_param_exc({ tag => "vlan tag max value is 4096"}) if $vnet->{tag} > 4096;
 }
 
 1;

@@ -139,8 +139,9 @@ sub on_update_hook {
     # do nothing by default
 }
 
-sub verify_tag {
-    my ($class, $tag) = @_;
+sub vnet_update_hook {
+    my ($class, $vnet) = @_;
+
     # do nothing by default
 }
 

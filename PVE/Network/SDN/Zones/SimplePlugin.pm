@@ -4,6 +4,8 @@ use strict;
 use warnings;
 use PVE::Network::SDN::Zones::Plugin;
 use PVE::Exception qw(raise raise_param_exc);
+use PVE::Cluster;
+use PVE::Tools;
 
 use base('PVE::Network::SDN::Zones::Plugin');
 
@@ -71,10 +73,16 @@ sub status {
     return $err_msg;
 }
 
-sub verify_tag {
-    my ($class, $tag) = @_;
 
-    raise_param_exc({ tag => "vlan tag is not allowed on simple bridge"}) if defined($tag);
+sub vnet_update_hook {
+    my ($class, $vnet) = @_;
+
+    raise_param_exc({ tag => "vlan tag is not allowed on simple bridge"}) if defined($vnet->{tag});
+
+    if (!defined($vnet->{mac})) {
+        my $dc = PVE::Cluster::cfs_read_file('datacenter.cfg');
+        $vnet->{mac} = PVE::Tools::random_ether_addr($dc->{mac_prefix});
+    }
 }
 
 1;

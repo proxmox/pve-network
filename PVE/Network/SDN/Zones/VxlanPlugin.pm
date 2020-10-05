@@ -89,11 +89,11 @@ sub generate_sdn_config {
     return $config;
 }
 
-sub verify_tag {
-    my ($class, $tag) = @_;
+sub vnet_update_hook {
+    my ($class, $vnet) = @_;
 
-    raise_param_exc({ tag => "missing vxlan tag"}) if !defined($tag);
-    raise_param_exc({ tag => "vxlan tag max value is 16777216"}) if $tag > 16777216;
+    raise_param_exc({ tag => "missing vxlan tag"}) if !defined($vnet->{tag});
+    raise_param_exc({ tag => "vxlan tag max value is 16777216"}) if $vnet->{tag} > 16777216;
 }
 
 1;
