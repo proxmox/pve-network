@@ -6,6 +6,7 @@ use warnings;
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 use Net::IP;
 use PVE::Network::SDN::Subnets;
+use PVE::Network::SDN::Zones;
 
 use PVE::Network::SDN::VnetPlugin;
 PVE::Network::SDN::VnetPlugin->register();
@@ -79,6 +80,10 @@ sub get_subnets {
 sub get_next_free_ip {
     my ($vnetid, $hostname, $ipversion) = @_;
 
+    my $vnet = PVE::Network::SDN::Vnets::get_vnet($vnetid);
+    my $zoneid = $vnet->{zone};
+    my $zone = PVE::Network::SDN::Zones::get_zone($zoneid);
+
     $ipversion = 4 if !$ipversion;
     my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid, 1);
     my $ip = undef;
@@ -92,7 +97,7 @@ sub get_next_free_ip {
 	$subnetcount++;
 	if ($subnet->{ipam}) {
 	    eval {
-		$ip = PVE::Network::SDN::Subnets::next_free_ip($subnetid, $subnet, $hostname);
+		$ip = PVE::Network::SDN::Subnets::next_free_ip($zone, $subnetid, $subnet, $hostname);
 	    };
 	    warn $@ if $@;
 	}
@@ -107,22 +112,28 @@ sub add_ip {
     my ($vnetid, $cidr, $hostname) = @_;
 
     my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid, 1);
+    my $vnet = PVE::Network::SDN::Vnets::get_vnet($vnetid);
+    my $zoneid = $vnet->{zone};
+    my $zone = PVE::Network::SDN::Zones::get_zone($zoneid);
 
     my ($ip, $mask) = split(/\//, $cidr);
     my ($subnetid, $subnet) = PVE::Network::SDN::Subnets::find_ip_subnet($ip, $subnets);
 
-    PVE::Network::SDN::Subnets::add_ip($subnetid, $subnet, $ip, $hostname);
+    PVE::Network::SDN::Subnets::add_ip($zone, $subnetid, $subnet, $ip, $hostname);
 }
 
 sub del_ip {
     my ($vnetid, $cidr, $hostname) = @_;
 
     my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid, 1);
+    my $vnet = PVE::Network::SDN::Vnets::get_vnet($vnetid);
+    my $zoneid = $vnet->{zone};
+    my $zone = PVE::Network::SDN::Zones::get_zone($zoneid);
 
     my ($ip, $mask) = split(/\//, $cidr);
     my ($subnetid, $subnet) = PVE::Network::SDN::Subnets::find_ip_subnet($ip, $subnets);
 
-    PVE::Network::SDN::Subnets::del_ip($subnetid, $subnet, $ip, $hostname);
+    PVE::Network::SDN::Subnets::del_ip($zone, $subnetid, $subnet, $ip, $hostname);
 }
 
 1;

@@ -38,6 +38,9 @@ sub options {
         nodes => { optional => 1},
         peers => { optional => 0 },
 	mtu => { optional => 1 },
+	dns => { optional => 1 },
+	reversedns => { optional => 1 },
+	dnszone => { optional => 1 },
     };
 }
 

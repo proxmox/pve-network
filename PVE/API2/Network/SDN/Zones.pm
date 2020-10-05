@@ -9,6 +9,7 @@ use PVE::Cluster qw(cfs_read_file cfs_write_file);
 use PVE::Network::SDN;
 use PVE::Network::SDN::Vnets;
 use PVE::Network::SDN::Zones;
+use PVE::Network::SDN::Dns;
 use PVE::Network::SDN::Zones::Plugin;
 use PVE::Network::SDN::Zones::VlanPlugin;
 use PVE::Network::SDN::Zones::QinQPlugin;
@@ -20,6 +21,7 @@ use PVE::Network::SDN::Zones::SimplePlugin;
 use Storable qw(dclone);
 use PVE::JSONSchema qw(get_standard_option);
 use PVE::RPCEnvironment;
+use PVE::Exception qw(raise raise_param_exc);
 
 use PVE::RESTHandler;
 
@@ -83,6 +85,9 @@ __PACKAGE__->register_method ({
 	    properties => { zone => { type => 'string'},
 			    type => { type => 'string'},
 			    mtu => { type => 'integer', optional => 1 },
+			    dns => { type => 'string', optional => 1},
+			    reversedns => { type => 'string', optional => 1},
+			    dnszone => { type => 'string', optional => 1},
 			    pending => { optional => 1},
 			    state => { type => 'string', optional => 1},
 			    nodes => { type => 'string', optional => 1},
@@ -198,11 +203,19 @@ __PACKAGE__->register_method ({
 
 		my $zone_cfg = PVE::Network::SDN::Zones::config();
 		my $controller_cfg = PVE::Network::SDN::Controllers::config();
+		my $dns_cfg = PVE::Network::SDN::Dns::config();
 
 		my $scfg = undef;
 		if ($scfg = PVE::Network::SDN::Zones::sdn_zones_config($zone_cfg, $id, 1)) {
 		    die "sdn zone object ID '$id' already defined\n";
 		}
+		
+		my $dnsserver = $opts->{dns};
+		my $reversednsserver = $opts->{reversedns};
+		my $dnszone = $opts->{dnszone};
+		raise_param_exc({ dns => "$dnsserver don't exist"}) if $dnsserver && !$dns_cfg->{ids}->{$dnsserver};
+		raise_param_exc({ reversedns => "$reversednsserver don't exist"}) if $reversednsserver && !$dns_cfg->{ids}->{$reversednsserver};
+		raise_param_exc({ dnszone => "missing dns server"}) if $dnszone && !$dnsserver;
 
 		$zone_cfg->{ids}->{$id} = $opts;
 		$plugin->on_update_hook($id, $zone_cfg, $controller_cfg);
@@ -236,6 +249,7 @@ __PACKAGE__->register_method ({
 
 	    my $zone_cfg = PVE::Network::SDN::Zones::config();
 	    my $controller_cfg = PVE::Network::SDN::Controllers::config();
+	    my $dns_cfg = PVE::Network::SDN::Dns::config();
 
 	    PVE::SectionConfig::assert_if_modified($zone_cfg, $digest);
 
@@ -247,6 +261,13 @@ __PACKAGE__->register_method ({
 	    foreach my $k (%$opts) {
 		$scfg->{$k} = $opts->{$k};
 	    }
+
+	    my $dnsserver = $opts->{dns};
+	    my $reversednsserver = $opts->{reversedns};
+	    my $dnszone = $opts->{dnszone};
+	    raise_param_exc({ dns => "$dnsserver don't exist"}) if $dnsserver && !$dns_cfg->{ids}->{$dnsserver};
+	    raise_param_exc({ reversedns => "$reversednsserver don't exist"}) if $reversednsserver && !$dns_cfg->{ids}->{$reversednsserver};
+	    raise_param_exc({ dnszone => "missing dns server"}) if $dnszone && !$dnsserver;
 
 	    $plugin->on_update_hook($id, $zone_cfg, $controller_cfg);
 

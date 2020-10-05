@@ -72,6 +72,22 @@ sub complete_sdn_zone {
     return  $cmdname eq 'add' ? [] : [ PVE::Network::SDN::sdn_zones_ids($cfg) ];
 }
 
+sub get_zone {
+    my ($zoneid, $running) = @_;
+
+    my $cfg = {};
+    if($running) {
+        my $cfg = PVE::Network::SDN::config();
+        $cfg = $cfg->{vnets};
+    } else {
+        $cfg = PVE::Network::SDN::Zones::config();
+    }
+
+    my $zone = PVE::Network::SDN::Zones::sdn_zones_config($cfg, $zoneid, 1);
+
+    return $zone;
+}
+
 
 sub generate_etc_network_config {
 

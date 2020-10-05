@@ -11,6 +11,7 @@ use PVE::Network::SDN;
 use PVE::Network::SDN::Subnets;
 use PVE::Network::SDN::SubnetPlugin;
 use PVE::Network::SDN::Vnets;
+use PVE::Network::SDN::Zones;
 use PVE::Network::SDN::Ipams;
 use PVE::Network::SDN::Ipams::Plugin;
 
@@ -177,6 +178,12 @@ __PACKAGE__->register_method ({
 	    sub {
 
 		my $cfg = PVE::Network::SDN::Subnets::config();
+		my $zone_cfg = PVE::Network::SDN::Zones::config();
+		my $vnet_cfg = PVE::Network::SDN::Vnets::config();
+		my $vnet = $param->{vnet};
+		my $zoneid = $vnet_cfg->{ids}->{$vnet}->{zone};
+		my $zone = $zone_cfg->{ids}->{$zoneid};      
+
 		my $opts = PVE::Network::SDN::SubnetPlugin->check_config($id, $param, 1, 1);
 
 		my $scfg = undef;
@@ -185,7 +192,7 @@ __PACKAGE__->register_method ({
 		}
 
 		$cfg->{ids}->{$id} = $opts;
-		PVE::Network::SDN::SubnetPlugin->on_update_hook($id, $opts);
+		PVE::Network::SDN::SubnetPlugin->on_update_hook($zone, $id, $opts);
 
 		PVE::Network::SDN::Subnets::write_config($cfg);
 
@@ -215,6 +222,12 @@ __PACKAGE__->register_method ({
 	 sub {
 
 	    my $cfg = PVE::Network::SDN::Subnets::config();
+	    my $zone_cfg = PVE::Network::SDN::Zones::config();
+	    my $vnet_cfg = PVE::Network::SDN::Vnets::config();
+	    my $vnet = $param->{vnet};
+	    my $zoneid = $vnet_cfg->{ids}->{$vnet}->{zone};
+	    my $zone = $zone_cfg->{ids}->{$zoneid};
+
 	    my $scfg = &$api_sdn_subnets_config($cfg, $id);
 
 	    PVE::SectionConfig::assert_if_modified($cfg, $digest);
@@ -224,7 +237,7 @@ __PACKAGE__->register_method ({
 
 	    raise_param_exc({ ipam => "you can't change ipam"}) if $opts->{ipam} && $scfg->{ipam} && $opts->{ipam} ne $scfg->{ipam};
 
-	    PVE::Network::SDN::SubnetPlugin->on_update_hook($id, $opts, $scfg);
+	    PVE::Network::SDN::SubnetPlugin->on_update_hook($zone, $id, $opts, $scfg);
 
 	    PVE::Network::SDN::Subnets::write_config($cfg);
 

@@ -7,6 +7,7 @@ use PVE::Cluster;
 use PVE::Tools;
 use JSON;
 use Net::IP;
+use NetAddr::IP;
 
 use base('PVE::Network::SDN::Dns::Plugin');
 
@@ -22,6 +23,9 @@ sub properties {
 	key => {
 	    type => 'string',
 	},
+        reversemaskv6 => { 
+	    type => 'integer' 
+        },
     };
 }
 
@@ -31,6 +35,8 @@ sub options {
         url => { optional => 0},
         key => { optional => 0 },
         ttl => { optional => 1 },
+        reversemaskv6 => { optional => 1, description => "force a different netmask for the ipv6 reverse zone name." },
+
     };
 }
 
@@ -81,7 +87,8 @@ sub add_ptr_record {
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'X-API-Key' => $key];
     $hostname .= ".";
 
-    my $reverseip = join(".", reverse(split(/\./, $ip))).".in-addr.arpa.";
+    my $reverseip = Net::IP->new($ip)->reverse_ip();
+
     my $type = "PTR";
 
     my $record = { content => $hostname, 
@@ -140,7 +147,8 @@ sub del_ptr_record {
     my $key = $plugin_config->{key};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'X-API-Key' => $key];
 
-    my $reverseip = join(".", reverse(split(/\./, $ip))).".in-addr.arpa.";
+    my $reverseip = Net::IP->new($ip)->reverse_ip();
+
     my $type = "PTR";
 
     my $rrset = { name => $reverseip, 
@@ -175,6 +183,52 @@ sub verify_zone {
     if ($@) {
         die "can't read zone $zone: $@";
     }
+}
+
+sub get_reversedns_zone {
+    my ($class, $plugin_config, $subnetid, $ip) = @_;
+
+    my ($network, $mask) = split(/-/, $subnetid);
+
+    my $cidr = "$ip/$mask";
+    my $zone = "";
+
+    if (Net::IP::ip_is_ipv4($ip)) {
+	my ($ipblock1, $ipblock2, $ipblock3, $ipblock4) = split(/\./, $ip);
+
+        my $ipv4 = new NetAddr::IP($cidr);
+	#private addresse #powerdns built-in private zone : serve-rfc1918
+	if($ipv4->is_rfc1918()) {
+	    if ($ipblock1 == 192) {
+		$zone = "168.192.in-addr.arpa.";
+	    } elsif ($ipblock1 == 172) {
+		$zone = "16-31.172.in-addr.arpa.";
+	    } elsif ($ipblock1 == 10) {
+		$zone = "10.in-addr.arpa.";
+	    }
+		
+	} else {
+	    #public ipv4 : RIPE,ARIN,AFRNIC
+	    #. Delegations can be managed in IPv4 on bit boundaries (/8, /16 or /24s), and IPv6 networks can be managed on nibble boundaries (every 4 bits of the IPv6 address)
+	    #One or more /24 type zones need to be created if your address space has a prefix length between /17 and /24. 
+	    # If your prefix length is between /16 and /9 you will have to request one or more delegations for /16 type zones.
+
+	    if ($mask <= 24) {
+		$zone = "$ipblock3.$ipblock2.$ipblock1.in-addr.arpa.";
+	    } elsif ($mask <= 16) {
+		$zone = "$ipblock2.$ipblock1.in-addr.arpa.";
+	    } elsif ($mask <= 8) {
+		$zone = "$ipblock1.in-addr.arpa.";
+	    }
+	}
+    } else {
+	$mask = $plugin_config->{reversemaskv6} if $plugin_config->{reversemaskv6};
+	die "reverse dns zone mask need to be a multiple of 4" if ($mask % 4);
+	my $networkv6 = NetAddr::IP->new($cidr)->network();
+	$zone = Net::IP->new($networkv6)->reverse_ip();
+    }
+
+    return $zone;
 }
 
 

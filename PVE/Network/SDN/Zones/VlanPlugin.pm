@@ -33,7 +33,10 @@ sub options {
     return {
         nodes => { optional => 1},
 	'bridge' => { optional => 0 },
-	mtu => { optional => 1 }
+	mtu => { optional => 1 },
+	dns => { optional => 1 },
+	reversedns => { optional => 1 },
+	dnszone => { optional => 1 },
     };
 }
 

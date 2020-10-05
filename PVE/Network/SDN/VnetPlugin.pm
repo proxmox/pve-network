@@ -100,6 +100,11 @@ sub on_delete_hook {
 
 sub on_update_hook {
     my ($class, $vnetid, $vnet_cfg, $subnet_cfg) = @_;
+
+    #fixme : don't allow change zone if subnets are defined
+    #fixme : don't vlanaware change if subnets are defined
+#    my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid);
+   
     # verify that tag is not already defined in another vnet
     if (defined($vnet_cfg->{ids}->{$vnetid}->{tag})) {
 	my $tag = $vnet_cfg->{ids}->{$vnetid}->{tag};

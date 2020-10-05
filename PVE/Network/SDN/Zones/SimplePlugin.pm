@@ -13,10 +13,30 @@ sub type {
     return 'simple';
 }
 
+sub properties {
+    return {
+	dns => {
+	    type => 'string',
+	    description => "dns api server",
+	},
+	reversedns => {
+	    type => 'string',
+	    description => "reverse dns api server",
+	},
+	dnszone => {
+	    type => 'string', format => 'dns-name',
+	    description => "dns domain zone  ex: mydomain.com",
+	},
+    };
+}
+
 sub options {
     return {
 	nodes => { optional => 1},
-	mtu => { optional => 1 }
+	mtu => { optional => 1 },
+	dns => { optional => 1 },
+	reversedns => { optional => 1 },
+	dnszone => { optional => 1 },
     };
 }
 

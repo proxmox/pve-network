@@ -37,6 +37,9 @@ sub options {
         'vrf-vxlan' => { optional => 0 },
         'controller' => { optional => 0 },
 	mtu => { optional => 1 },
+	dns => { optional => 1 },
+	reversedns => { optional => 1 },
+	dnszone => { optional => 1 },
     };
 }
 

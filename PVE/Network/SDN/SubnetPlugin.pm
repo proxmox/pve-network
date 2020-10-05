@@ -71,22 +71,6 @@ sub properties {
 #            type => 'string',
 #            description => "static routes [network=<network>:gateway=<ip>,network=<network>:gateway=<ip>,... ]",
 #        },
-        dns => {
-            type => 'string',
-            description => "dns api server",
-        },
-        reversedns => {
-            type => 'string',
-            description => "reverse dns api server",
-        },
-        dnszone => {
-            type => 'string', format => 'dns-name',
-            description => "dns domain zone  ex: mydomain.com",
-        },
-        reversednszone => {
-            type => 'string', format => 'dns-name',
-            description => "reverse dns zone ex: 0.168.192.in-addr.arpa",
-        },
         dnszoneprefix => {
             type => 'string', format => 'dns-name',
             description => "dns domain zone prefix  ex: 'adm' -> <hostname>.adm.mydomain.com",
@@ -104,17 +88,13 @@ sub options {
 	gateway => { optional => 1 },
 #	routes => { optional => 1 },
 	snat => { optional => 1 },
-	dns => { optional => 1 },
-	reversedns => { optional => 1 },
-	dnszone => { optional => 1 },
-	reversednszone => { optional => 1 },
 	dnszoneprefix => { optional => 1 },
 	ipam => { optional => 0 },
     };
 }
 
 sub on_update_hook {
-    my ($class, $subnetid, $subnet, $old_subnet) = @_;
+    my ($class, $zone, $subnetid, $subnet, $old_subnet) = @_;
 
     my $cidr = $subnetid =~ s/-/\//r;
     my $subnet_matcher = subnet_matcher($cidr);
@@ -122,10 +102,9 @@ sub on_update_hook {
     my $vnetid = $subnet->{vnet};
     my $gateway = $subnet->{gateway};
     my $ipam = $subnet->{ipam};
-    my $dns = $subnet->{dns};
-    my $dnszone = $subnet->{dnszone};
-    my $reversedns = $subnet->{reversedns};
-    my $reversednszone = $subnet->{reversednszone};
+    my $dns = $zone->{dns};
+    my $dnszone = $zone->{dnszone};
+    my $reversedns = $zone->{reversedns};
 
     my $old_gateway = $old_subnet->{gateway} if $old_subnet;
 
@@ -139,12 +118,6 @@ sub on_update_hook {
     #for /32 pointopoint, we allow gateway outside the subnet
     raise_param_exc({ gateway => "$gateway is not in subnet $subnetid"}) if $gateway && !$subnet_matcher->($gateway) && $mask != 32;
 
-    raise_param_exc({ dns => "missing dns provider"}) if $dnszone && !$dns;
-    raise_param_exc({ dnszone => "missing dns zone"}) if $dns && !$dnszone;
-    raise_param_exc({ reversedns => "missing dns provider"}) if $reversednszone && !$reversedns;
-    raise_param_exc({ reversednszone => "missing dns zone"}) if $reversedns && !$reversednszone;
-    raise_param_exc({ reversedns => "missing forward dns zone"}) if $reversednszone && !$dnszone;
-
     if ($ipam) {
 	my $ipam_cfg = PVE::Network::SDN::Ipams::config();
 	my $plugin_config = $ipam_cfg->{ids}->{$ipam};
@@ -155,18 +128,18 @@ sub on_update_hook {
 	#delete on removal
 	if (!defined($gateway) && $old_gateway) {
 	    eval {
-		PVE::Network::SDN::Subnets::del_ip($subnetid, $old_subnet, $old_gateway);
+		PVE::Network::SDN::Subnets::del_ip($zone, $subnetid, $old_subnet, $old_gateway);
 	    };
 	    warn if $@;
 	}
         if(!$old_gateway || $gateway && $gateway ne $old_gateway) {
-	    PVE::Network::SDN::Subnets::add_ip($subnetid, $subnet, $gateway);
+	    PVE::Network::SDN::Subnets::add_ip($zone, $subnetid, $subnet, $gateway);
 	}
 
 	#delete old ip after update
 	if($gateway && $old_gateway && $gateway ne $old_gateway) {
 	    eval {
-		PVE::Network::SDN::Subnets::del_ip($subnetid, $old_subnet, $old_gateway);
+		PVE::Network::SDN::Subnets::del_ip($zone, $subnetid, $old_subnet, $old_gateway);
 	    };
 	    warn if $@;
 	}

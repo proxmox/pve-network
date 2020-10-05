@@ -26,6 +26,9 @@ sub options {
 	'dp-id' => { optional => 0 },
 #	'uplink-id' => { optional => 0 },
         'controller' => { optional => 0 },
+        dns => { optional => 1 },
+        reversedns => { optional => 1 },
+	dnszone => { optional => 1 },
     };
 }
 

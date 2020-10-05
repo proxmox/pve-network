@@ -93,6 +93,17 @@ my $verify_dns_zone = sub {
     $plugin->verify_zone($plugin_config, $zone);
 };
 
+my $get_reversedns_zone = sub {
+    my ($subnetid, $dns, $ip) = @_;
+
+    return if !$subnetid || !$dns || !$ip;
+
+    my $dns_cfg = PVE::Network::SDN::Dns::config();
+    my $plugin_config = $dns_cfg->{ids}->{$dns};
+    my $plugin = PVE::Network::SDN::Dns::Plugin->lookup($plugin_config->{type});
+    $plugin->get_reversedns_zone($plugin_config, $subnetid, $ip);
+};
+
 my $add_dns_record = sub {
     my ($zone, $dns, $hostname, $dnszoneprefix, $ip) = @_;
     return if !$zone || !$dns || !$hostname || !$ip;
@@ -144,21 +155,19 @@ my $del_dns_ptr_record = sub {
 };
 
 sub next_free_ip {
-    my ($subnetid, $subnet, $hostname) = @_;
+    my ($zone, $subnetid, $subnet, $hostname) = @_;
 
     my $cidr = undef;
     my $ip = undef;
 
     my $ipamid = $subnet->{ipam};
-    my $dns = $subnet->{dns};
-    my $dnszone = $subnet->{dnszone};
-    my $reversedns = $subnet->{reversedns};
-    my $reversednszone = $subnet->{reversednszone};
+    my $dns = $zone->{dns};
+    my $dnszone = $zone->{dnszone};
+    my $reversedns = $zone->{reversedns};
     my $dnszoneprefix = $subnet->{dnszoneprefix};
 
     #verify dns zones before ipam
     &$verify_dns_zone($dnszone, $dns);
-    &$verify_dns_zone($reversednszone, $reversedns);
 
     if($ipamid) {
 	my $ipam_cfg = PVE::Network::SDN::Ipams::config();
@@ -172,6 +181,8 @@ sub next_free_ip {
     }
 
     eval {
+	my $reversednszone = &$get_reversedns_zone($subnetid, $reversedns, $ip);
+
 	#add dns
 	&$add_dns_record($dnszone, $dns, $hostname, $dnszoneprefix, $ip);
 	#add reverse dns
@@ -189,15 +200,15 @@ sub next_free_ip {
 }
 
 sub add_ip {
-    my ($subnetid, $subnet, $ip, $hostname) = @_;
+    my ($zone, $subnetid, $subnet, $ip, $hostname) = @_;
 
     return if !$subnet;
 
     my $ipamid = $subnet->{ipam};
-    my $dns = $subnet->{dns};
-    my $dnszone = $subnet->{dnszone};
-    my $reversedns = $subnet->{reversedns};
-    my $reversednszone = $subnet->{reversednszone};
+    my $dns = $zone->{dns};
+    my $dnszone = $zone->{dnszone};
+    my $reversedns = $zone->{reversedns};
+    my $reversednszone = &$get_reversedns_zone($subnetid, $reversedns, $ip);
     my $dnszoneprefix = $subnet->{dnszoneprefix};
 
     #verify dns zones before ipam
@@ -231,15 +242,15 @@ sub add_ip {
 }
 
 sub del_ip {
-    my ($subnetid, $subnet, $ip, $hostname) = @_;
+    my ($zone, $subnetid, $subnet, $ip, $hostname) = @_;
 
     return if !$subnet;
 
     my $ipamid = $subnet->{ipam};
-    my $dns = $subnet->{dns};
-    my $dnszone = $subnet->{dnszone};
-    my $reversedns = $subnet->{reversedns};
-    my $reversednszone = $subnet->{reversednszone};
+    my $dns = $zone->{dns};
+    my $dnszone = $zone->{dnszone};
+    my $reversedns = $zone->{reversedns};
+    my $reversednszone = &$get_reversedns_zone($subnetid, $reversedns, $ip);
     my $dnszoneprefix = $subnet->{dnszoneprefix};
 
     &$verify_dns_zone($dnszone, $dns);

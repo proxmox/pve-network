@@ -42,6 +42,7 @@ my $defaultData = {
 	    type => 'string', format => 'pve-configid',
 	},
         ttl => { type => 'integer', optional => 1 },
+        reversev6mask => { type => 'integer', optional => 1 },
         dns => get_standard_option('pve-sdn-dns-id',
             { completion => \&PVE::Network::SDN::Dns::complete_sdn_dns }),
     },

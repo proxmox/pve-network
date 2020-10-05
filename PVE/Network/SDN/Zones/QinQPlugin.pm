@@ -40,6 +40,9 @@ sub options {
 	'bridge' => { optional => 0 },
 	'mtu' => { optional => 1 },
 	'vlan-protocol' => { optional => 1 },
+	dns => { optional => 1 },
+	reversedns => { optional => 1 },
+	dnszone => { optional => 1 },
     };
 }
 
