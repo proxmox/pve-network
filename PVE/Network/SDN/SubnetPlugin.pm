@@ -132,6 +132,7 @@ sub on_update_hook {
     if($vnetid) {
 	my $vnet = PVE::Network::SDN::Vnets::get_vnet($vnetid);
 	raise_param_exc({ vnet => "$vnetid don't exist"}) if !$vnet;
+	raise_param_exc({ vnet => "you can't add a subnet on a vlanaware vnet"}) if $vnet->{vlanaware};
     }
 
     my ($ip, $mask) = split(/\//, $cidr);
