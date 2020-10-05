@@ -81,6 +81,51 @@ sub config {
     return cfs_read_file($running_cfg);
 }
 
+sub pending_config {
+    my ($running_cfg, $cfg, $type) = @_;
+
+    my $pending = {};
+
+    my $running_objects = $running_cfg->{$type}->{ids};
+    my $config_objects = $cfg->{ids};
+
+    foreach my $id (sort keys %{$running_objects}) {
+	my $running_object = $running_objects->{$id};
+	my $config_object = $config_objects->{$id};
+	foreach my $key (sort keys %{$running_object}) {
+	    $pending->{$id}->{$key} = $running_object->{$key};
+	    if(!keys %{$config_object}) {
+		$pending->{$id}->{state} = "deleted";
+	    } elsif ($running_object->{$key} ne $config_object->{$key}) {
+		$pending->{$id}->{state} = "changed";
+	    }
+	}
+    }
+
+   foreach my $id (sort keys %{$config_objects}) {
+	my $running_object = $running_objects->{$id};
+	my $config_object = $config_objects->{$id};
+
+	foreach my $key (sort keys %{$config_object}) {
+	    my $config_value = $config_object->{$key} if $config_object->{$key};
+	    my $running_value = $running_object->{$key} if $running_object->{$key};
+	    if($key eq 'type' || $key eq 'vnet') {
+		$pending->{$id}->{$key} = $config_value;
+	    } else {
+		$pending->{$id}->{"pending"}->{$key} = $config_value if !defined($running_value) || ($config_value ne $running_value);
+	    }
+	    if(!keys %{$running_object}) {
+		$pending->{$id}->{state} = "new";
+	    } elsif (!defined($running_value) && defined($config_value)) {
+		$pending->{$id}->{state} = "changed";
+	    }
+	}
+   }
+
+   return {ids => $pending};
+
+}
+
 sub commit_config {
 
     my $cfg = cfs_read_file($running_cfg);

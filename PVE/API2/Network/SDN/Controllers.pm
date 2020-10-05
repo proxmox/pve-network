@@ -51,15 +51,27 @@ __PACKAGE__->register_method ({
 		enum => $sdn_controllers_type_enum,
 		optional => 1,
 	    },
+	    running => {
+		type => 'boolean',
+		optional => 1,
+		description => "Display running config.",
+	    },
+	    pending => {
+		type => 'boolean',
+		optional => 1,
+		description => "Display pending config.",
+	    },
 	},
     },
     returns => {
 	type => 'array',
 	items => {
 	    type => "object",
-	    properties => { controller => { type => 'string'},
-			    type => { type => 'string'},
-			  },
+	    properties => { controller => { type => 'string' },
+			    type => { type => 'string' },
+			    state => { type => 'string', optional => 1 },
+                            pending => { optional => 1},
+	    },
 	},
 	links => [ { rel => 'child', href => "{controller}" } ],
     },
@@ -69,8 +81,17 @@ __PACKAGE__->register_method ({
 	my $rpcenv = PVE::RPCEnvironment::get();
 	my $authuser = $rpcenv->get_user();
 
-
-	my $cfg = PVE::Network::SDN::Controllers::config();
+        my $cfg = {};
+        if($param->{pending}) {
+            my $running_cfg = PVE::Network::SDN::config();
+            my $config = PVE::Network::SDN::Controllers::config();
+            $cfg = PVE::Network::SDN::pending_config($running_cfg, $config, 'controllers');
+        } elsif ($param->{running}) {
+            my $running_cfg = PVE::Network::SDN::config();
+            $cfg = $running_cfg->{controllers};
+        } else {
+            $cfg = PVE::Network::SDN::Controllers::config();
+        }
 
 	my @sids = PVE::Network::SDN::Controllers::sdn_controllers_ids($cfg);
 	my $res = [];
@@ -102,13 +123,33 @@ __PACKAGE__->register_method ({
     	additionalProperties => 0,
 	properties => {
 	    controller => get_standard_option('pve-sdn-controller-id'),
+	    running => {
+		type => 'boolean',
+		optional => 1,
+		description => "Display running config.",
+	    },
+	    pending => {
+		type => 'boolean',
+		optional => 1,
+		description => "Display pending config.",
+	    },
 	},
     },
     returns => { type => 'object' },
     code => sub {
 	my ($param) = @_;
 
-	my $cfg = PVE::Network::SDN::Controllers::config();
+        my $cfg = {};
+        if($param->{pending}) {
+            my $running_cfg = PVE::Network::SDN::config();
+            my $config = PVE::Network::SDN::Controllers::config();
+            $cfg = PVE::Network::SDN::pending_config($running_cfg, $config, 'controllers');
+        } elsif ($param->{running}) {
+            my $running_cfg = PVE::Network::SDN::config();
+            $cfg = $running_cfg->{controllers};
+        } else {
+            $cfg = PVE::Network::SDN::Controllers::config();
+        }
 
 	return &$api_sdn_controllers_config($cfg, $param->{controller});
     }});

@@ -33,8 +33,20 @@ my $api_sdn_vnets_config = sub {
     my $scfg = dclone(PVE::Network::SDN::Vnets::sdn_vnets_config($cfg, $id));
     $scfg->{vnet} = $id;
     $scfg->{digest} = $cfg->{digest};
-
+    
     return $scfg;
+};
+
+my $api_sdn_vnets_deleted_config = sub {
+    my ($cfg, $running_cfg, $id) = @_;
+
+    if (!$cfg->{ids}->{$id}) {
+
+	my $vnet_cfg = dclone(PVE::Network::SDN::Vnets::sdn_vnets_config($running_cfg->{vnets}, $id));
+	$vnet_cfg->{state} = "deleted";
+	$vnet_cfg->{vnet} = $id;
+	return $vnet_cfg;
+    }
 };
 
 __PACKAGE__->register_method ({
@@ -49,6 +61,18 @@ __PACKAGE__->register_method ({
     },
     parameters => {
 	additionalProperties => 0,
+	properties => {
+            running => {
+                type => 'boolean',
+                optional => 1,
+                description => "Display running config.",
+            },
+	    pending => {
+		type => 'boolean',
+		optional => 1,
+		description => "Display pending config.",
+	    },
+	},
     },
     returns => {
 	type => 'array',
@@ -64,7 +88,17 @@ __PACKAGE__->register_method ({
 	my $rpcenv = PVE::RPCEnvironment::get();
 	my $authuser = $rpcenv->get_user();
 
-	my $cfg = PVE::Network::SDN::Vnets::config();
+	my $cfg = {};
+	if($param->{pending}) {
+	    my $running_cfg = PVE::Network::SDN::config();
+	    my $config = PVE::Network::SDN::Vnets::config();
+	    $cfg = PVE::Network::SDN::pending_config($running_cfg, $config, 'vnets');
+	} elsif ($param->{running}) {
+	    my $running_cfg = PVE::Network::SDN::config();
+	    $cfg = $running_cfg->{vnets};
+	} else {
+	    $cfg = PVE::Network::SDN::Vnets::config();
+	}
 
 	my @sids = PVE::Network::SDN::Vnets::sdn_vnets_ids($cfg);
 	my $res = [];
@@ -93,13 +127,33 @@ __PACKAGE__->register_method ({
 	    vnet => get_standard_option('pve-sdn-vnet-id', {
 		completion => \&PVE::Network::SDN::Vnets::complete_sdn_vnets,
 	    }),
+            running => {
+                type => 'boolean',
+                optional => 1,
+                description => "Display running config.",
+            },
+	    pending => {
+		type => 'boolean',
+		optional => 1,
+		description => "Display pending config.",
+	    },
 	},
     },
     returns => { type => 'object' },
     code => sub {
 	my ($param) = @_;
 
-	my $cfg = PVE::Network::SDN::Vnets::config();
+	my $cfg = {};
+	if($param->{pending}) {
+	    my $running_cfg = PVE::Network::SDN::config();
+	    my $config = PVE::Network::SDN::Vnets::config();
+	    $cfg = PVE::Network::SDN::pending_config($running_cfg, $config, 'vnets');
+	} elsif ($param->{running}) {
+	    my $running_cfg = PVE::Network::SDN::config();
+	    $cfg = $running_cfg->{vnets};
+	} else {
+	    $cfg = PVE::Network::SDN::Vnets::config();
+	}
 
 	return $api_sdn_vnets_config->($cfg, $param->{vnet});
     }});

@@ -38,6 +38,11 @@ my $api_sdn_zones_config = sub {
         $scfg->{nodes} = PVE::Network::SDN::Zones::Plugin->encode_value($scfg->{type}, 'nodes', $scfg->{nodes});
     }
 
+    my $pending = $scfg->{pending};
+    if ($pending->{nodes}) {
+        $pending->{nodes} = PVE::Network::SDN::Zones::Plugin->encode_value($scfg->{type}, 'nodes', $pending->{nodes});
+    }
+
     return $scfg;
 };
 
@@ -59,6 +64,16 @@ __PACKAGE__->register_method ({
 		enum => $sdn_zones_type_enum,
 		optional => 1,
 	    },
+	    running => {
+		type => 'boolean',
+		optional => 1,
+		description => "Display running config.",
+	    },
+	    pending => {
+		type => 'boolean',
+		optional => 1,
+		description => "Display pending config.",
+	    },
 	},
     },
     returns => {
@@ -67,6 +82,10 @@ __PACKAGE__->register_method ({
 	    type => "object",
 	    properties => { zone => { type => 'string'},
 			    type => { type => 'string'},
+			    mtu => { type => 'integer', optional => 1 },
+			    pending => { optional => 1},
+			    state => { type => 'string', optional => 1},
+			    nodes => { type => 'string', optional => 1},
 			  },
 	},
 	links => [ { rel => 'child', href => "{zone}" } ],
@@ -77,8 +96,17 @@ __PACKAGE__->register_method ({
 	my $rpcenv = PVE::RPCEnvironment::get();
 	my $authuser = $rpcenv->get_user();
 
-
-	my $cfg = PVE::Network::SDN::Zones::config();
+	my $cfg = {};
+	if($param->{pending}) {
+	    my $running_cfg = PVE::Network::SDN::config();
+	    my $config = PVE::Network::SDN::Zones::config();
+	    $cfg = PVE::Network::SDN::pending_config($running_cfg, $config, 'zones');
+        } elsif ($param->{running}) {
+	    my $running_cfg = PVE::Network::SDN::config();
+	    $cfg = $running_cfg->{zones};
+        } else {
+	    $cfg = PVE::Network::SDN::Zones::config();
+        }
 
 	my @sids = PVE::Network::SDN::Zones::sdn_zones_ids($cfg);
 	my $res = [];
@@ -110,13 +138,33 @@ __PACKAGE__->register_method ({
     	additionalProperties => 0,
 	properties => {
 	    zone => get_standard_option('pve-sdn-zone-id'),
+	    running => {
+		type => 'boolean',
+		optional => 1,
+		description => "Display running config.",
+	    },
+	    pending => {
+		type => 'boolean',
+		optional => 1,
+		description => "Display pending config.",
+	    }
 	},
     },
     returns => { type => 'object' },
     code => sub {
 	my ($param) = @_;
 
-	my $cfg = PVE::Network::SDN::Zones::config();
+	my $cfg = {};
+	if($param->{pending}) {
+	    my $running_cfg = PVE::Network::SDN::config();
+	    my $config = PVE::Network::SDN::Zones::config();
+	    $cfg = PVE::Network::SDN::pending_config($running_cfg, $config, 'zones');
+        } elsif ($param->{running}) {
+	    my $running_cfg = PVE::Network::SDN::config();
+	    $cfg = $running_cfg->{zones};
+        } else {
+	    $cfg = PVE::Network::SDN::Zones::config();
+        }
 
 	return &$api_sdn_zones_config($cfg, $param->{zone});
     }});

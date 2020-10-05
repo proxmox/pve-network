@@ -46,7 +46,17 @@ __PACKAGE__->register_method ({
 	additionalProperties => 0,
 	properties => {
 	    vnet => get_standard_option('pve-sdn-vnet-id'),
-	},
+	    running => {
+		type => 'boolean',
+		optional => 1,
+		description => "Display running config.",
+	    },
+	    pending => {
+		type => 'boolean',
+		optional => 1,
+		description => "Display pending config.",
+	    },
+        },
     },
     returns => {
 	type => 'array',
@@ -64,7 +74,17 @@ __PACKAGE__->register_method ({
 
         my $vnetid = $param->{vnet};
 
-	my $cfg = PVE::Network::SDN::Subnets::config();
+        my $cfg = {};
+        if($param->{pending}) {
+	    my $running_cfg = PVE::Network::SDN::config();
+	    my $config = PVE::Network::SDN::Subnets::config();
+	    $cfg = PVE::Network::SDN::pending_config($running_cfg, $config, 'subnets');
+        } elsif ($param->{running}) {
+	    my $running_cfg = PVE::Network::SDN::config();
+	    $cfg = $running_cfg->{subnets};
+        } else {
+	    $cfg = PVE::Network::SDN::Subnets::config();
+        }
 
 	my @sids = PVE::Network::SDN::Subnets::sdn_subnets_ids($cfg);
 	my $res = [];
@@ -96,13 +116,34 @@ __PACKAGE__->register_method ({
 	    subnet => get_standard_option('pve-sdn-subnet-id', {
 		completion => \&PVE::Network::SDN::Subnets::complete_sdn_subnets,
 	    }),
-	},
+	    running => {
+		type => 'boolean',
+		optional => 1,
+		description => "Display running config.",
+	    },
+	    pending => {
+		type => 'boolean',
+		optional => 1,
+		description => "Display pending config.",
+	    },
+        },
     },
     returns => { type => 'object' },
     code => sub {
 	my ($param) = @_;
 
-	my $cfg = PVE::Network::SDN::Subnets::config();
+        my $cfg = {};
+        if($param->{pending}) {
+	    my $running_cfg = PVE::Network::SDN::config();
+	    my $config = PVE::Network::SDN::Subnets::config();
+	    $cfg = PVE::Network::SDN::pending_config($running_cfg, $config, 'subnets');
+        } elsif ($param->{running}) {
+	    my $running_cfg = PVE::Network::SDN::config();
+	    $cfg = $running_cfg->{subnets};
+        } else {
+	    $cfg = PVE::Network::SDN::Subnets::config();
+        }
+
         my $scfg = &$api_sdn_subnets_config($cfg, $param->{subnet});
 
 	raise_param_exc({ vnet => "wrong vnet"}) if $param->{vnet} ne $scfg->{vnet};
