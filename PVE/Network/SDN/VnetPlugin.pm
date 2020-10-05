@@ -91,29 +91,28 @@ sub on_delete_hook {
 
     #verify if subnets are associated
     my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid);
-    my @subnetlist = ();
-    foreach my $subnetid (sort keys %{$subnets}) {
-	push @subnetlist, $subnetid;
-    }
-    raise_param_exc({ vnet => "Vnet is attached to following subnets:". join(',', @subnetlist)}) if @subnetlist > 0;
+    raise_param_exc({ vnet => "Can't delete vnet if subnets exists"}) if $subnets;
 }
 
 sub on_update_hook {
-    my ($class, $vnetid, $vnet_cfg, $subnet_cfg) = @_;
+    my ($class, $vnetid, $vnet_cfg) = @_;
 
-    #fixme : don't allow change zone if subnets are defined
-    #fixme : don't vlanaware change if subnets are defined
-#    my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid);
-   
+    my $vnet = $vnet_cfg->{ids}->{$vnetid};
+    my $tag = $vnet->{tag};
+    my $vlanaware = $vnet->{vlanaware};
+
+    #don't allow vlanaware change if subnets are defined
+    if($vnet->{vlanaware}) {
+	my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid);
+	raise_param_exc({ vlanaware => "vlanaware vnet is not compatible with subnets"}) if $subnets;
+    }
+
     # verify that tag is not already defined in another vnet
-    if (defined($vnet_cfg->{ids}->{$vnetid}->{tag})) {
-	my $tag = $vnet_cfg->{ids}->{$vnetid}->{tag};
+    if (defined($tag)) {
 	foreach my $id (keys %{$vnet_cfg->{ids}}) {
 	    next if $id eq $vnetid;
-	    my $vnet = $vnet_cfg->{ids}->{$id};
-	    if ($vnet->{type} eq 'vnet' && defined($vnet->{tag})) {
-		raise_param_exc({ tag => "tag $tag already exist in vnet $id"}) if $tag eq $vnet->{tag};
-	    }
+	    my $othervnettag = $vnet_cfg->{ids}->{$id}->{tag};
+	    raise_param_exc({ tag => "tag $tag already exist in vnet $id"}) if $othervnettag && $tag eq $othervnettag;
 	}
     }
 }

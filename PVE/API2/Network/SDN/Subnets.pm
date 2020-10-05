@@ -28,7 +28,6 @@ my $api_sdn_subnets_config = sub {
 
     my $scfg = dclone(PVE::Network::SDN::Subnets::sdn_subnets_config($cfg, $id));
     $scfg->{subnet} = $id;
-    $scfg->{cidr} = $id =~ s/-/\//r;
     $scfg->{digest} = $cfg->{digest};
 
     return $scfg;
@@ -168,7 +167,6 @@ __PACKAGE__->register_method ({
 
 	my $type = extract_param($param, 'type');
 	my $cidr = extract_param($param, 'subnet');
-	my $id = $cidr =~ s/\//-/r;
 
 	# create /etc/pve/sdn directory
 	PVE::Cluster::check_cfs_quorum();
@@ -183,7 +181,9 @@ __PACKAGE__->register_method ({
 		my $vnet = $param->{vnet};
 		my $zoneid = $vnet_cfg->{ids}->{$vnet}->{zone};
 		my $zone = $zone_cfg->{ids}->{$zoneid};      
-
+		my $id = $cidr =~ s/\//-/r;
+		$id = "$zoneid-$id";
+		
 		my $opts = PVE::Network::SDN::SubnetPlugin->check_config($id, $param, 1, 1);
 
 		my $scfg = undef;
@@ -192,7 +192,9 @@ __PACKAGE__->register_method ({
 		}
 
 		$cfg->{ids}->{$id} = $opts;
-		PVE::Network::SDN::SubnetPlugin->on_update_hook($zone, $id, $opts);
+
+		my $subnet = PVE::Network::SDN::Subnets::sdn_subnets_config($cfg, $id);
+		PVE::Network::SDN::SubnetPlugin->on_update_hook($zone, $id, $subnet);
 
 		PVE::Network::SDN::Subnets::write_config($cfg);
 
@@ -237,7 +239,8 @@ __PACKAGE__->register_method ({
 
 	    raise_param_exc({ ipam => "you can't change ipam"}) if $opts->{ipam} && $scfg->{ipam} && $opts->{ipam} ne $scfg->{ipam};
 
-	    PVE::Network::SDN::SubnetPlugin->on_update_hook($zone, $id, $opts, $scfg);
+	    my $subnet = PVE::Network::SDN::Subnets::sdn_subnets_config($cfg, $id);
+	    PVE::Network::SDN::SubnetPlugin->on_update_hook($zone, $id, $subnet);
 
 	    PVE::Network::SDN::Subnets::write_config($cfg);
 

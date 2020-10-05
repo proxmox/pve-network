@@ -7,6 +7,7 @@ use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_register_file cfs_lock_file
 use PVE::Tools;
 use JSON;
 use NetAddr::IP;
+use Net::IP;
 use Digest::SHA;
 
 use base('PVE::Network::SDN::Ipams::Plugin');
@@ -33,15 +34,22 @@ sub options {
 sub add_subnet {
     my ($class, $plugin_config, $subnetid, $subnet) = @_;
 
-    my $cidr = $subnetid =~ s/-/\//r;
+    my $cidr = $subnet->{cidr};
+    my $zone = $subnet->{zone};
     my $gateway = $subnet->{gateway};
 
+
     cfs_lock_file($ipamdb_file, undef, sub {
-	my $config = read_db();
-	#create subnet
-	if (!defined($config->{subnets}->{$cidr})) {
-	    $config->{subnets}->{$cidr}->{ips} = {};
-	    write_db($config);
+	my $db = {};
+	$db = read_db();
+
+	$db->{zones}->{$zone} = {} if !$db->{zones}->{$zone};
+	my $zonedb = $db->{zones}->{$zone};
+
+	if(!$zonedb->{subnets}->{$cidr}) {
+	    #create subnet
+	    $zonedb->{subnets}->{$cidr}->{ips} = {};
+	    write_db($db);
 	}
     });
     die "$@" if $@;
@@ -50,14 +58,22 @@ sub add_subnet {
 sub del_subnet {
     my ($class, $plugin_config, $subnetid, $subnet) = @_;
 
-    my $cidr = $subnetid =~ s/-/\//r;
+    my $cidr = $subnet->{cidr};
+    my $zone = $subnet->{zone};
 
     cfs_lock_file($ipamdb_file, undef, sub {
 
 	my $db = read_db();
-	my $ips = $db->{subnets}->{$cidr}->{ips};
-	die "cannot delete subnet '$cidr', not empty\n" if keys %{$ips} > 0;
-	delete $db->{subnets}->{$cidr};
+
+	my $dbzone = $db->{zones}->{$zone};
+	die "zone '$zone' doesn't exist in IPAM DB\n" if !$dbzone;
+	my $dbsubnet = $dbzone->{subnets}->{$cidr};
+	die "subnet '$cidr' doesn't exist in IPAM DB\n" if !$dbsubnet;
+
+	die "cannot delete subnet '$cidr', not empty\n" if keys %{$dbsubnet->{ips}} > 0;
+
+	delete $dbzone->{subnets}->{$cidr};
+
 	write_db($db);
     });
     die "$@" if $@;
@@ -65,19 +81,24 @@ sub del_subnet {
 }
 
 sub add_ip {
-    my ($class, $plugin_config, $subnetid, $ip, $is_gateway) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $ip, $is_gateway) = @_;
 
-    my $cidr = $subnetid =~ s/-/\//r;
+    my $cidr = $subnet->{cidr};
+    my $zone = $subnet->{zone};
 
     cfs_lock_file($ipamdb_file, undef, sub {
 
 	my $db = read_db();
-	my $s = $db->{subnets}->{$cidr};
 
-	die "IP '$ip' already exist\n" if defined($s->{ips}->{$ip});
+	my $dbzone = $db->{zones}->{$zone};
+	die "zone '$zone' doesn't exist in IPAM DB\n" if !$dbzone;
+	my $dbsubnet = $dbzone->{subnets}->{$cidr};
+	die "subnet '$cidr' doesn't exist in IPAM DB\n" if !$dbsubnet;
 
-	#verify that ip is valid for this subnet
-	$s->{ips}->{$ip} = 1;
+	die "IP '$ip' already exist\n" if defined($dbsubnet->{ips}->{$ip});
+
+	$dbsubnet->{ips}->{$ip} = 1;
+
 	write_db($db);
     });
     die "$@" if $@;
@@ -86,49 +107,64 @@ sub add_ip {
 sub add_next_freeip {
     my ($class, $plugin_config, $subnetid, $subnet) = @_;
 
-    my $cidr = $subnetid =~ s/-/\//r;
+    my $cidr = $subnet->{cidr};
+    my $network = $subnet->{network};
+    my $zone = $subnet->{zone};
+    my $mask = $subnet->{mask};
     my $freeip = undef;
 
     cfs_lock_file($ipamdb_file, undef, sub {
 
 	my $db = read_db();
-	my $s = $db->{subnets}->{$cidr};
-	my $iplist = new NetAddr::IP($cidr);
-	my $broadcast = $iplist->broadcast();
+	my $dbzone = $db->{zones}->{$zone};
+	die "zone '$zone' doesn't exist in IPAM DB\n" if !$dbzone;
+	my $dbsubnet = $dbzone->{subnets}->{$cidr};
+	die "subnet '$cidr' doesn't exist in IPAM DB" if !$dbsubnet;
 
-	while (1) {
-	    $iplist++;
-	    last if $iplist eq $broadcast;
-	    my $ip = $iplist->addr();
-	    next if defined($s->{ips}->{$ip});
-	    $freeip = $ip;
-	    last;
+	if (Net::IP::ip_is_ipv4($network) && $mask == 32) {
+	    die "cannot find free IP in subnet '$cidr'\n" if defined($dbsubnet->{ips}->{$network});
+	    $freeip = $network;
+	} else {
+	    my $iplist = new NetAddr::IP($cidr);
+	    my $broadcast = $iplist->broadcast();
+
+	    while(1) {
+		$iplist++;
+		last if $iplist eq $broadcast;
+		my $ip = $iplist->addr();
+		next if defined($dbsubnet->{ips}->{$ip});
+		$freeip = $ip;
+		last;
+	    }
 	}
 
 	die "can't find free ip in subnet '$cidr'\n" if !$freeip;
 
-	$s->{ips}->{$freeip} = 1;
+	$dbsubnet->{ips}->{$freeip} = 1;
 	write_db($db);
     });
     die "$@" if $@;
 
-    my ($network, $mask) = split(/-/, $subnetid);
     return "$freeip/$mask";
 }
 
 sub del_ip {
-    my ($class, $plugin_config, $subnetid, $ip) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $ip) = @_;
 
-    my $cidr = $subnetid =~ s/-/\//r;
+    my $cidr = $subnet->{cidr};
+    my $zone = $subnet->{zone};
 
     cfs_lock_file($ipamdb_file, undef, sub {
 
 	my $db = read_db();
-	my $s = $db->{subnets}->{$cidr};
-	return if !$ip;
+	die "zone $zone don't exist in ipam db" if !$db->{zones}->{$zone};
+	my $dbzone = $db->{zones}->{$zone};
+	die "subnet $cidr don't exist in ipam db" if !$dbzone->{subnets}->{$cidr};
+	my $dbsubnet = $dbzone->{subnets}->{$cidr};
 
-	die "IP '$ip' does not exist in IPAM DB\n" if !defined($s->{ips}->{$ip});
-	delete $s->{ips}->{$ip};
+	die "IP '$ip' does not exist in IPAM DB\n" if !defined($dbsubnet->{ips}->{$ip});
+	delete $dbsubnet->{ips}->{$ip};
+
 	write_db($db);
     });
     die "$@" if $@;

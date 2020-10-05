@@ -17,6 +17,7 @@ use PVE::API2::Network::SDN::Subnets;
 use Storable qw(dclone);
 use PVE::JSONSchema qw(get_standard_option);
 use PVE::RPCEnvironment;
+use PVE::Exception qw(raise raise_param_exc);
 
 use PVE::RESTHandler;
 
@@ -193,9 +194,7 @@ __PACKAGE__->register_method ({
 	    my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
             $plugin->vnet_update_hook($cfg->{ids}->{$id});
 
-	    my $subnet_cfg = PVE::Network::SDN::Subnets::config();
-
-	    PVE::Network::SDN::VnetPlugin->on_update_hook($id, $cfg, $subnet_cfg);
+	    PVE::Network::SDN::VnetPlugin->on_update_hook($id, $cfg);
 
 	    PVE::Network::SDN::Vnets::write_config($cfg);
 
@@ -226,7 +225,12 @@ __PACKAGE__->register_method ({
 
 	    PVE::SectionConfig::assert_if_modified($cfg, $digest);
 
+
 	    my $opts = PVE::Network::SDN::VnetPlugin->check_config($id, $param, 0, 1);
+	    raise_param_exc({ zone => "missing zone"}) if !$opts->{zone};
+	    my $subnets = PVE::Network::SDN::Vnets::get_subnets($id);
+	    raise_param_exc({ zone => "can't change zone if subnets exists"}) if($subnets && $opts->{zone} ne $cfg->{ids}->{$id}->{zone});
+
 	    $cfg->{ids}->{$id} = $opts;
 
 	    my $zone_cfg = PVE::Network::SDN::Zones::config();
@@ -235,9 +239,7 @@ __PACKAGE__->register_method ({
 	    my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
 	    $plugin->vnet_update_hook($cfg->{ids}->{$id});
 
-	    my $subnet_cfg = PVE::Network::SDN::Subnets::config();
-
-	    PVE::Network::SDN::VnetPlugin->on_update_hook($id, $cfg, $subnet_cfg);
+	    PVE::Network::SDN::VnetPlugin->on_update_hook($id, $cfg);
 
 	    PVE::Network::SDN::Vnets::write_config($cfg);
 

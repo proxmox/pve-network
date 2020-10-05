@@ -75,16 +75,16 @@ sub del_subnet {
 }
 
 sub add_ip {
-    my ($class, $plugin_config, $subnetid, $subnet, $internalid, $ip, $hostname, $is_gateway) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $ip, $is_gateway) = @_;
 
 }
 
 sub add_next_freeip {
-    my ($class, $plugin_config) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet) = @_;
 }
 
 sub del_ip {
-    my ($class, $plugin_config, $subnetid, $ip) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $ip) = @_;
 }
 
 sub on_update_hook {

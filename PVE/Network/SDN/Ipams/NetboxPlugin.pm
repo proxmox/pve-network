@@ -30,7 +30,7 @@ sub options {
 sub add_subnet {
     my ($class, $plugin_config, $subnetid, $subnet) = @_;
 
-    my $cidr = $subnetid =~ s/-/\//r;
+    my $cidr = $subnet->{cidr};
     my $gateway = $subnet->{gateway};
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
@@ -40,13 +40,11 @@ sub add_subnet {
 
     #create subnet
     if (!$internalid) {
-	my ($network, $mask) = split(/-/, $subnetid);
 
 	my $params = { prefix => $cidr };
 
 	eval {
 		my $result = PVE::Network::SDN::Ipams::Plugin::api_request("POST", "$url/ipam/prefixes/", $headers, $params);
-		$subnet->{ipamid} = $result->{id} if defined($result->{id});
 	};
 	if ($@) {
 	    die "error add subnet to ipam: $@";
@@ -58,7 +56,7 @@ sub add_subnet {
 sub del_subnet {
     my ($class, $plugin_config, $subnetid, $subnet) = @_;
 
-    my $cidr = $subnetid =~ s/-/\//r;
+    my $cidr = $subnet->{cidr};
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
     my $gateway = $subnet->{gateway};
@@ -66,9 +64,8 @@ sub del_subnet {
 
     my $internalid = get_prefix_id($url, $cidr, $headers);
     return if !$internalid;
-    #fixme: check that prefix is empty exluding gateway, before delete
 
-    PVE::Network::SDN::Ipams::NetboxPlugin::del_ip($class, $plugin_config, $subnetid, $gateway) if $gateway;
+    return; #fixme: check that prefix is empty exluding gateway, before delete
 
     eval {
 	PVE::Network::SDN::Ipams::Plugin::api_request("DELETE", "$url/ipam/prefixes/$internalid/", $headers);
@@ -80,9 +77,9 @@ sub del_subnet {
 }
 
 sub add_ip {
-    my ($class, $plugin_config, $subnetid, $ip, $is_gateway) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $ip, $is_gateway) = @_;
 
-    my ($network, $mask) = split(/-/, $subnetid);
+    my $mask = $subnet->{mask};
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
     my $section = $plugin_config->{section};
@@ -102,7 +99,8 @@ sub add_ip {
 sub add_next_freeip {
     my ($class, $plugin_config, $subnetid, $subnet) = @_;
 
-    my $cidr = $subnetid =~ s/-/\//r;
+    my $cidr = $subnet->{cidr};
+
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Authorization' => "token $token"];
@@ -125,7 +123,7 @@ sub add_next_freeip {
 }
 
 sub del_ip {
-    my ($class, $plugin_config, $subnetid, $ip) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $ip) = @_;
 
     return if !$ip;
 

@@ -9,6 +9,7 @@ use PVE::Cluster qw(cfs_read_file cfs_write_file);
 use PVE::Network::SDN;
 use PVE::Network::SDN::Vnets;
 use PVE::Network::SDN::Zones;
+use PVE::Network::SDN::Subnets;
 use PVE::Network::SDN::Dns;
 use PVE::Network::SDN::Zones::Plugin;
 use PVE::Network::SDN::Zones::VlanPlugin;
@@ -262,6 +263,16 @@ __PACKAGE__->register_method ({
 
 	    my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($scfg->{type});
 	    my $opts = $plugin->check_config($id, $param, 0, 1);
+
+	    if($opts->{ipam} ne $scfg->{ipam}) {
+
+		#don't allow ipam change if subnet are defined
+		my $subnets_cfg = PVE::Network::SDN::Subnets::config();
+		foreach my $subnetid (sort keys %{$subnets_cfg->{ids}}) {
+		    my $subnet = PVE::Network::SDN::Subnets::sdn_subnets_config($subnets_cfg, $subnetid);
+		    raise_param_exc({ ipam => "can't change ipam if subnet if already defined for this zone"}) if $subnet->{zone} eq $id;
+		}
+	    }
 
 	    foreach my $k (%$opts) {
 		$scfg->{$k} = $opts->{$k};

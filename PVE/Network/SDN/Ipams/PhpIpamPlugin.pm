@@ -40,7 +40,10 @@ sub options {
 sub add_subnet {
     my ($class, $plugin_config, $subnetid, $subnet) = @_;
 
-    my $cidr = $subnetid =~ s/-/\//r;
+    my $cidr = $subnet->{cidr};
+    my $network = $subnet->{network};
+    my $mask = $subnet->{mask};
+
     my $gateway = $subnet->{gateway};
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
@@ -52,7 +55,6 @@ sub add_subnet {
 
     #create subnet
     if (!$internalid) {
-	my ($network, $mask) = split(/-/, $subnetid);
 
 	my $params = { subnet => $network,
 		   mask => $mask,
@@ -72,7 +74,7 @@ sub add_subnet {
 sub del_subnet {
     my ($class, $plugin_config, $subnetid, $subnet) = @_;
 
-    my $cidr = $subnetid =~ s/-/\//r;
+    my $cidr = $subnet->{cidr};
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
     my $section = $plugin_config->{section};
@@ -81,7 +83,7 @@ sub del_subnet {
     my $internalid = get_internalid($url, $cidr, $headers);
     return if !$internalid;
 
-    #fixme: check that prefix is empty exluding gateway, before delete
+    return; #fixme: check that prefix is empty exluding gateway, before delete
 
     eval {
 	PVE::Network::SDN::Ipams::Plugin::api_request("DELETE", "$url/subnets/$internalid", $headers);
@@ -93,9 +95,9 @@ sub del_subnet {
 }
 
 sub add_ip {
-    my ($class, $plugin_config, $subnetid, $ip, $is_gateway) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $ip, $is_gateway) = @_;
 
-    my $cidr = $subnetid =~ s/-/\//r;
+    my $cidr = $subnet->{cidr};
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
     my $section = $plugin_config->{section};
@@ -120,7 +122,8 @@ sub add_ip {
 sub add_next_freeip {
     my ($class, $plugin_config, $subnetid, $subnet, $internalid, $hostname) = @_;
 
-    my $cidr = $subnetid =~ s/-/\//r;
+    my $cidr = $subnet->{cidr};  
+    my $mask = $subnet->{mask};  
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
     my $section = $plugin_config->{section};
@@ -140,12 +143,11 @@ sub add_next_freeip {
         die "can't find free ip in subnet $cidr: $@";
     }
 
-    my ($network, $mask) = split(/-/, $subnetid);
     return "$ip/$mask";
 }
 
 sub del_ip {
-    my ($class, $plugin_config, $subnetid, $ip) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $ip) = @_;
 
     return if !$ip;
 

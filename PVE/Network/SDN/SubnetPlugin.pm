@@ -10,6 +10,7 @@ use PVE::Exception qw(raise raise_param_exc);
 use Net::Subnet qw(subnet_matcher);
 use PVE::Network::SDN::Vnets;
 use PVE::Network::SDN::Ipams;
+use Net::IP;
 
 PVE::Cluster::cfs_register_file('sdn/subnets.cfg',
                                  sub { __PACKAGE__->parse_config(@_); },
@@ -25,7 +26,13 @@ PVE::JSONSchema::register_format('pve-sdn-subnet-id', \&parse_sdn_subnet_id);
 sub parse_sdn_subnet_id {
     my ($id, $noerr) = @_;
 
-    my $cidr = $id =~ s/-/\//r;
+    my $cidr = "";
+    if($id =~ /\//) {
+	$cidr = $id;
+    } else {
+	my ($zone, $ip, $mask) = split(/-/, $id);
+	$cidr = "$ip/$mask";
+    }
 
     if (!(PVE::JSONSchema::pve_verify_cidrv4($cidr, 1) ||
           PVE::JSONSchema::pve_verify_cidrv6($cidr, 1)))
@@ -91,7 +98,9 @@ sub options {
 sub on_update_hook {
     my ($class, $zone, $subnetid, $subnet, $old_subnet) = @_;
 
-    my $cidr = $subnetid =~ s/-/\//r;
+    my $cidr = $subnet->{cidr};
+    my $mask = $subnet->{mask};
+
     my $subnet_matcher = subnet_matcher($cidr);
 
     my $vnetid = $subnet->{vnet};
@@ -109,9 +118,11 @@ sub on_update_hook {
 	raise_param_exc({ vnet => "you can't add a subnet on a vlanaware vnet"}) if $vnet->{vlanaware};
     }
 
-    my ($ip, $mask) = split(/\//, $cidr);
+    my $pointopoint = 1 if Net::IP::ip_is_ipv4($gateway) && $mask == 32;
+
     #for /32 pointopoint, we allow gateway outside the subnet
-    raise_param_exc({ gateway => "$gateway is not in subnet $subnetid"}) if $gateway && !$subnet_matcher->($gateway) && $mask != 32;
+    raise_param_exc({ gateway => "$gateway is not in subnet $cidr"}) if $gateway && !$subnet_matcher->($gateway) && !$pointopoint;
+
 
     if ($ipam) {
 	my $ipam_cfg = PVE::Network::SDN::Ipams::config();
@@ -119,7 +130,10 @@ sub on_update_hook {
 	my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
 	$plugin->add_subnet($plugin_config, $subnetid, $subnet);
 
-	#delete on removal
+	#don't register gateway for pointopoint
+	return if $pointopoint;
+
+	#delete gateway on removal
 	if (!defined($gateway) && $old_gateway) {
 	    eval {
 		PVE::Network::SDN::Subnets::del_ip($zone, $subnetid, $old_subnet, $old_gateway);
@@ -130,7 +144,7 @@ sub on_update_hook {
 	    PVE::Network::SDN::Subnets::add_ip($zone, $subnetid, $subnet, $gateway);
 	}
 
-	#delete old ip after update
+	#delete old gateway after update
 	if($gateway && $old_gateway && $gateway ne $old_gateway) {
 	    eval {
 		PVE::Network::SDN::Subnets::del_ip($zone, $subnetid, $old_subnet, $old_gateway);

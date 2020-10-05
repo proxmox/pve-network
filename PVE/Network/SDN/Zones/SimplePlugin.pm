@@ -60,14 +60,15 @@ sub generate_sdn_config {
     my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid, 1);
     foreach my $subnetid (sort keys %{$subnets}) {
 	my $subnet = $subnets->{$subnetid};
-	my $cidr = $subnetid =~ s/-/\//r; 
+	my $cidr = $subnet->{cidr};
+	my $mask = $subnet->{mask};
+
 	my $gateway = $subnet->{gateway};
 	if ($gateway) {
 	    push @iface_config, "address $gateway" if !defined($address->{$gateway});
 	    $address->{$gateway} = 1;
 	}
 	#add route for /32 pointtopoint
-	my ($ip, $mask) = split(/\//, $cidr);
 	push @iface_config, "up ip route add $cidr dev $vnetid" if $mask == 32;
 	if ($subnet->{snat}) {
 	    #find outgoing interface

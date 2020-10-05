@@ -21,6 +21,14 @@ sub sdn_subnets_config {
     my $scfg = $cfg->{ids}->{$id};
     die "sdn subnet '$id' does not exist\n" if (!$noerr && !$scfg);
 
+    if($scfg) {
+	my ($zone, $network, $mask) = split(/-/, $id);
+	$scfg->{cidr} = "$network/$mask";
+	$scfg->{zone} = $zone;
+	$scfg->{network} = $network;
+	$scfg->{mask} = $mask;
+    }
+
     return $scfg;
 }
 
@@ -64,13 +72,15 @@ sub get_subnet {
 }
 
 sub find_ip_subnet {
-    my ($ip, $subnets) = @_;
+    my ($ip, $mask, $subnets) = @_;
 
     my $subnet = undef;
     my $subnetid = undef;
 
     foreach my $id (sort keys %{$subnets}) {
-	my $cidr = $id =~ s/-/\//r;
+
+	next if $mask ne $subnets->{$id}->{mask};
+	my $cidr = $subnets->{$id}->{cidr};
 	my $subnet_matcher = subnet_matcher($cidr);
 	next if !$subnet_matcher->($ip);
 	$subnet = $subnets->{$id};
@@ -94,14 +104,14 @@ my $verify_dns_zone = sub {
 };
 
 my $get_reversedns_zone = sub {
-    my ($subnetid, $dns, $ip) = @_;
+    my ($subnetid, $subnet, $dns, $ip) = @_;
 
     return if !$subnetid || !$dns || !$ip;
 
     my $dns_cfg = PVE::Network::SDN::Dns::config();
     my $plugin_config = $dns_cfg->{ids}->{$dns};
     my $plugin = PVE::Network::SDN::Dns::Plugin->lookup($plugin_config->{type});
-    $plugin->get_reversedns_zone($plugin_config, $subnetid, $ip);
+    $plugin->get_reversedns_zone($plugin_config, $subnetid, $subnet, $ip);
 };
 
 my $add_dns_record = sub {
@@ -181,7 +191,7 @@ sub next_free_ip {
     }
 
     eval {
-	my $reversednszone = &$get_reversedns_zone($subnetid, $reversedns, $ip);
+	my $reversednszone = &$get_reversedns_zone($subnetid, $subnet, $reversedns, $ip);
 
 	#add dns
 	&$add_dns_record($dnszone, $dns, $hostname, $dnszoneprefix, $ip);
@@ -208,7 +218,7 @@ sub add_ip {
     my $dns = $zone->{dns};
     my $dnszone = $zone->{dnszone};
     my $reversedns = $zone->{reversedns};
-    my $reversednszone = &$get_reversedns_zone($subnetid, $reversedns, $ip);
+    my $reversednszone = &$get_reversedns_zone($subnetid, $subnet, $reversedns, $ip);
     my $dnszoneprefix = $subnet->{dnszoneprefix};
 
     #verify dns zones before ipam
@@ -220,7 +230,7 @@ sub add_ip {
 	my $plugin_config = $ipam_cfg->{ids}->{$ipamid};
 	my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
 	eval {
-	    $plugin->add_ip($plugin_config, $subnetid, $ip);
+	    $plugin->add_ip($plugin_config, $subnetid, $subnet, $ip);
 	};
 	die $@ if $@;
     }
@@ -250,7 +260,7 @@ sub del_ip {
     my $dns = $zone->{dns};
     my $dnszone = $zone->{dnszone};
     my $reversedns = $zone->{reversedns};
-    my $reversednszone = &$get_reversedns_zone($subnetid, $reversedns, $ip);
+    my $reversednszone = &$get_reversedns_zone($subnetid, $subnet, $reversedns, $ip);
     my $dnszoneprefix = $subnet->{dnszoneprefix};
 
     &$verify_dns_zone($dnszone, $dns);
@@ -260,7 +270,7 @@ sub del_ip {
 	my $ipam_cfg = PVE::Network::SDN::Ipams::config();
 	my $plugin_config = $ipam_cfg->{ids}->{$ipamid};
 	my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
-	$plugin->del_ip($plugin_config, $subnetid, $ip);
+	$plugin->del_ip($plugin_config, $subnetid, $subnet, $ip);
     }
 
     eval {

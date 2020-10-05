@@ -186,11 +186,11 @@ sub verify_zone {
 }
 
 sub get_reversedns_zone {
-    my ($class, $plugin_config, $subnetid, $ip) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $ip) = @_;
 
-    my ($network, $mask) = split(/-/, $subnetid);
+    my $cidr = $subnet->{cidr};
+    my $mask = $subnet->{mask};
 
-    my $cidr = "$ip/$mask";
     my $zone = "";
 
     if (Net::IP::ip_is_ipv4($ip)) {
