@@ -37,6 +37,7 @@ sub options {
 	dns => { optional => 1 },
 	reversedns => { optional => 1 },
 	dnszone => { optional => 1 },
+        ipam => { optional => 0 },
     };
 }
 

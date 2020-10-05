@@ -44,6 +44,10 @@ my $defaultData = {
         nodes => get_standard_option('pve-node-list', { optional => 1 }),
         zone => get_standard_option('pve-sdn-zone-id',
             { completion => \&PVE::Network::SDN::Zones::complete_sdn_zone }),
+        ipam => {
+            type => 'string',
+            description => "use a specific ipam",
+        },
     },
 };
 

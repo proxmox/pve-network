@@ -75,10 +75,6 @@ sub properties {
             type => 'string', format => 'dns-name',
             description => "dns domain zone prefix  ex: 'adm' -> <hostname>.adm.mydomain.com",
         },
-        ipam => {
-            type => 'string',
-            description => "use a specific ipam",
-        },
     };
 }
 
@@ -89,7 +85,6 @@ sub options {
 #	routes => { optional => 1 },
 	snat => { optional => 1 },
 	dnszoneprefix => { optional => 1 },
-	ipam => { optional => 0 },
     };
 }
 
@@ -101,7 +96,7 @@ sub on_update_hook {
 
     my $vnetid = $subnet->{vnet};
     my $gateway = $subnet->{gateway};
-    my $ipam = $subnet->{ipam};
+    my $ipam = $zone->{ipam};
     my $dns = $zone->{dns};
     my $dnszone = $zone->{dnszone};
     my $reversedns = $zone->{reversedns};
@@ -121,7 +116,6 @@ sub on_update_hook {
     if ($ipam) {
 	my $ipam_cfg = PVE::Network::SDN::Ipams::config();
 	my $plugin_config = $ipam_cfg->{ids}->{$ipam};
-	raise_param_exc({ ipam => "$ipam not existing"}) if !$plugin_config;
 	my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
 	$plugin->add_subnet($plugin_config, $subnetid, $subnet);
 

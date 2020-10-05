@@ -160,7 +160,7 @@ sub next_free_ip {
     my $cidr = undef;
     my $ip = undef;
 
-    my $ipamid = $subnet->{ipam};
+    my $ipamid = $zone->{ipam};
     my $dns = $zone->{dns};
     my $dnszone = $zone->{dnszone};
     my $reversedns = $zone->{reversedns};
@@ -204,7 +204,7 @@ sub add_ip {
 
     return if !$subnet;
 
-    my $ipamid = $subnet->{ipam};
+    my $ipamid = $zone->{ipam};
     my $dns = $zone->{dns};
     my $dnszone = $zone->{dnszone};
     my $reversedns = $zone->{reversedns};
@@ -246,7 +246,7 @@ sub del_ip {
 
     return if !$subnet;
 
-    my $ipamid = $subnet->{ipam};
+    my $ipamid = $zone->{ipam};
     my $dns = $zone->{dns};
     my $dnszone = $zone->{dnszone};
     my $reversedns = $zone->{reversedns};

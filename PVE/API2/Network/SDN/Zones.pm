@@ -88,6 +88,7 @@ __PACKAGE__->register_method ({
 			    dns => { type => 'string', optional => 1},
 			    reversedns => { type => 'string', optional => 1},
 			    dnszone => { type => 'string', optional => 1},
+			    ipam => { type => 'string', optional => 1},
 			    pending => { optional => 1},
 			    state => { type => 'string', optional => 1},
 			    nodes => { type => 'string', optional => 1},
@@ -217,6 +218,10 @@ __PACKAGE__->register_method ({
 		raise_param_exc({ reversedns => "$reversednsserver don't exist"}) if $reversednsserver && !$dns_cfg->{ids}->{$reversednsserver};
 		raise_param_exc({ dnszone => "missing dns server"}) if $dnszone && !$dnsserver;
 
+		my $ipam = $opts->{ipam};
+		my $ipam_cfg = PVE::Network::SDN::Ipams::config();
+		raise_param_exc({ ipam => "$ipam not existing"}) if $ipam && !$ipam_cfg->{ids}->{$ipam};
+
 		$zone_cfg->{ids}->{$id} = $opts;
 		$plugin->on_update_hook($id, $zone_cfg, $controller_cfg);
 
@@ -268,6 +273,10 @@ __PACKAGE__->register_method ({
 	    raise_param_exc({ dns => "$dnsserver don't exist"}) if $dnsserver && !$dns_cfg->{ids}->{$dnsserver};
 	    raise_param_exc({ reversedns => "$reversednsserver don't exist"}) if $reversednsserver && !$dns_cfg->{ids}->{$reversednsserver};
 	    raise_param_exc({ dnszone => "missing dns server"}) if $dnszone && !$dnsserver;
+
+	    my $ipam = $opts->{ipam};
+	    my $ipam_cfg = PVE::Network::SDN::Ipams::config();
+	    raise_param_exc({ ipam => "$ipam not existing"}) if $ipam && !$ipam_cfg->{ids}->{$ipam};
 
 	    $plugin->on_update_hook($id, $zone_cfg, $controller_cfg);
 

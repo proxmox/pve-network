@@ -95,7 +95,7 @@ sub get_next_free_ip {
 
 	next if $ipversion != Net::IP::ip_get_version($network);
 	$subnetcount++;
-	if ($subnet->{ipam}) {
+	if ($zone->{ipam}) {
 	    eval {
 		$ip = PVE::Network::SDN::Subnets::next_free_ip($zone, $subnetid, $subnet, $hostname);
 	    };
