@@ -9,6 +9,7 @@ use PVE::Cluster qw(cfs_read_file cfs_write_file);
 use PVE::Network::SDN;
 use PVE::Network::SDN::Subnets;
 use PVE::Network::SDN::SubnetPlugin;
+use PVE::Network::SDN::Vnets;
 
 use Storable qw(dclone);
 use PVE::JSONSchema qw(get_standard_option);
@@ -206,9 +207,11 @@ __PACKAGE__->register_method ({
 
 		my $scfg = PVE::Network::SDN::Subnets::sdn_subnets_config($cfg, $id);
 
-		my $subnet_cfg = PVE::Network::SDN::Subnets::config();
+		my $subnets_cfg = PVE::Network::SDN::Subnets::config();
+		my $vnets_cfg = PVE::Network::SDN::Vnets::config();
 
 		delete $cfg->{ids}->{$id};
+		PVE::Network::SDN::SubnetPlugin->on_delete_hook($id, $subnets_cfg, $vnets_cfg);
 		PVE::Network::SDN::Subnets::write_config($cfg);
 		PVE::Network::SDN::increase_version();
 

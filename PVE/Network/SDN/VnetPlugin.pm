@@ -68,16 +68,11 @@ sub properties {
             description => "alias name of the vnet",
 	    optional => 1,
         },
-        ipv4 => {
-            description => "Anycast router ipv4 address.",
-            type => 'string', format => 'CIDRv4',
-            optional => 1,
-        },
-	ipv6 => {
-	    description => "Anycast router ipv6 address.",
-	    type => 'string', format => 'CIDRv6',
+        subnets => {
+            type => 'string',
+            description => "Subnets list",
 	    optional => 1,
-	},
+        },
         mac => {
             type => 'string',
             description => "Anycast router mac address",
@@ -91,8 +86,7 @@ sub options {
         zone => { optional => 0},
         tag => { optional => 1},
         alias => { optional => 1 },
-        ipv4 => { optional => 1 },
-        ipv6 => { optional => 1 },
+        subnets => { optional => 1 },
         mac => { optional => 1 },
         vlanaware => { optional => 1 },
     };
@@ -105,7 +99,7 @@ sub on_delete_hook {
 }
 
 sub on_update_hook {
-    my ($class, $vnetid, $vnet_cfg) = @_;
+    my ($class, $vnetid, $vnet_cfg, $subnet_cfg) = @_;
     # verify that tag is not already defined in another vnet
     if (defined($vnet_cfg->{ids}->{$vnetid}->{tag})) {
 	my $tag = $vnet_cfg->{ids}->{$vnetid}->{tag};
@@ -116,6 +110,13 @@ sub on_update_hook {
 		raise_param_exc({ tag => "tag $tag already exist in vnet $id"}) if $tag eq $vnet->{tag};
 	    }
 	}
+    }
+
+    #verify subnet
+    my @subnets = PVE::Tools::split_list($vnet_cfg->{ids}->{$vnetid}->{subnets}) if $vnet_cfg->{ids}->{$vnetid}->{subnets};
+    foreach my $subnet (@subnets) {
+	my $id = $subnet =~ s/\//-/r;
+	raise_param_exc({ subnet => "$subnet not existing"}) if !$subnet_cfg->{ids}->{$id};
     }
 }
 

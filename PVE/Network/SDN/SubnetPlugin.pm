@@ -112,4 +112,20 @@ sub on_update_hook {
     raise_param_exc({ gateway => "$gateway is not in subnet $subnet"}) if $gateway && !$subnet_matcher->($gateway);
 }
 
+sub on_delete_hook {
+    my ($class, $subnetid, $subnet_cfg, $vnet_cfg) = @_;
+
+    #verify if vnets have subnet
+    foreach my $vnetid (keys %{$vnet_cfg->{ids}}) {
+	my $vnet = $vnet_cfg->{ids}->{$vnetid};
+	my @subnets = PVE::Tools::split_list($vnet->{subnets}) if $vnet->{subnets};
+	foreach my $subnet (@subnets) {
+	    my $id = $subnet =~ s/\//-/r;
+	    raise_param_exc({ subnet => "$subnet is attached to vnet $vnetid"}) if $id eq $subnetid;
+	}
+    }
+
+    return;
+}
+
 1;

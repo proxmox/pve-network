@@ -11,6 +11,7 @@ use PVE::Network::SDN::Zones;
 use PVE::Network::SDN::Zones::Plugin;
 use PVE::Network::SDN::Vnets;
 use PVE::Network::SDN::VnetPlugin;
+use PVE::Network::SDN::Subnets;
 
 use Storable qw(dclone);
 use PVE::JSONSchema qw(get_standard_option);
@@ -132,7 +133,9 @@ __PACKAGE__->register_method ({
 	    my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
 	    $plugin->verify_tag($opts->{tag});
 
-	    PVE::Network::SDN::VnetPlugin->on_update_hook($id, $cfg);
+	    my $subnet_cfg = PVE::Network::SDN::Subnets::config();
+
+	    PVE::Network::SDN::VnetPlugin->on_update_hook($id, $cfg, $subnet_cfg);
 
 	    PVE::Network::SDN::Vnets::write_config($cfg);
 	    PVE::Network::SDN::increase_version();
@@ -173,7 +176,9 @@ __PACKAGE__->register_method ({
 	    my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
 	    $plugin->verify_tag($opts->{tag});
 
-	    PVE::Network::SDN::VnetPlugin->on_update_hook($id, $cfg);
+	    my $subnet_cfg = PVE::Network::SDN::Subnets::config();
+
+	    PVE::Network::SDN::VnetPlugin->on_update_hook($id, $cfg, $subnet_cfg);
 
 	    PVE::Network::SDN::Vnets::write_config($cfg);
 	    PVE::Network::SDN::increase_version();
