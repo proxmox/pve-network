@@ -17,6 +17,8 @@ Depends: libpve-common-perl (>= 5.0-45),
          perl (>= 5.6.0-16),
          pve-cluster (>= 5.0-32),
          libnet-subnet-perl,
+         libnet-ip-perl,
+         libnetaddr-ip-perl,
          ${misc:Depends},
          ${perl:Depends},
 Recommends: frr-pythontools, ifupdown2

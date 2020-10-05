@@ -4,6 +4,8 @@ use strict;
 use warnings;
 
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
+use Net::IP;
+use PVE::Network::SDN::Subnets;
 
 use PVE::Network::SDN::VnetPlugin;
 PVE::Network::SDN::VnetPlugin->register();
@@ -50,6 +52,54 @@ sub get_vnet {
     my $cfg = PVE::Network::SDN::Vnets::config();
     my $vnet = PVE::Network::SDN::Vnets::sdn_vnets_config($cfg, $vnetid, 1);
     return $vnet;
+}
+
+sub get_next_free_ip {
+    my ($vnet, $ipversion) = @_;
+
+    $ipversion = 4 if !$ipversion;
+    my $subnets_cfg = PVE::Network::SDN::Subnets::config();
+    my @subnets = PVE::Tools::split_list($vnet->{subnets}) if $vnet->{subnets};
+    my $ip = undef;
+    my $subnet = undef;
+    my $subnetcount = 0;
+    foreach my $s (@subnets) {
+	my $subnetid = $s =~ s/\//-/r;
+	my ($network, $mask) = split(/-/, $subnetid);
+	next if $ipversion != Net::IP::ip_get_version($network);
+	$subnetcount++;
+	$subnet = $subnets_cfg->{ids}->{$subnetid};
+	if ($subnet && $subnet->{ipam}) {
+	    eval {
+		$ip = PVE::Network::SDN::Subnets::next_free_ip($subnetid, $subnet);
+	    };
+	    warn $@ if $@;
+	}
+	last if $ip;
+    }
+    die "can't find any free ip" if !$ip && $subnetcount > 0;
+
+    return $ip;
+}
+
+sub add_ip {
+    my ($vnet, $cidr, $name) = @_;
+
+    my ($ip, $mask) = split(/\//, $cidr);
+    my ($subnetid, $subnet) = PVE::Network::SDN::Subnets::find_ip_subnet($ip, $vnet->{subnets});
+    return if !$subnet->{ipam};
+
+    PVE::Network::SDN::Subnets::add_ip($subnetid, $subnet, $ip);
+}
+
+sub del_ip {
+    my ($vnet, $cidr) = @_;
+
+    my ($ip, $mask) = split(/\//, $cidr);
+    my ($subnetid, $subnet) = PVE::Network::SDN::Subnets::find_ip_subnet($ip, $vnet->{subnets});
+    return if !$subnet->{ipam};
+
+    PVE::Network::SDN::Subnets::del_ip($subnetid, $subnet, $ip);
 }
 
 1;

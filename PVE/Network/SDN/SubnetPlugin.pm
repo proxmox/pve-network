@@ -82,7 +82,7 @@ sub properties {
             type => 'string',
             description => "Develop some dns registrations plugins (powerdns,...)",
         },
-        ipam_driver => {
+        ipam => {
             type => 'string',
             description => "use a specific ipam",
         },
@@ -98,7 +98,7 @@ sub options {
 	snat => { optional => 1 },
 	dhcp => { optional => 1 },
 	dns_driver => { optional => 1 },
-	ipam_driver => { optional => 1 },
+	ipam => { optional => 1 },
     };
 }
 
@@ -110,6 +110,7 @@ sub on_update_hook {
 
     my $gateway = $subnet_cfg->{ids}->{$subnetid}->{gateway};
     raise_param_exc({ gateway => "$gateway is not in subnet $subnet"}) if $gateway && !$subnet_matcher->($gateway);
+
 }
 
 sub on_delete_hook {
