@@ -44,6 +44,9 @@ __PACKAGE__->register_method ({
     },
     parameters => {
 	additionalProperties => 0,
+	properties => {
+	    vnet => get_standard_option('pve-sdn-vnet-id'),
+	},
     },
     returns => {
 	type => 'array',
@@ -59,6 +62,7 @@ __PACKAGE__->register_method ({
 	my $rpcenv = PVE::RPCEnvironment::get();
 	my $authuser = $rpcenv->get_user();
 
+        my $vnetid = $param->{vnet};
 
 	my $cfg = PVE::Network::SDN::Subnets::config();
 
@@ -66,9 +70,10 @@ __PACKAGE__->register_method ({
 	my $res = [];
 	foreach my $id (@sids) {
 	    my $privs = [ 'SDN.Audit', 'SDN.Allocate' ];
-	    next if !$rpcenv->check_any($authuser, "/sdn/subnets/$id", $privs, 1);
+	    next if !$rpcenv->check_any($authuser, "/sdn/vnets/$vnetid/subnets/$id", $privs, 1);
 
 	    my $scfg = &$api_sdn_subnets_config($cfg, $id);
+	    next if !$scfg->{vnet} || $scfg->{vnet} ne $vnetid;
 	    push @$res, $scfg;
 	}
 
@@ -81,12 +86,13 @@ __PACKAGE__->register_method ({
     method => 'GET',
     description => "Read sdn subnet configuration.",
     permissions => {
-	check => ['perm', '/sdn/subnets/{subnet}', ['SDN.Allocate']],
+	check => ['perm', '/sdn/vnets/{vnet}/subnets/{subnet}', ['SDN.Allocate']],
    },
 
     parameters => {
 	additionalProperties => 0,
 	properties => {
+	    vnet => get_standard_option('pve-sdn-vnet-id'),
 	    subnet => get_standard_option('pve-sdn-subnet-id', {
 		completion => \&PVE::Network::SDN::Subnets::complete_sdn_subnets,
 	    }),
@@ -97,8 +103,11 @@ __PACKAGE__->register_method ({
 	my ($param) = @_;
 
 	my $cfg = PVE::Network::SDN::Subnets::config();
+        my $scfg = &$api_sdn_subnets_config($cfg, $param->{subnet});
 
-	return &$api_sdn_subnets_config($cfg, $param->{subnet});
+	raise_param_exc({ vnet => "wrong vnet"}) if $param->{vnet} ne $scfg->{vnet};
+
+	return $scfg;
     }});
 
 __PACKAGE__->register_method ({
@@ -108,7 +117,7 @@ __PACKAGE__->register_method ({
     method => 'POST',
     description => "Create a new sdn subnet object.",
     permissions => {
-	check => ['perm', '/sdn/subnets', ['SDN.Allocate']],
+	check => ['perm', '/sdn/vnets/{vnet}/subnets', ['SDN.Allocate']],
     },
     parameters => PVE::Network::SDN::SubnetPlugin->createSchema(),
     returns => { type => 'null' },
@@ -162,7 +171,7 @@ __PACKAGE__->register_method ({
     method => 'PUT',
     description => "Update sdn subnet object configuration.",
     permissions => {
-	check => ['perm', '/sdn/subnets', ['SDN.Allocate']],
+	check => ['perm', '/sdn/vnets/{vnet}/subnets', ['SDN.Allocate']],
     },
     parameters => PVE::Network::SDN::SubnetPlugin->updateSchema(),
     returns => { type => 'null' },
@@ -217,11 +226,12 @@ __PACKAGE__->register_method ({
     method => 'DELETE',
     description => "Delete sdn subnet object configuration.",
     permissions => {
-	check => ['perm', '/sdn/subnets', ['SDN.Allocate']],
+	check => ['perm', '/sdn/vnets/{vnet}/subnets', ['SDN.Allocate']],
     },
     parameters => {
 	additionalProperties => 0,
 	properties => {
+            vnet => get_standard_option('pve-sdn-vnet-id'),
 	    subnet => get_standard_option('pve-sdn-subnet-id', {
                 completion => \&PVE::Network::SDN::Subnets::complete_sdn_subnets,
             }),

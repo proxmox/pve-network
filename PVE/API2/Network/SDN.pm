@@ -14,7 +14,6 @@ use PVE::Tools qw(run_command);
 use PVE::API2::Network::SDN::Controllers;
 use PVE::API2::Network::SDN::Vnets;
 use PVE::API2::Network::SDN::Zones;
-use PVE::API2::Network::SDN::Subnets;
 use PVE::API2::Network::SDN::Ipams;
 use PVE::API2::Network::SDN::Dns;
 
@@ -33,11 +32,6 @@ __PACKAGE__->register_method ({
 __PACKAGE__->register_method ({
     subclass => "PVE::API2::Network::SDN::Controllers",
     path => 'controllers',
-});
-
-__PACKAGE__->register_method ({
-    subclass => "PVE::API2::Network::SDN::Subnets",
-    path => 'subnets',
 });
 
 __PACKAGE__->register_method ({
@@ -79,7 +73,6 @@ __PACKAGE__->register_method({
 	    { id => 'vnets' },
 	    { id => 'zones' },
 	    { id => 'controllers' },
-	    { id => 'subnets' },
 	    { id => 'ipams' },
 	    { id => 'dns' },
 	];

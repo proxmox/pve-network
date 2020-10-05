@@ -94,6 +94,7 @@ sub properties {
 
 sub options {
     return {
+	vnet => { optional => 0 },
 	gateway => { optional => 1 },
 #	routes => { optional => 1 },
 	snat => { optional => 1 },
