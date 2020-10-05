@@ -2,28 +2,47 @@ Here a sample of command with pvesh to manage the sdn.
 
 
 #create a vlan transportzone
-pvesh create /cluster/sdn/zones/ --zone vlanzone --type vlan --bridge vmbr0
+pvesh create /cluster/sdn/zones/ --zone vlanzone --type vlan --ipam pve --bridge vmbr0
+#create a vnet on vlanzone
+pvesh create /cluster/sdn/vnets/ --vnet vnet100 --type vnet --zone vlanzone --tag 100
+#create a subnet on vlanzone
+pvesh create /cluster/sdn/vnets/vnet100/subnets/ --type subnet --subnet 192.168.0.0/24 --gateway 192.168.0.1
 
 
 #create a layer2 vxlan unicast transportzone
-pvesh create /cluster/sdn/zones/ --zone vxlanunicastzone --type vxlan --peers 192.168.0.1,192.168.0.2,192.168.0.3
+pvesh create /cluster/sdn/zones/ --zone vxlanunicastzone --type vxlan --ipam pve --peers 192.168.0.1,192.168.0.2,192.168.0.3
 
 #create an controller
 pvesh create /cluster/sdn/controllers/ --controller frrrouter1 --type evpn --peers 192.168.0.1,192.168.0.2,192.168.0.3 --asn 1234 --gateway-nodes pxnode1,pxnode2 --gateway-external-peers 192.168.0.253,192.168.0.254
 
 #create a layer2 vxlan bgpevpn transportzone
-pvesh create /cluster/sdn/zones/ --zone layer2evpnzone --type evpn --controller frrrouter1
+pvesh create /cluster/sdn/zones/ --zone layer2evpnzone --type evpn --ipam pve --controller frrrouter1
 
 #create a layer3 routable vxlan bgpevpn transportzone
-pvesh create /cluster/sdn/zones/ --zone layer3evpnzone --type evpn --controller frrrouter1 --vrf-vxlan 4000
+pvesh create /cluster/sdn/zones/ --zone layer3evpnzone --type evpn --ipam pve --controller frrrouter1 --vrf-vxlan 4000
 
 
 #create a vnet in the transportzone
 pvesh create /cluster/sdn/vnets/ --vnet vnet10 --type vnet --zone vlanzone --tag 10
 
-#create a vnet in the transportzone with ip for evpn routing
-pvesh create /cluster/sdn/vnets/ --vnet vnet11 --type vnet --zone layer3evpnzone --tag 11 --ipv4 10.0.0.1/24 --mac c8:1f:66:f8:62:8d
-pvesh create /cluster/sdn/vnets/ --vnet vnet12 --type vnet --zone layer3evpnzone --tag 12 --ipv4 10.0.1.1/24 --mac c8:1f:66:f8:62:8e
+#create a vnet in the transportzone with subnets for evpn routing
+pvesh create /cluster/sdn/vnets/ --vnet vnet11 --type vnet --zone layer3evpnzone --tag 11 --mac c8:1f:66:f8:62:8d
+pvesh create /cluster/sdn/vnets/vnet11/subnets/ --type subnet --subnet 10.0.0.0/24 --gateway 10.0.0.1
+pvesh create /cluster/sdn/vnets/ --vnet vnet12 --type vnet --zone layer3evpnzone --tag 12 --mac c8:1f:66:f8:62:8e
+pvesh create /cluster/sdn/vnets/vnet11/subnets/ --type subnet --subnet 10.0.1.0/24 --gateway 10.0.1.1
+
+#display running configuration
+pvesh get /cluster/sdn/vnets --running
+pvesh get /cluster/sdn/zones --running
+pvesh get /cluster/sdn/controllers --running
+pvesh get /cluster/sdn/vnets/vnetX/subnets --running
+
+
+#display pending configuration
+pvesh get /cluster/sdn/vnets --pending
+pvesh get /cluster/sdn/zones --pending
+pvesh get /cluster/sdn/controllers --pending
+pvesh get /cluster/sdn/vnets/vnetX/subnets --pending
 
 
 #apply changes from /etc/pve/sdn.cfg.new to /etc/pve/sdn.cfg
