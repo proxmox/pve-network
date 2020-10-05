@@ -51,6 +51,7 @@ sub generate_sdn_config {
 
     my $vrf_iface = "vrf_$zoneid";
     my $vrfvxlan = $plugin_config->{'vrf-vxlan'};
+    my $local_node = PVE::INotify::nodename();
 
     die "missing vxlan tag" if !$tag;
     warn "vlan-aware vnet can't be enabled with evpn plugin" if $vnet->{vlanaware};
@@ -86,6 +87,23 @@ sub generate_sdn_config {
 	    push @iface_config, "address $gateway" if !defined($address->{$gateway});
 	    $address->{$gateway} = 1;
 	}
+	if ($subnet->{snat}) {
+	    my $gatewaynodes = $controller->{'gateway-nodes'};
+	    my $is_evpn_gateway = "";
+	    foreach my $evpn_gatewaynode (PVE::Tools::split_list($gatewaynodes)) {
+		$is_evpn_gateway = 1 if $evpn_gatewaynode eq $local_node;
+	    }
+            #find outgoing interface
+            my ($outip, $outiface) = PVE::Network::SDN::Zones::Plugin::get_local_route_ip('8.8.8.8');
+            if ($outip && $outiface && $is_evpn_gateway) {
+                #use snat, faster than masquerade
+                push @iface_config, "post-up iptables -t nat -A POSTROUTING -s '$cidr' -o $outiface -j SNAT --to-source $outip";
+                push @iface_config, "post-down iptables -t nat -D POSTROUTING -s '$cidr' -o $outiface -j SNAT --to-source $outip";
+                #add conntrack zone once on outgoing interface
+                push @iface_config, "post-up iptables -t raw -I PREROUTING -i fwbr+ -j CT --zone 1";
+                push @iface_config, "post-down iptables -t raw -D PREROUTING -i fwbr+ -j CT --zone 1";
+            }
+        }
     }
 
     push @iface_config, "hwaddress $mac" if $mac;
