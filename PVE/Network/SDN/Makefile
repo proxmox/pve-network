@@ -1,4 +1,4 @@
-SOURCES=Vnets.pm VnetPlugin.pm Zones.pm Controllers.pm Subnets.pm SubnetPlugin.pm Ipams.pm
+SOURCES=Vnets.pm VnetPlugin.pm Zones.pm Controllers.pm Subnets.pm SubnetPlugin.pm Ipams.pm Dns.pm
 
 
 PERL5DIR=${DESTDIR}/usr/share/perl5
@@ -9,4 +9,5 @@ install:
 	make -C Controllers install
 	make -C Zones install
 	make -C Ipams install
+	make -C Dns install
 

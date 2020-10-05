@@ -55,7 +55,7 @@ sub get_vnet {
 }
 
 sub get_next_free_ip {
-    my ($vnet, $ipversion) = @_;
+    my ($vnet, $hostname, $ipversion) = @_;
 
     $ipversion = 4 if !$ipversion;
     my $subnets_cfg = PVE::Network::SDN::Subnets::config();
@@ -71,7 +71,7 @@ sub get_next_free_ip {
 	$subnet = $subnets_cfg->{ids}->{$subnetid};
 	if ($subnet && $subnet->{ipam}) {
 	    eval {
-		$ip = PVE::Network::SDN::Subnets::next_free_ip($subnetid, $subnet);
+		$ip = PVE::Network::SDN::Subnets::next_free_ip($subnetid, $subnet, $hostname);
 	    };
 	    warn $@ if $@;
 	}
@@ -83,23 +83,23 @@ sub get_next_free_ip {
 }
 
 sub add_ip {
-    my ($vnet, $cidr, $name) = @_;
+    my ($vnet, $cidr, $hostname) = @_;
 
     my ($ip, $mask) = split(/\//, $cidr);
     my ($subnetid, $subnet) = PVE::Network::SDN::Subnets::find_ip_subnet($ip, $vnet->{subnets});
     return if !$subnet->{ipam};
 
-    PVE::Network::SDN::Subnets::add_ip($subnetid, $subnet, $ip);
+    PVE::Network::SDN::Subnets::add_ip($subnetid, $subnet, $ip, $hostname);
 }
 
 sub del_ip {
-    my ($vnet, $cidr) = @_;
+    my ($vnet, $cidr, $hostname) = @_;
 
     my ($ip, $mask) = split(/\//, $cidr);
     my ($subnetid, $subnet) = PVE::Network::SDN::Subnets::find_ip_subnet($ip, $vnet->{subnets});
     return if !$subnet->{ipam};
 
-    PVE::Network::SDN::Subnets::del_ip($subnetid, $subnet, $ip);
+    PVE::Network::SDN::Subnets::del_ip($subnetid, $subnet, $ip, $hostname);
 }
 
 1;

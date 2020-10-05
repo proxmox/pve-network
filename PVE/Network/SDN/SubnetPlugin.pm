@@ -65,22 +65,25 @@ sub properties {
             type => 'string',
             description => "static routes [network=<network>:gateway=<ip>,network=<network>:gateway=<ip>,... ]",
         },
-	#cloudinit, dhcp options
-        nameservers => {
-            type => 'string', format => 'address-list',
-            description => " dns nameserver",
-        },
-	#cloudinit, dhcp options
-        searchdomain => {
+        dns => {
             type => 'string',
+            description => "dns api server",
         },
-        dhcp => {
-            type => 'boolean',
-            description => "enable dhcp for this subnet",
-        },
-        dns_driver => {
+        reversedns => {
             type => 'string',
-            description => "Develop some dns registrations plugins (powerdns,...)",
+            description => "reverse dns api server",
+        },
+        dnszone => {
+            type => 'string',
+            description => "dns domain zone  ex: mydomain.com",
+        },
+        reversednszone => {
+            type => 'string',
+            description => "reverse dns zone ex: 0.168.192.in-addr.arpa",
+        },
+        dnszoneprefix => {
+            type => 'string',
+            description => "dns domain zone prefix  ex: 'adm' -> <hostname>.adm.mydomain.com",
         },
         ipam => {
             type => 'string',
@@ -93,11 +96,12 @@ sub options {
     return {
 	gateway => { optional => 1 },
 	routes => { optional => 1 },
-	nameservers => { optional => 1 },
-	searchdomain => { optional => 1 },
 	snat => { optional => 1 },
-	dhcp => { optional => 1 },
-	dns_driver => { optional => 1 },
+	dns => { optional => 1 },
+	reversedns => { optional => 1 },
+	dnszone => { optional => 1 },
+	reversednszone => { optional => 1 },
+	dnszoneprefix => { optional => 1 },
 	ipam => { optional => 1 },
     };
 }
@@ -105,11 +109,25 @@ sub options {
 sub on_update_hook {
     my ($class, $subnetid, $subnet_cfg) = @_;
 
-    my $subnet = $subnetid =~ s/-/\//r;
-    my $subnet_matcher = subnet_matcher($subnet);
+    my $cidr = $subnetid =~ s/-/\//r;
+    my $subnet_matcher = subnet_matcher($cidr);
 
-    my $gateway = $subnet_cfg->{ids}->{$subnetid}->{gateway};
+    my $subnet = $subnet_cfg->{ids}->{$subnetid};
+
+    my $gateway = $subnet->{gateway};
+    my $dns = $subnet->{dns};
+    my $dnszone = $subnet->{dnszone};
+    my $reversedns = $subnet->{reversedns};
+    my $reversednszone = $subnet->{reversednszone};
+
+    #to: for /32 pointotoping, allow gateway outside the subnet
     raise_param_exc({ gateway => "$gateway is not in subnet $subnet"}) if $gateway && !$subnet_matcher->($gateway);
+
+    raise_param_exc({ dns => "missing dns provider"}) if $dnszone && !$dns;
+    raise_param_exc({ dnszone => "missing dns zone"}) if $dns && !$dnszone;
+    raise_param_exc({ reversedns => "missing dns provider"}) if $reversednszone && !$reversedns;
+    raise_param_exc({ reversednszone => "missing dns zone"}) if $reversedns && !$reversednszone;
+    raise_param_exc({ reversedns => "missing forward dns zone"}) if $reversednszone && !$dnszone;
 
 }
 

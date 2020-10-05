@@ -1,4 +1,4 @@
-package PVE::Network::SDN::Ipams::Plugin;
+package PVE::Network::SDN::Dns::Plugin;
 
 use strict;
 use warnings;
@@ -14,22 +14,22 @@ use Data::Dumper;
 use PVE::JSONSchema qw(get_standard_option);
 use base qw(PVE::SectionConfig);
 
-PVE::Cluster::cfs_register_file('sdn/ipams.cfg',
+PVE::Cluster::cfs_register_file('sdn/dns.cfg',
 				 sub { __PACKAGE__->parse_config(@_); },
 				 sub { __PACKAGE__->write_config(@_); });
 
-PVE::JSONSchema::register_standard_option('pve-sdn-ipam-id', {
-    description => "The SDN ipam object identifier.",
-    type => 'string', format => 'pve-sdn-ipam-id',
+PVE::JSONSchema::register_standard_option('pve-sdn-dns-id', {
+    description => "The SDN dns object identifier.",
+    type => 'string', format => 'pve-sdn-dns-id',
 });
 
-PVE::JSONSchema::register_format('pve-sdn-ipam-id', \&parse_sdn_ipam_id);
-sub parse_sdn_ipam_id {
+PVE::JSONSchema::register_format('pve-sdn-dns-id', \&parse_sdn_dns_id);
+sub parse_sdn_dns_id {
     my ($id, $noerr) = @_;
 
     if ($id !~ m/^[a-z][a-z0-9]*[a-z0-9]$/i) {
 	return undef if $noerr;
-	die "ipam ID '$id' contains illegal characters\n";
+	die "dns ID '$id' contains illegal characters\n";
     }
     return $id;
 }
@@ -40,10 +40,10 @@ my $defaultData = {
 	type => {
 	    description => "Plugin type.",
 	    type => 'string', format => 'pve-configid',
-	    type => 'string',
 	},
-        ipam => get_standard_option('pve-sdn-ipam-id',
-            { completion => \&PVE::Network::SDN::Ipams::complete_sdn_ipam }),
+        ttl => { type => 'integer', optional => 1 },
+        dns => get_standard_option('pve-sdn-dns-id',
+            { completion => \&PVE::Network::SDN::Dns::complete_sdn_dns }),
     },
 };
 
@@ -66,31 +66,17 @@ sub parse_section_header {
 }
 
 
-sub add_subnet {
-    my ($class, $plugin_config, $subnetid, $subnet) = @_;
+sub add_a_record {
+    my ($class, $plugin_config, $type, $zone, $reversezone, $hostname, $ip) = @_;
 }
 
-sub del_subnet {
-    my ($class, $plugin_config, $subnetid, $subnet) = @_;
-}
-
-sub add_ip {
-    my ($class, $plugin_config, $subnetid, $subnet, $internalid, $ip, $hostname, $is_gateway) = @_;
-
-}
-
-sub add_next_freeip {
-    my ($class, $plugin_config) = @_;
-}
-
-sub del_ip {
-    my ($class, $plugin_config, $subnetid, $ip) = @_;
+sub del_a_record {
+    my ($class, $plugin_config, $hostname, $ip) = @_;
 }
 
 sub on_update_hook {
-    my ($class, $plugin_config)  = @_;
+    my ($class, $plugin_config) = @_;
 }
-
 
 #helpers
 sub api_request {
