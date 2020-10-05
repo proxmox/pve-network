@@ -39,7 +39,7 @@ sub options {
 
 # Plugin implementation
 sub generate_sdn_config {
-    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $controller, $interfaces_config, $config) = @_;
+    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $controller, $subnet_cfg, $interfaces_config, $config) = @_;
 
     my $bridge = $plugin_config->{bridge};
     die "can't find bridge $bridge" if !-d "/sys/class/net/$bridge";

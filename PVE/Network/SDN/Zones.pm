@@ -11,6 +11,7 @@ use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 use PVE::Network;
 
 use PVE::Network::SDN::Vnets;
+use PVE::Network::SDN::Subnets;
 use PVE::Network::SDN::Zones::VlanPlugin;
 use PVE::Network::SDN::Zones::QinQPlugin;
 use PVE::Network::SDN::Zones::VxlanPlugin;
@@ -78,6 +79,7 @@ sub generate_etc_network_config {
     my $version = PVE::Cluster::cfs_read_file('sdn/.version');
     my $vnet_cfg = PVE::Cluster::cfs_read_file('sdn/vnets.cfg');
     my $zone_cfg = PVE::Cluster::cfs_read_file('sdn/zones.cfg');
+    my $subnet_cfg = PVE::Network::SDN::Subnets::config();
     my $controller_cfg = PVE::Cluster::cfs_read_file('sdn/controllers.cfg');
     return if !$vnet_cfg && !$zone_cfg;
 
@@ -112,7 +114,7 @@ sub generate_etc_network_config {
 
 	my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
 	eval {
-	    $plugin->generate_sdn_config($plugin_config, $zone, $id, $vnet, $controller, $interfaces_config, $config);
+	    $plugin->generate_sdn_config($plugin_config, $zone, $id, $vnet, $controller, $subnet_cfg, $interfaces_config, $config);
 	};
 	if (my $err = $@) {
 	    warn "zone $zone : vnet $id : $err\n";

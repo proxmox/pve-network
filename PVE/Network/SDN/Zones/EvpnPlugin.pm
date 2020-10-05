@@ -38,7 +38,7 @@ sub options {
 
 # Plugin implementation
 sub generate_sdn_config {
-    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $controller, $interfaces_config, $config) = @_;
+    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $controller, $subnet_cfg, $interfaces_config, $config) = @_;
 
     my $tag = $vnet->{tag};
     my $alias = $vnet->{alias};
@@ -72,8 +72,13 @@ sub generate_sdn_config {
 
     #vnet bridge
     @iface_config = ();
-    push @iface_config, "address $ipv4" if $ipv4;
-    push @iface_config, "address $ipv6" if $ipv6;
+
+    my @subnets = PVE::Tools::split_list($vnet->{subnets}) if $vnet->{subnets};
+    foreach my $subnet (@subnets) {
+        next if !defined($subnet_cfg->{ids}->{$subnet});
+        push @iface_config, "address $subnet_cfg->{ids}->{$subnet}->{gateway}" if $subnet_cfg->{ids}->{$subnet}->{gateway};
+    }
+
     push @iface_config, "hwaddress $mac" if $mac;
     push @iface_config, "bridge_ports $vxlan_iface";
     push @iface_config, "bridge_stp off";

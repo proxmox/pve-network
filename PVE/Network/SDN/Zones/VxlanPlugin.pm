@@ -43,13 +43,10 @@ sub options {
 
 # Plugin implementation
 sub generate_sdn_config {
-    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $controller, $interfaces_config, $config) = @_;
+    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $controller, $subnet_cfg, $interfaces_config, $config) = @_;
 
     my $tag = $vnet->{tag};
     my $alias = $vnet->{alias};
-    my $ipv4 = $vnet->{ipv4};
-    my $ipv6 = $vnet->{ipv6};
-    my $mac = $vnet->{mac};
     my $multicastaddress = $plugin_config->{'multicast-address'};
     my @peers;
     @peers = PVE::Tools::split_list($plugin_config->{'peers'}) if $plugin_config->{'peers'};
@@ -78,9 +75,6 @@ sub generate_sdn_config {
 
     #vnet bridge
     @iface_config = ();
-    push @iface_config, "address $ipv4" if $ipv4;
-    push @iface_config, "address $ipv6" if $ipv6;
-    push @iface_config, "hwaddress $mac" if $mac;
     push @iface_config, "bridge_ports $vxlan_iface";
     push @iface_config, "bridge_stp off";
     push @iface_config, "bridge_fd 0";
