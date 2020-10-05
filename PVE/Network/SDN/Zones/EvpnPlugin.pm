@@ -3,6 +3,7 @@ package PVE::Network::SDN::Zones::EvpnPlugin;
 use strict;
 use warnings;
 use PVE::Network::SDN::Zones::VxlanPlugin;
+use PVE::Exception qw(raise raise_param_exc);
 use PVE::Tools qw($IPV4RE);
 use PVE::INotify;
 use PVE::Cluster;
