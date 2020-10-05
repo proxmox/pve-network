@@ -34,6 +34,8 @@ sub sdn_ipams_config {
 
 sub config {
     my $config = cfs_read_file("sdn/ipams.cfg");
+    #add default internal pve
+    $config->{ids}->{pve}->{type} = 'pve';
     return $config;
 }
 

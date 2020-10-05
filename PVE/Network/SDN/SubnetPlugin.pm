@@ -109,7 +109,7 @@ sub options {
 	dnszone => { optional => 1 },
 	reversednszone => { optional => 1 },
 	dnszoneprefix => { optional => 1 },
-	ipam => { optional => 1 },
+	ipam => { optional => 0 },
     };
 }
 
