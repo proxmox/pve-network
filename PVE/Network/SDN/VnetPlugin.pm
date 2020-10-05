@@ -68,11 +68,6 @@ sub properties {
             description => "alias name of the vnet",
 	    optional => 1,
         },
-        subnets => {
-            type => 'string',
-            description => "Subnets list",
-	    optional => 1,
-        },
         mac => {
             type => 'string',
             description => "Anycast router mac address",
@@ -86,16 +81,21 @@ sub options {
         zone => { optional => 0},
         tag => { optional => 1},
         alias => { optional => 1 },
-        subnets => { optional => 1 },
         mac => { optional => 1 },
         vlanaware => { optional => 1 },
     };
 }
 
 sub on_delete_hook {
-    my ($class, $sdnid, $vnet_cfg) = @_;
+    my ($class, $vnetid, $vnet_cfg) = @_;
 
-    return;
+    #verify if subnets are associated
+    my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid);
+    my @subnetlist = ();
+    foreach my $subnetid (sort keys %{$subnets}) {
+	push @subnetlist, $subnetid;
+    }
+    raise_param_exc({ vnet => "Vnet is attached to following subnets:". join(',', @subnetlist)}) if @subnetlist > 0;
 }
 
 sub on_update_hook {
@@ -110,13 +110,6 @@ sub on_update_hook {
 		raise_param_exc({ tag => "tag $tag already exist in vnet $id"}) if $tag eq $vnet->{tag};
 	    }
 	}
-    }
-
-    #verify subnet
-    my @subnets = PVE::Tools::split_list($vnet_cfg->{ids}->{$vnetid}->{subnets}) if $vnet_cfg->{ids}->{$vnetid}->{subnets};
-    foreach my $subnet (@subnets) {
-	my $id = $subnet =~ s/\//-/r;
-	raise_param_exc({ subnet => "$subnet not existing"}) if !$subnet_cfg->{ids}->{$id};
     }
 }
 

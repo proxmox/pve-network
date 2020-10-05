@@ -57,20 +57,18 @@ sub get_subnet {
 }
 
 sub find_ip_subnet {
-    my ($ip, $subnetslist) = @_;
-
-    my $subnets_cfg = PVE::Network::SDN::Subnets::config();
-    my @subnets = PVE::Tools::split_list($subnetslist) if $subnetslist;
+    my ($ip, $subnets) = @_;
 
     my $subnet = undef;
     my $subnetid = undef;
 
-    foreach my $s (@subnets) {
-        my $subnet_matcher = subnet_matcher($s);
-        next if !$subnet_matcher->($ip);
-        $subnetid = $s =~ s/\//-/r;
-        $subnet = $subnets_cfg->{ids}->{$subnetid};
-        last;
+    foreach my $id (sort keys %{$subnets}) {
+	my $cidr = $id =~ s/-/\//r;
+	my $subnet_matcher = subnet_matcher($cidr);
+	next if !$subnet_matcher->($ip);
+	$subnet = $subnets->{$id};
+	$subnetid = $id;
+	last;
     }
     die  "can't find any subnet for ip $ip" if !$subnet;
 
@@ -159,8 +157,11 @@ sub next_free_ip {
 	my $ipam_cfg = PVE::Network::SDN::Ipams::config();
 	my $plugin_config = $ipam_cfg->{ids}->{$ipamid};
 	my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
-	$cidr = $plugin->add_next_freeip($plugin_config, $subnetid, $subnet);
-	($ip, undef) = split(/\//, $cidr);
+	eval {
+	    $cidr = $plugin->add_next_freeip($plugin_config, $subnetid, $subnet);
+	    ($ip, undef) = split(/\//, $cidr);
+	};
+	die $@ if $@;
     }
 
     eval {
@@ -183,6 +184,8 @@ sub next_free_ip {
 sub add_ip {
     my ($subnetid, $subnet, $ip, $hostname) = @_;
 
+    return if !$subnet;
+
     my $ipamid = $subnet->{ipam};
     my $dns = $subnet->{dns};
     my $dnszone = $subnet->{dnszone};
@@ -198,7 +201,10 @@ sub add_ip {
 	my $ipam_cfg = PVE::Network::SDN::Ipams::config();
 	my $plugin_config = $ipam_cfg->{ids}->{$ipamid};
 	my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
-	$plugin->add_ip($plugin_config, $subnetid, $ip);
+	eval {
+	    $plugin->add_ip($plugin_config, $subnetid, $ip);
+	};
+	die $@ if $@;
     }
 
     eval {
@@ -219,6 +225,8 @@ sub add_ip {
 
 sub del_ip {
     my ($subnetid, $subnet, $ip, $hostname) = @_;
+
+    return if !$subnet;
 
     my $ipamid = $subnet->{ipam};
     my $dns = $subnet->{dns};

@@ -76,10 +76,16 @@ sub generate_sdn_config {
     #vnet bridge
     @iface_config = ();
 
-    my @subnets = PVE::Tools::split_list($vnet->{subnets}) if $vnet->{subnets};
-    foreach my $subnet (@subnets) {
-        next if !defined($subnet_cfg->{ids}->{$subnet});
-        push @iface_config, "address $subnet_cfg->{ids}->{$subnet}->{gateway}" if $subnet_cfg->{ids}->{$subnet}->{gateway};
+    my $address = {};
+    my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid);
+    foreach my $subnetid (sort keys %{$subnets}) {
+	my $subnet = $subnets->{$subnetid};
+	my $cidr = $subnetid =~ s/-/\//r;
+	my $gateway = $subnet->{gateway};
+	if ($gateway) {
+	    push @iface_config, "address $gateway" if !defined($address->{$gateway});
+	    $address->{$gateway} = 1;
+	}
     }
 
     push @iface_config, "hwaddress $mac" if $mac;

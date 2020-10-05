@@ -8,6 +8,8 @@ use base qw(PVE::SectionConfig);
 use PVE::JSONSchema qw(get_standard_option);
 use PVE::Exception qw(raise raise_param_exc);
 use Net::Subnet qw(subnet_matcher);
+use PVE::Network::SDN::Vnets;
+use PVE::Network::SDN::Ipams;
 
 PVE::Cluster::cfs_register_file('sdn/subnets.cfg',
                                  sub { __PACKAGE__->parse_config(@_); },
@@ -52,6 +54,10 @@ sub private {
 
 sub properties {
     return {
+        vnet => {
+            type => 'string',
+            description => "associated vnet",
+        },
         gateway => {
             type => 'string', format => 'ip',
             description => "Subnet Gateway: Will be assign on vnet for layer3 zones",
@@ -108,21 +114,29 @@ sub options {
 }
 
 sub on_update_hook {
-    my ($class, $subnetid, $subnet_cfg) = @_;
+    my ($class, $subnetid, $subnet, $old_subnet) = @_;
 
     my $cidr = $subnetid =~ s/-/\//r;
     my $subnet_matcher = subnet_matcher($cidr);
 
-    my $subnet = $subnet_cfg->{ids}->{$subnetid};
-
+    my $vnetid = $subnet->{vnet};
     my $gateway = $subnet->{gateway};
+    my $ipam = $subnet->{ipam};
     my $dns = $subnet->{dns};
     my $dnszone = $subnet->{dnszone};
     my $reversedns = $subnet->{reversedns};
     my $reversednszone = $subnet->{reversednszone};
 
-    #to: for /32 pointotoping, allow gateway outside the subnet
-    raise_param_exc({ gateway => "$gateway is not in subnet $subnet"}) if $gateway && !$subnet_matcher->($gateway);
+    my $old_gateway = $old_subnet->{gateway} if $old_subnet;
+
+    if($vnetid) {
+	my $vnet = PVE::Network::SDN::Vnets::get_vnet($vnetid);
+	raise_param_exc({ vnet => "$vnetid don't exist"}) if !$vnet;
+    }
+
+    my ($ip, $mask) = split(/\//, $cidr);
+    #for /32 pointopoint, we allow gateway outside the subnet
+    raise_param_exc({ gateway => "$gateway is not in subnet $subnetid"}) if $gateway && !$subnet_matcher->($gateway) && $mask != 32;
 
     raise_param_exc({ dns => "missing dns provider"}) if $dnszone && !$dns;
     raise_param_exc({ dnszone => "missing dns zone"}) if $dns && !$dnszone;
@@ -130,20 +144,36 @@ sub on_update_hook {
     raise_param_exc({ reversednszone => "missing dns zone"}) if $reversedns && !$reversednszone;
     raise_param_exc({ reversedns => "missing forward dns zone"}) if $reversednszone && !$dnszone;
 
+    if ($ipam) {
+	my $ipam_cfg = PVE::Network::SDN::Ipams::config();
+	my $plugin_config = $ipam_cfg->{ids}->{$ipam};
+	raise_param_exc({ ipam => "$ipam not existing"}) if !$plugin_config;
+	my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
+	$plugin->add_subnet($plugin_config, $subnetid, $subnet);
+
+	#delete on removal
+	if (!defined($gateway) && $old_gateway) {
+	    eval {
+		PVE::Network::SDN::Subnets::del_ip($subnetid, $old_subnet, $old_gateway);
+	    };
+	    warn if $@;
+	}
+        if(!$old_gateway || $gateway && $gateway ne $old_gateway) {
+	    PVE::Network::SDN::Subnets::add_ip($subnetid, $subnet, $gateway);
+	}
+
+	#delete old ip after update
+	if($gateway && $old_gateway && $gateway ne $old_gateway) {
+	    eval {
+		PVE::Network::SDN::Subnets::del_ip($subnetid, $old_subnet, $old_gateway);
+	    };
+	    warn if $@;
+	}
+    }
 }
 
 sub on_delete_hook {
     my ($class, $subnetid, $subnet_cfg, $vnet_cfg) = @_;
-
-    #verify if vnets have subnet
-    foreach my $vnetid (keys %{$vnet_cfg->{ids}}) {
-	my $vnet = $vnet_cfg->{ids}->{$vnetid};
-	my @subnets = PVE::Tools::split_list($vnet->{subnets}) if $vnet->{subnets};
-	foreach my $subnet (@subnets) {
-	    my $id = $subnet =~ s/\//-/r;
-	    raise_param_exc({ subnet => "$subnet is attached to vnet $vnetid"}) if $id eq $subnetid;
-	}
-    }
 
     return;
 }

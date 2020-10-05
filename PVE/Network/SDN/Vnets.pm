@@ -54,22 +54,35 @@ sub get_vnet {
     return $vnet;
 }
 
+sub get_subnets {
+    my ($vnetid) = @_;
+
+    my $subnets = {};
+    my $subnets_cfg = PVE::Network::SDN::Subnets::config();
+    foreach my $subnetid (sort keys %{$subnets_cfg->{ids}}) {
+	my $subnet = $subnets_cfg->{ids}->{$subnetid};
+	next if !$subnet->{vnet} || $subnet->{vnet} ne $vnetid;
+	$subnets->{$subnetid} = $subnet;
+    }
+    return $subnets;
+
+}
+
 sub get_next_free_ip {
-    my ($vnet, $hostname, $ipversion) = @_;
+    my ($vnetid, $hostname, $ipversion) = @_;
 
     $ipversion = 4 if !$ipversion;
-    my $subnets_cfg = PVE::Network::SDN::Subnets::config();
-    my @subnets = PVE::Tools::split_list($vnet->{subnets}) if $vnet->{subnets};
+    my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid);
     my $ip = undef;
-    my $subnet = undef;
     my $subnetcount = 0;
-    foreach my $s (@subnets) {
-	my $subnetid = $s =~ s/\//-/r;
+
+    foreach my $subnetid (sort keys %{$subnets}) {
+        my $subnet = $subnets->{$subnetid};
 	my ($network, $mask) = split(/-/, $subnetid);
+
 	next if $ipversion != Net::IP::ip_get_version($network);
 	$subnetcount++;
-	$subnet = $subnets_cfg->{ids}->{$subnetid};
-	if ($subnet && $subnet->{ipam}) {
+	if ($subnet->{ipam}) {
 	    eval {
 		$ip = PVE::Network::SDN::Subnets::next_free_ip($subnetid, $subnet, $hostname);
 	    };
@@ -83,21 +96,23 @@ sub get_next_free_ip {
 }
 
 sub add_ip {
-    my ($vnet, $cidr, $hostname) = @_;
+    my ($vnetid, $cidr, $hostname) = @_;
+
+    my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid);
 
     my ($ip, $mask) = split(/\//, $cidr);
-    my ($subnetid, $subnet) = PVE::Network::SDN::Subnets::find_ip_subnet($ip, $vnet->{subnets});
-    return if !$subnet->{ipam};
+    my ($subnetid, $subnet) = PVE::Network::SDN::Subnets::find_ip_subnet($ip, $subnets);
 
     PVE::Network::SDN::Subnets::add_ip($subnetid, $subnet, $ip, $hostname);
 }
 
 sub del_ip {
-    my ($vnet, $cidr, $hostname) = @_;
+    my ($vnetid, $cidr, $hostname) = @_;
+
+    my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid);
 
     my ($ip, $mask) = split(/\//, $cidr);
-    my ($subnetid, $subnet) = PVE::Network::SDN::Subnets::find_ip_subnet($ip, $vnet->{subnets});
-    return if !$subnet->{ipam};
+    my ($subnetid, $subnet) = PVE::Network::SDN::Subnets::find_ip_subnet($ip, $subnets);
 
     PVE::Network::SDN::Subnets::del_ip($subnetid, $subnet, $ip, $hostname);
 }

@@ -144,17 +144,7 @@ __PACKAGE__->register_method ({
 		}
 
 		$cfg->{ids}->{$id} = $opts;
-		PVE::Network::SDN::SubnetPlugin->on_update_hook($id, $cfg);
-
-		my $ipam_cfg = PVE::Network::SDN::Ipams::config();
-		my $ipam = $cfg->{ids}->{$id}->{ipam};
-		if ($ipam) {
-		    raise_param_exc({ ipam => "$ipam not existing"}) if !$ipam_cfg->{ids}->{$ipam};
-		    my $plugin_config = $ipam_cfg->{ids}->{$ipam};
-		    my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
-		    $plugin->add_subnet($plugin_config, $id, $cfg->{ids}->{$id});
-		    $plugin->add_ip($plugin_config, $id, $opts->{gateway}, 1) if $opts->{gateway};
-		}
+		PVE::Network::SDN::SubnetPlugin->on_update_hook($id, $opts);
 
 		PVE::Network::SDN::Subnets::write_config($cfg);
 		PVE::Network::SDN::increase_version();
@@ -192,24 +182,7 @@ __PACKAGE__->register_method ({
 	    my $opts = PVE::Network::SDN::SubnetPlugin->check_config($id, $param, 0, 1);
 	    $cfg->{ids}->{$id} = $opts;
 
-	    PVE::Network::SDN::SubnetPlugin->on_update_hook($id, $cfg);
-
-            my $ipam_cfg = PVE::Network::SDN::Ipams::config();
-            my $ipam = $cfg->{ids}->{$id}->{ipam};
-	    if ($ipam) {
-		raise_param_exc({ ipam => "$ipam not existing"}) if !$ipam_cfg->{ids}->{$ipam};
-		my $plugin_config = $ipam_cfg->{ids}->{$ipam};
-		my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
-		$plugin->add_subnet($plugin_config, $id, $cfg->{ids}->{$id});
-
-		if($opts->{gateway} && $scfg->{gateway} && $opts->{gateway} ne $scfg->{gateway}) {
-		    $plugin->del_ip($plugin_config, $id, $scfg->{gateway});
-		}
-		if (!defined($opts->{gateway}) && $scfg->{gateway}) {
-		    $plugin->del_ip($plugin_config, $id, $scfg->{gateway});
-		} 
-		$plugin->add_ip($plugin_config, $id, $opts->{gateway}, 1) if $opts->{gateway};
-	    }
+	    PVE::Network::SDN::SubnetPlugin->on_update_hook($id, $opts, $scfg);
 
 	    PVE::Network::SDN::Subnets::write_config($cfg);
 	    PVE::Network::SDN::increase_version();
