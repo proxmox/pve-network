@@ -56,7 +56,7 @@ sub del_subnet {
 
 	my $db = read_db();
 	my $ips = $db->{subnets}->{$cidr}->{ips};
-	die "can't delete subnet, not empty" if keys %{$ips} > 0;
+	die "cannot delete subnet '$cidr', not empty\n" if keys %{$ips} > 0;
 	delete $db->{subnets}->{$cidr};
 	write_db($db);
     });
@@ -74,7 +74,7 @@ sub add_ip {
 	my $db = read_db();
 	my $s = $db->{subnets}->{$cidr};
 
-	die "ip already exist" if defined($s->{ips}->{$ip});
+	die "IP '$ip' already exist\n" if defined($s->{ips}->{$ip});
 
 	#verify that ip is valid for this subnet
 	$s->{ips}->{$ip} = 1;
