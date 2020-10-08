@@ -4,9 +4,11 @@ use strict;
 use warnings;
 
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
-use base qw(PVE::SectionConfig);
-use PVE::JSONSchema qw(get_standard_option);
 use PVE::Exception qw(raise raise_param_exc);
+use PVE::JSONSchema qw(get_standard_option);
+
+use PVE::SectionConfig;
+use base qw(PVE::SectionConfig);
 
 PVE::Cluster::cfs_register_file('sdn/vnets.cfg',
                                  sub { __PACKAGE__->parse_config(@_); },

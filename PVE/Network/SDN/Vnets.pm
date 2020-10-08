@@ -3,8 +3,9 @@ package PVE::Network::SDN::Vnets;
 use strict;
 use warnings;
 
-use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 use Net::IP;
+
+use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 use PVE::Network::SDN::Subnets;
 use PVE::Network::SDN::Zones;
 

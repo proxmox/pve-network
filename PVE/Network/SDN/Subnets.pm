@@ -4,11 +4,12 @@ use strict;
 use warnings;
 
 use Net::Subnet qw(subnet_matcher);
-use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 use Net::IP;
 
-use PVE::Network::SDN::Ipams;
+use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 use PVE::Network::SDN::Dns;
+use PVE::Network::SDN::Ipams;
+
 use PVE::Network::SDN::SubnetPlugin;
 PVE::Network::SDN::SubnetPlugin->register();
 PVE::Network::SDN::SubnetPlugin->init();
