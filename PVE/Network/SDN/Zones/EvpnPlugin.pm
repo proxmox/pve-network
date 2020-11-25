@@ -49,7 +49,7 @@ sub options {
 
 # Plugin implementation
 sub generate_sdn_config {
-    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $controller, $subnet_cfg, $interfaces_config, $config) = @_;
+    my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $controller, $controller_cfg, $subnet_cfg, $interfaces_config, $config) = @_;
 
     my $tag = $vnet->{tag};
     my $alias = $vnet->{alias};
@@ -66,9 +66,8 @@ sub generate_sdn_config {
     warn "vlan-aware vnet can't be enabled with evpn plugin" if $vnet->{vlanaware};
 
     my @peers = PVE::Tools::split_list($controller->{'peers'});
-#    my $bgprouter = PVE::Network::SDN::Controllers::EvpnController::find_bgp_controller($local_node, $controller_cfg);
-#    my $loopback = $bgprouter->{loopback} if $bgprouter->{loopback};
-    my $loopback = undef;
+    my $bgprouter = PVE::Network::SDN::Controllers::EvpnPlugin::find_bgp_controller($local_node, $controller_cfg);
+    my $loopback = $bgprouter->{loopback} if $bgprouter->{loopback};
     my ($ifaceip, $iface) = PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers, $loopback);
 
     my $mtu = 1450;

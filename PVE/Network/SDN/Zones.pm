@@ -131,7 +131,7 @@ sub generate_etc_network_config {
 
 	my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
 	eval {
-	    $plugin->generate_sdn_config($plugin_config, $zone, $id, $vnet, $controller, $subnet_cfg, $interfaces_config, $config);
+	    $plugin->generate_sdn_config($plugin_config, $zone, $id, $vnet, $controller, $controller_cfg, $subnet_cfg, $interfaces_config, $config);
 	};
 	if (my $err = $@) {
 	    warn "zone $zone : vnet $id : $err\n";
