@@ -70,7 +70,14 @@ sub generate_sdn_config {
 }
 
 sub generate_controller_config {
-    my ($class, $plugin_config, $controller, $id, $uplinks, $config) = @_;
+    my ($class, $plugin_config, $controller_cfg, $id, $uplinks, $config) = @_;
+
+    die "please implement inside plugin";
+}
+
+
+sub generate_controller_zone_config {
+    my ($class, $plugin_config, $controller, $controller_cfg, $id, $uplinks, $config) = @_;
 
     die "please implement inside plugin";
 }

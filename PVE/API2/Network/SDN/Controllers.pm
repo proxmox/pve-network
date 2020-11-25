@@ -11,6 +11,7 @@ use PVE::Network::SDN::Zones;
 use PVE::Network::SDN::Controllers;
 use PVE::Network::SDN::Controllers::Plugin;
 use PVE::Network::SDN::Controllers::EvpnPlugin;
+use PVE::Network::SDN::Controllers::BgpPlugin;
 use PVE::Network::SDN::Controllers::FaucetPlugin;
 
 use Storable qw(dclone);

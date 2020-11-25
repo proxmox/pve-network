@@ -9,6 +9,7 @@ use PVE::Tools qw(run_command file_set_contents file_get_contents);
 
 use PVE::Network::SDN::Controllers::Plugin;
 use PVE::Network::SDN::Zones::Plugin;
+use Net::IP;
 
 use base('PVE::Network::SDN::Controllers::Plugin');
 
@@ -26,11 +27,6 @@ sub properties {
 	    description => "peers address list.",
 	    type => 'string', format => 'ip-list'
 	},
-	'gateway-nodes' => get_standard_option('pve-node-list'),
-	'gateway-external-peers' => {
-	    description => "upstream bgp peers address list.",
-	    type => 'string', format => 'ip-list'
-	},
     };
 }
 
@@ -38,80 +34,97 @@ sub options {
     return {
 	'asn' => { optional => 0 },
 	'peers' => { optional => 0 },
-	'gateway-nodes' => { optional => 1 },
-	'gateway-external-peers' => { optional => 1 },
     };
 }
 
 # Plugin implementation
 sub generate_controller_config {
-    my ($class, $plugin_config, $controller, $id, $uplinks, $config) = @_;
+    my ($class, $plugin_config, $controller_cfg, $id, $uplinks, $config) = @_;
 
     my @peers;
     @peers = PVE::Tools::split_list($plugin_config->{'peers'}) if $plugin_config->{'peers'};
 
+    my $local_node = PVE::INotify::nodename();
+
     my $asn = $plugin_config->{asn};
-    my $gatewaynodes = $plugin_config->{'gateway-nodes'};
-    my @gatewaypeers;
-    @gatewaypeers = PVE::Tools::split_list($plugin_config->{'gateway-external-peers'}) if $plugin_config->{'gateway-external-peers'};
+    my $ebgp = undef;
+    my $loopback = undef;
+    my $autortas = undef;
+    my $bgprouter = find_bgp_controller($local_node, $controller_cfg);
+    if($bgprouter) {
+	$ebgp = 1 if $plugin_config->{'asn'} ne $bgprouter->{asn};
+	$loopback = $bgprouter->{loopback} if $bgprouter->{loopback};
+	$asn = $bgprouter->{asn} if $bgprouter->{asn};
+	$autortas = $plugin_config->{'asn'} if $ebgp;
+    }
 
     return if !$asn;
 
     my $bgp = $config->{frr}->{router}->{"bgp $asn"} //= {};
 
-    my ($ifaceip, $interface) = PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers);
+    my ($ifaceip, $interface) = PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers, $loopback);
 
-    my $is_gateway = undef;
-    my $local_node = PVE::INotify::nodename();
+    my $remoteas = $ebgp ? "external" : $asn;
 
-    foreach my $gatewaynode (PVE::Tools::split_list($gatewaynodes)) {
-	$is_gateway = 1 if $gatewaynode eq $local_node;
-    }
-
+    #global options
     my @controller_config = (
 	"bgp router-id $ifaceip",
 	"no bgp default ipv4-unicast",
 	"coalesce-time 1000",
     );
 
-    foreach my $address (@peers) {
-	next if $address eq $ifaceip;
-	push @controller_config, "neighbor $address remote-as $asn";
-    }
-
-    if ($is_gateway) {
-	foreach my $address (@gatewaypeers) {
-	    push @controller_config, "neighbor $address remote-as external";
-	}
-    }
-    push(@{$bgp->{""}}, @controller_config);
+    push(@{$bgp->{""}}, @controller_config) if keys %{$bgp} == 0;
 
     @controller_config = ();
+    
+    #VTEP neighbors
+    push @controller_config, "neighbor VTEP peer-group";
+    push @controller_config, "neighbor VTEP remote-as $remoteas";
+    push @controller_config, "neighbor VTEP bfd";
+
+    if($ebgp && $loopback) {
+	push @controller_config, "neighbor VTEP ebgp-multihop 10";
+	push @controller_config, "neighbor VTEP update-source $loopback";
+    }
+
+    # VTEP peers
     foreach my $address (@peers) {
 	next if $address eq $ifaceip;
-	push @controller_config, "neighbor $address activate";
+	push @controller_config, "neighbor $address peer-group VTEP";
     }
+
+    push(@{$bgp->{""}}, @controller_config);
+
+    # address-family l2vpn
+    @controller_config = ();
+    push @controller_config, "neighbor VTEP activate";
     push @controller_config, "advertise-all-vni";
+    push @controller_config, "autort as $autortas" if $autortas;
     push(@{$bgp->{"address-family"}->{"l2vpn evpn"}}, @controller_config);
-
-    if ($is_gateway) {
-	# import /32 routes of evpn network from vrf1 to default vrf (for packet return)
-	@controller_config = map { "neighbor $_ activate" } @gatewaypeers;
-
-	push(@{$bgp->{"address-family"}->{"ipv4 unicast"}}, @controller_config);
-	push(@{$bgp->{"address-family"}->{"ipv6 unicast"}}, @controller_config);
-    }
 
     return $config;
 }
 
 sub generate_controller_zone_config {
-    my ($class, $plugin_config, $controller, $id, $uplinks, $config) = @_;
+    my ($class, $plugin_config, $controller, $controller_cfg, $id, $uplinks, $config) = @_;
+
+    my $local_node = PVE::INotify::nodename();
 
     my $vrf = "vrf_$id";
     my $vrfvxlan = $plugin_config->{'vrf-vxlan'};
+    my $exitnodes = $plugin_config->{'exitnodes'};
+
     my $asn = $controller->{asn};
-    my $gatewaynodes = $controller->{'gateway-nodes'};
+    my $ebgp = undef;
+    my $loopback = undef;
+    my $autortas = undef;
+    my $bgprouter = find_bgp_controller($local_node, $controller_cfg);
+    if($bgprouter) {
+        $ebgp = 1 if $controller->{'asn'} ne $bgprouter->{asn};
+	$loopback = $bgprouter->{loopback} if $bgprouter->{loopback};
+	$asn = $bgprouter->{asn} if $bgprouter->{asn};
+	$autortas = $controller->{'asn'} if $ebgp;
+    }
 
     return if !$vrf || !$vrfvxlan || !$asn;
 
@@ -120,11 +133,18 @@ sub generate_controller_zone_config {
     push @controller_config, "vni $vrfvxlan";
     push(@{$config->{frr}->{vrf}->{"$vrf"}}, @controller_config);
 
-    push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{""}}, "!");
+    #main vrf router
+    @controller_config = ();
+    push @controller_config, "no bgp ebgp-requires-policy" if $ebgp;
+#    push @controller_config, "!";
+    push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{""}}, @controller_config);
 
-    my $local_node = PVE::INotify::nodename();
+    if ($autortas) {
+	push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"l2vpn evpn"}}, "route-target import $autortas:$vrfvxlan");
+	push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"l2vpn evpn"}}, "route-target export $autortas:$vrfvxlan");
+    }
 
-    my $is_gateway = grep { $_ eq $local_node } PVE::Tools::split_list($gatewaynodes);
+    my $is_gateway = grep { $_ eq $local_node } PVE::Tools::split_list($exitnodes);
     if ($is_gateway) {
 
 	@controller_config = ();
@@ -165,12 +185,30 @@ sub on_update_hook {
 
     # we can only have 1 evpn controller / 1 asn by server
 
+    my $controllernb = 0;
     foreach my $id (keys %{$controller_cfg->{ids}}) {
 	next if $id eq $controllerid;
 	my $controller = $controller_cfg->{ids}->{$id};
-	die "only 1 evpn controller can be defined" if $controller->{type} eq "evpn";
+	next if $controller->{type} ne "evpn";
+	$controllernb++;
+	die "only 1 global evpn controller can be defined" if $controllernb > 1;
     }
 }
+
+sub find_bgp_controller {
+    my ($nodename, $controller_cfg) = @_;
+
+    my $controller = undef;
+    foreach my $id  (keys %{$controller_cfg->{ids}}) {
+        $controller = $controller_cfg->{ids}->{$id};
+        next if $controller->{type} ne 'bgp';
+        next if $controller->{node} ne $nodename;
+	last;
+    }
+
+    return $controller;
+}
+
 
 sub sort_frr_config {
     my $order = {};

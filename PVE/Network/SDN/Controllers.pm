@@ -13,9 +13,11 @@ use PVE::Network::SDN::Vnets;
 use PVE::Network::SDN::Zones;
 
 use PVE::Network::SDN::Controllers::EvpnPlugin;
+use PVE::Network::SDN::Controllers::BgpPlugin;
 use PVE::Network::SDN::Controllers::FaucetPlugin;
 use PVE::Network::SDN::Controllers::Plugin;
 PVE::Network::SDN::Controllers::EvpnPlugin->register();
+PVE::Network::SDN::Controllers::BgpPlugin->register();
 PVE::Network::SDN::Controllers::FaucetPlugin->register();
 PVE::Network::SDN::Controllers::Plugin->init();
 
@@ -95,24 +97,24 @@ sub generate_controller_config {
     #generate configuration
     my $config = {};
 
-    foreach my $id (keys %{$controller_cfg->{ids}}) {
+    foreach my $id (sort keys %{$controller_cfg->{ids}}) {
 	my $plugin_config = $controller_cfg->{ids}->{$id};
 	my $plugin = PVE::Network::SDN::Controllers::Plugin->lookup($plugin_config->{type});
-	$plugin->generate_controller_config($plugin_config, $plugin_config, $id, $uplinks, $config);
+	$plugin->generate_controller_config($plugin_config, $controller_cfg, $id, $uplinks, $config);
     }
 
-    foreach my $id (keys %{$zone_cfg->{ids}}) {
+    foreach my $id (sort keys %{$zone_cfg->{ids}}) {
 	my $plugin_config = $zone_cfg->{ids}->{$id};
 	my $controllerid = $plugin_config->{controller};
 	next if !$controllerid;
 	my $controller = $controller_cfg->{ids}->{$controllerid};
 	if ($controller) {
 	    my $controller_plugin = PVE::Network::SDN::Controllers::Plugin->lookup($controller->{type});
-	    $controller_plugin->generate_controller_zone_config($plugin_config, $controller, $id, $uplinks, $config);
+	    $controller_plugin->generate_controller_zone_config($plugin_config, $controller, $controller_cfg, $id, $uplinks, $config);
 	}
     }
 
-    foreach my $id (keys %{$vnet_cfg->{ids}}) {
+    foreach my $id (sort keys %{$vnet_cfg->{ids}}) {
 	my $plugin_config = $vnet_cfg->{ids}->{$id};
 	my $zoneid = $plugin_config->{zone};
 	next if !$zoneid;

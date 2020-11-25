@@ -274,10 +274,17 @@ sub get_local_route_ip {
 
 
 sub find_local_ip_interface_peers {
-    my ($peers) = @_;
+    my ($peers, $iface) = @_;
 
     my $network_config = PVE::INotify::read_file('interfaces');
     my $ifaces = $network_config->{ifaces};
+    
+    #if iface is defined, return ip if exist (if not,try to find it on other ifaces)
+    if ($iface) {
+	my $ip = $ifaces->{$iface}->{address};
+	return ($ip,$iface) if $ip;
+    }
+
     #is a local ip member of peers list ?
     foreach my $address (@{$peers}) {
 	while (my $interface = each %$ifaces) {

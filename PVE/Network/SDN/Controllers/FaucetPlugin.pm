@@ -22,12 +22,12 @@ sub properties {
 
 # Plugin implementation
 sub generate_controller_config {
-    my ($class, $plugin_config, $controller, $id, $uplinks, $config) = @_;
+    my ($class, $plugin_config, $controller_cfg, $id, $uplinks, $config) = @_;
 
 }
 
 sub generate_controller_zone_config {
-    my ($class, $plugin_config, $controller, $id, $uplinks, $config) = @_;
+    my ($class, $plugin_config, $controller, $controller_cfg, $id, $uplinks, $config) = @_;
 
     my $dpid = $plugin_config->{'dp-id'};
     my $dphex = printf("%x",$dpid);

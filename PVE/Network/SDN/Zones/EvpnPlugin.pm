@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use PVE::Network::SDN::Zones::VxlanPlugin;
 use PVE::Exception qw(raise raise_param_exc);
+use PVE::JSONSchema qw(get_standard_option);
 use PVE::Tools qw($IPV4RE);
 use PVE::INotify;
 use PVE::Cluster;
@@ -27,6 +28,7 @@ sub properties {
 	    type => 'string',
 	    description => "Frr router name",
 	},
+	'exitnodes' => get_standard_option('pve-node-list'),
     };
 }
 
@@ -35,7 +37,8 @@ sub options {
     return {
         nodes => { optional => 1},
         'vrf-vxlan' => { optional => 0 },
-        'controller' => { optional => 0 },
+        controller => { optional => 0 },
+	exitnodes => { optional => 1 },
 	mtu => { optional => 1 },
 	dns => { optional => 1 },
 	reversedns => { optional => 1 },
@@ -59,10 +62,14 @@ sub generate_sdn_config {
     my $local_node = PVE::INotify::nodename();
 
     die "missing vxlan tag" if !$tag;
+    die "missing controller" if !$controller;
     warn "vlan-aware vnet can't be enabled with evpn plugin" if $vnet->{vlanaware};
 
     my @peers = PVE::Tools::split_list($controller->{'peers'});
-    my ($ifaceip, $iface) = PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers);
+#    my $bgprouter = PVE::Network::SDN::Controllers::EvpnController::find_bgp_controller($local_node, $controller_cfg);
+#    my $loopback = $bgprouter->{loopback} if $bgprouter->{loopback};
+    my $loopback = undef;
+    my ($ifaceip, $iface) = PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers, $loopback);
 
     my $mtu = 1450;
     $mtu = $interfaces_config->{$iface}->{mtu} - 50 if $interfaces_config->{$iface}->{mtu};
