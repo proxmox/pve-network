@@ -6,6 +6,8 @@ use warnings;
 use Data::Dumper;
 use JSON;
 
+use PVE::JSONSchema;
+
 use PVE::Network::SDN::Vnets;
 use PVE::Network::SDN::Zones;
 use PVE::Network::SDN::Controllers;
@@ -96,7 +98,11 @@ sub pending_config {
 	    $pending->{$id}->{$key} = $running_object->{$key};
 	    if(!keys %{$config_object}) {
 		$pending->{$id}->{state} = "deleted";
-	    } elsif ($running_object->{$key} ne $config_object->{$key}) {
+	    } elsif (!defined($config_object->{$key})) {
+		$pending->{$id}->{"pending"}->{$key} = 'deleted';
+		$pending->{$id}->{state} = "changed";
+	    } elsif (PVE::Network::SDN::encode_value(undef, $key, $running_object->{$key})
+			 ne PVE::Network::SDN::encode_value(undef, $key, $config_object->{$key})) {
 		$pending->{$id}->{state} = "changed";
 	    }
 	}
@@ -107,8 +113,8 @@ sub pending_config {
 	my $config_object = $config_objects->{$id};
 
 	foreach my $key (sort keys %{$config_object}) {
-	    my $config_value = $config_object->{$key} if $config_object->{$key};
-	    my $running_value = $running_object->{$key} if $running_object->{$key};
+	    my $config_value = PVE::Network::SDN::encode_value(undef, $key, $config_object->{$key}) if $config_object->{$key};
+	    my $running_value = PVE::Network::SDN::encode_value(undef, $key, $running_object->{$key}) if $running_object->{$key};
 	    if($key eq 'type' || $key eq 'vnet') {
 		$pending->{$id}->{$key} = $config_value;
 	    } else {
@@ -208,6 +214,39 @@ sub generate_controller_config {
     PVE::Network::SDN::Controllers::write_controller_config($raw_config);
 
     PVE::Network::SDN::Controllers::reload_controller() if $reload;
+}
+
+
+sub decode_value {
+    my ($type, $key, $value) = @_;
+
+    if ($key eq 'nodes') {
+        my $res = {};
+
+        foreach my $node (PVE::Tools::split_list($value)) {
+            if (PVE::JSONSchema::pve_verify_node_name($node)) {
+                $res->{$node} = 1;
+            }
+        }
+
+        return $res;
+    }
+
+   return $value;
+}
+
+sub encode_value {
+    my ($type, $key, $value) = @_;
+
+    if ($key eq 'nodes' || $key eq 'exitnodes') {
+        if(ref($value) eq 'HASH') {
+            return join(',', sort keys(%$value));
+        } else {
+            return $value;
+        }
+    }
+
+    return $value;
 }
 
 1;

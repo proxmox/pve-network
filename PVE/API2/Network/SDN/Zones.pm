@@ -38,12 +38,20 @@ my $api_sdn_zones_config = sub {
     $scfg->{digest} = $cfg->{digest};
 
     if ($scfg->{nodes}) {
-        $scfg->{nodes} = PVE::Network::SDN::Zones::Plugin->encode_value($scfg->{type}, 'nodes', $scfg->{nodes});
+        $scfg->{nodes} = PVE::Network::SDN::encode_value($scfg->{type}, 'nodes', $scfg->{nodes});
+    }
+
+    if ($scfg->{exitnodes}) {
+        $scfg->{exitnodes} = PVE::Network::SDN::encode_value($scfg->{type}, 'exitnodes', $scfg->{exitnodes});
     }
 
     my $pending = $scfg->{pending};
     if ($pending->{nodes}) {
-        $pending->{nodes} = PVE::Network::SDN::Zones::Plugin->encode_value($scfg->{type}, 'nodes', $pending->{nodes});
+        $pending->{nodes} = PVE::Network::SDN::encode_value($scfg->{type}, 'nodes', $pending->{nodes});
+    }
+
+    if ($pending->{exitnodes}) {
+        $pending->{exitnodes} = PVE::Network::SDN::encode_value($scfg->{type}, 'exitnodes', $pending->{exitnodes});
     }
 
     return $scfg;
