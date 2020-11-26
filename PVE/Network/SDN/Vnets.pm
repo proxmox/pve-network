@@ -6,6 +6,7 @@ use warnings;
 use Net::IP;
 
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
+use PVE::Network::SDN;
 use PVE::Network::SDN::Subnets;
 use PVE::Network::SDN::Zones;
 
