@@ -93,10 +93,11 @@ sub generate_sdn_config {
     foreach my $subnetid (sort keys %{$subnets}) {
 	my $subnet = $subnets->{$subnetid};
 	my $cidr = $subnet->{cidr};
+	my $mask = $subnet->{mask};
 
 	my $gateway = $subnet->{gateway};
 	if ($gateway) {
-	    push @iface_config, "address $gateway" if !defined($address->{$gateway});
+	    push @iface_config, "address $gateway/$mask" if !defined($address->{$gateway});
 	    $address->{$gateway} = 1;
 	}
 	if ($subnet->{snat}) {

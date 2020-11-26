@@ -65,7 +65,7 @@ sub generate_sdn_config {
 
 	my $gateway = $subnet->{gateway};
 	if ($gateway) {
-	    push @iface_config, "address $gateway" if !defined($address->{$gateway});
+	    push @iface_config, "address $gateway/$mask" if !defined($address->{$gateway});
 	    $address->{$gateway} = 1;
 	}
 	#add route for /32 pointtopoint
