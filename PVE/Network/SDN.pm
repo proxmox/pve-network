@@ -188,6 +188,8 @@ sub get_local_vnets {
 
 	my $vnet = PVE::Network::SDN::Vnets::sdn_vnets_config($vnets_cfg, $vnetid);
 	my $zoneid = $vnet->{zone};
+	my $comments = $vnet->{alias};
+
 	my $privs = [ 'SDN.Audit', 'SDN.Allocate' ];
 
 	next if !$zoneid;
@@ -196,7 +198,7 @@ sub get_local_vnets {
 	my $zone_config = PVE::Network::SDN::Zones::sdn_zones_config($zones_cfg, $zoneid);
 
 	next if defined($zone_config->{nodes}) && !$zone_config->{nodes}->{$nodename};
-	$vnets->{$vnetid} = { type => 'vnet', active => '1' };
+	$vnets->{$vnetid} = { type => 'vnet', active => '1', comments => $comments };
     }
 
     return $vnets;
