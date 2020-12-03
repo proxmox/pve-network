@@ -288,7 +288,7 @@ sub write_controller_config {
     push @{$final_config}, "log syslog informational";
     push @{$final_config}, "ip forwarding";
     push @{$final_config}, "ipv6 forwarding";
-    push @{$final_config}, "frr defaults traditional";
+    push @{$final_config}, "frr defaults datacenter";
     push @{$final_config}, "service integrated-vtysh-config";
     push @{$final_config}, "hostname $nodename";
     push @{$final_config}, "!";
