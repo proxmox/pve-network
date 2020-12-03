@@ -6,8 +6,6 @@ use warnings;
 use Data::Dumper;
 use JSON;
 
-use PVE::JSONSchema;
-
 use PVE::Network::SDN::Vnets;
 use PVE::Network::SDN::Zones;
 use PVE::Network::SDN::Controllers;
@@ -216,25 +214,6 @@ sub generate_controller_config {
     PVE::Network::SDN::Controllers::write_controller_config($raw_config);
 
     PVE::Network::SDN::Controllers::reload_controller() if $reload;
-}
-
-
-sub decode_value {
-    my ($type, $key, $value) = @_;
-
-    if ($key eq 'nodes') {
-        my $res = {};
-
-        foreach my $node (PVE::Tools::split_list($value)) {
-            if (PVE::JSONSchema::pve_verify_node_name($node)) {
-                $res->{$node} = 1;
-            }
-        }
-
-        return $res;
-    }
-
-   return $value;
 }
 
 sub encode_value {

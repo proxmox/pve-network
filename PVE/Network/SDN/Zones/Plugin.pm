@@ -69,6 +69,34 @@ sub parse_section_header {
     return undef;
 }
 
+sub decode_value {
+    my ($class, $type, $key, $value) = @_;
+
+    if ($key eq 'nodes' || $key eq 'exitnodes') {
+	my $res = {};
+
+	foreach my $node (PVE::Tools::split_list($value)) {
+	    if (PVE::JSONSchema::pve_verify_node_name($node)) {
+		$res->{$node} = 1;
+	    }
+	}
+
+	return $res;
+    }
+
+    return $value;
+}
+
+sub encode_value {
+    my ($class, $type, $key, $value) = @_;
+
+    if ($key eq 'nodes' || $key eq 'exitnodes') {
+	return join(',', keys(%$value));
+    }
+
+    return $value;
+}
+
 sub generate_sdn_config {
     my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $controller, $controller_cfg, $subnet_cfg, $interfaces_config, $config) = @_;
 
