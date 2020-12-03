@@ -240,7 +240,7 @@ __PACKAGE__->register_method ({
 	    raise_param_exc({ ipam => "you can't change ipam"}) if $opts->{ipam} && $scfg->{ipam} && $opts->{ipam} ne $scfg->{ipam};
 
 	    my $subnet = PVE::Network::SDN::Subnets::sdn_subnets_config($cfg, $id);
-	    PVE::Network::SDN::SubnetPlugin->on_update_hook($zone, $id, $subnet);
+	    PVE::Network::SDN::SubnetPlugin->on_update_hook($zone, $id, $subnet, $scfg);
 
 	    PVE::Network::SDN::Subnets::write_config($cfg);
 
