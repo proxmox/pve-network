@@ -144,7 +144,8 @@ sub generate_controller_zone_config {
 	push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"l2vpn evpn"}}, "route-target export $autortas:$vrfvxlan");
     }
 
-    my $is_gateway = grep { $_ eq $local_node } PVE::Tools::split_list($exitnodes);
+    my $is_gateway = $exitnodes->{$local_node};
+
     if ($is_gateway) {
 
 	@controller_config = ();

@@ -100,12 +100,11 @@ sub generate_sdn_config {
 	    push @iface_config, "address $gateway/$mask" if !defined($address->{$gateway});
 	    $address->{$gateway} = 1;
 	}
+
 	if ($subnet->{snat}) {
-	    my $gatewaynodes = $controller->{'gateway-nodes'};
-	    my $is_evpn_gateway = "";
-	    foreach my $evpn_gatewaynode (PVE::Tools::split_list($gatewaynodes)) {
-		$is_evpn_gateway = 1 if $evpn_gatewaynode eq $local_node;
-	    }
+
+	    my $is_evpn_gateway = $plugin_config->{'exitnodes'}->{$local_node};
+
             #find outgoing interface
             my ($outip, $outiface) = PVE::Network::SDN::Zones::Plugin::get_local_route_ip('8.8.8.8');
             if ($outip && $outiface && $is_evpn_gateway) {
