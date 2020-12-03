@@ -7,8 +7,7 @@ use PVE::Cluster;
 use PVE::Tools;
 use JSON;
 use Net::IP;
-use NetAddr::IP;
-
+use NetAddr::IP qw(:lower);
 use base('PVE::Network::SDN::Dns::Plugin');
 
 sub type {

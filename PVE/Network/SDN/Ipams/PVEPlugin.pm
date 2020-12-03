@@ -6,7 +6,8 @@ use PVE::INotify;
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_register_file cfs_lock_file);
 use PVE::Tools;
 use JSON;
-use NetAddr::IP;
+use NetAddr::IP qw(:lower);
+
 use Net::IP;
 use Digest::SHA;
 
@@ -134,7 +135,7 @@ sub add_next_freeip {
 	    while(1) {
 		$iplist++;
 		last if $iplist eq $broadcast;
-		my $ip = $iplist->addr();
+		my $ip = $iplist->canon();
 		next if defined($dbsubnet->{ips}->{$ip});
 		$freeip = $ip;
 		last;

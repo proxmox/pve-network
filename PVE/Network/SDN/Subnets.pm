@@ -5,6 +5,7 @@ use warnings;
 
 use Net::Subnet qw(subnet_matcher);
 use Net::IP;
+use NetAddr::IP qw(:lower);
 
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 use PVE::Network::SDN::Dns;
@@ -213,6 +214,9 @@ sub add_ip {
 
     return if !$subnet || !$ip; 
 
+    my $ipaddr = new NetAddr::IP($ip);
+    $ip = $ipaddr->canon();
+
     my $ipamid = $zone->{ipam};
     my $dns = $zone->{dns};
     my $dnszone = $zone->{dnszone};
@@ -255,7 +259,10 @@ sub add_ip {
 sub del_ip {
     my ($zone, $subnetid, $subnet, $ip, $hostname) = @_;
 
-    return if !$subnet;
+    return if !$subnet || !$ip;
+
+    my $ipaddr = new NetAddr::IP($ip);
+    $ip = $ipaddr->canon();
 
     my $ipamid = $zone->{ipam};
     my $dns = $zone->{dns};
