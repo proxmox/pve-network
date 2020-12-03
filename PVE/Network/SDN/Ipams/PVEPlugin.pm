@@ -98,10 +98,7 @@ sub add_ip {
 
 	die "IP '$ip' already exist\n" if defined($dbsubnet->{ips}->{$ip});
 
-	$dbsubnet->{ips}->{$ip} = {
-	    hostname => $hostname,
-	    description => $description,
-	};
+	$dbsubnet->{ips}->{$ip} = {};
 
 	write_db($db);
     });
@@ -144,10 +141,7 @@ sub add_next_freeip {
 
 	die "can't find free ip in subnet '$cidr'\n" if !$freeip;
 
-	$dbsubnet->{ips}->{$freeip} = {
-	    hostname => $hostname,
-	    description => $description,
-	};
+	$dbsubnet->{ips}->{$freeip} = {};
 
 	write_db($db);
     });
