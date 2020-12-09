@@ -1,0 +1,9 @@
+auto eth0
+iface eth0 inet manual
+        ovs_type OVSPort
+        ovs_bridge vmbr0
+
+auto vmbr0
+iface vmbr0 inet manual
+        ovs_type OVSBridge
+        ovs_ports eth0

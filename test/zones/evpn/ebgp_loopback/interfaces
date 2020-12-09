@@ -1,0 +1,13 @@
+auto eth0
+iface eth0 inet static
+	address 172.16.0.1/24
+
+auto eth1
+iface eth1 inet static
+	address 172.17.0.1/24
+
+auto dummy1
+iface dummy1 inet static
+        address 192.168.0.1/32
+        link-type dummy
+

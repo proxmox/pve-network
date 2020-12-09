@@ -1,0 +1,7 @@
+#version:1
+
+auto myvnet
+iface myvnet
+	bridge_ports none
+	bridge_stp off
+	bridge_fd 0

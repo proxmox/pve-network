@@ -1,0 +1,18 @@
+#version:1
+
+auto cv_myvnet
+iface cv_myvnet
+	vlan-raw-device sv_myvnet
+	vlan-id 100
+
+auto myvnet
+iface myvnet
+	bridge_ports  cv_myvnet
+	bridge_stp off
+	bridge_fd 0
+
+auto sv_myvnet
+iface sv_myvnet
+	vlan-raw-device eth0
+	vlan-id 10
+	vlan-protocol 802.1ad

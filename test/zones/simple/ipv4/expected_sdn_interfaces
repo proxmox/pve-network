@@ -1,0 +1,8 @@
+#version:1
+
+auto myvnet
+iface myvnet
+	address 192.168.0.1/24
+	bridge_ports none
+	bridge_stp off
+	bridge_fd 0

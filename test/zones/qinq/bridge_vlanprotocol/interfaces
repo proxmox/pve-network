@@ -1,0 +1,5 @@
+auto vmbr0
+iface vmbr0 inet manual
+        bridge-ports eth0
+        bridge-stp off
+        bridge-fd 0

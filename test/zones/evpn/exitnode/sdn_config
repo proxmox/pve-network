@@ -1,0 +1,26 @@
+{
+  version => 1,
+  vnets   => {
+               ids => {
+                        myvnet => { tag => "100", type => "vnet", zone => "myzone" },
+                      },
+             },
+
+  zones   => {
+               ids => { myzone => { ipam => "pve", type => "evpn", controller => "evpnctl", 'vrf-vxlan' => 1000, exitnodes => { 'localhost' => 1 } } },
+             },
+  controllers  => {
+               ids => { evpnctl => { type => "evpn", 'peers' => '192.168.0.1,192.168.0.2,192.168.0.3', asn => "65000" } },
+             },
+
+  subnets => {
+              ids => { 'myzone-10.0.0.0-24' => {
+							'type' => 'subnet',
+							'vnet' => 'myvnet',
+							'gateway' => '10.0.0.1',
+						  }
+		     }
+	     }
+}
+
+

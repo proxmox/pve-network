@@ -1,0 +1,15 @@
+#version:1
+
+auto myvnet
+iface myvnet
+	bridge_ports vxlan_myvnet
+	bridge_stp off
+	bridge_fd 0
+	mtu 1450
+
+auto vxlan_myvnet
+iface vxlan_myvnet
+	vxlan-id 100
+	vxlan_remoteip 192.168.0.2
+	vxlan_remoteip 192.168.0.3
+	mtu 1450

@@ -1,0 +1,19 @@
+#version:1
+
+auto ln_myvnet
+iface ln_myvnet
+	ovs_type OVSIntPort
+	ovs_bridge vmbr0
+	ovs_options vlan_mode=dot1q-tunnel other_config:qinq-ethtype=802.1q tag=100
+
+auto myvnet
+iface myvnet
+	bridge_ports ln_myvnet
+	bridge_stp off
+	bridge_fd 0
+	bridge-vlan-aware yes
+	bridge-vids 2-4094
+
+auto vmbr0
+iface vmbr0
+	ovs_ports ln_myvnet

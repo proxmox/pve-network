@@ -37,9 +37,9 @@ distclean: clean
 clean:
 	rm -rf *~ *.deb *.changes ${PACKAGE}-* *.buildinfo *.dsc *.tar.gz
 
-.PHONY: check
-check:
-	$(MAKE) -C test check
+.PHONY: test
+test:
+	$(MAKE) -C test
 
 .PHONY: install
 install:

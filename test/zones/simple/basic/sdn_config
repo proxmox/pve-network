@@ -1,0 +1,11 @@
+{
+  version => 1,
+  vnets   => {
+               ids => {
+                        myvnet => { type => "vnet", zone => "myzone" },
+                      },
+             },
+  zones   => {
+               ids => { myzone => { ipam => "pve", type => "simple" } },
+             },
+}

@@ -1,0 +1,17 @@
+#version:1
+
+auto ln_myvnet
+iface ln_myvnet
+	ovs_type OVSIntPort
+	ovs_bridge vmbr0
+	ovs_options tag=100
+
+auto myvnet
+iface myvnet
+	bridge_ports ln_myvnet
+	bridge_stp off
+	bridge_fd 0
+
+auto vmbr0
+iface vmbr0
+	ovs_ports ln_myvnet

@@ -1,0 +1,7 @@
+#version:1
+
+auto myvnet
+iface myvnet
+	bridge_ports vmbr0.100
+	bridge_stp off
+	bridge_fd 0
