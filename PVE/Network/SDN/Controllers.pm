@@ -147,10 +147,27 @@ sub reload_controller {
     }
 }
 
+sub generate_controller_rawconfig {
+    my ($config) = @_;
+
+    my $cfg = PVE::Network::SDN::config();
+    my $controller_cfg = $cfg->{controllers};
+    return if !$controller_cfg;
+
+    my $rawconfig = "";
+    foreach my $id (keys %{$controller_cfg->{ids}}) {
+	my $plugin_config = $controller_cfg->{ids}->{$id};
+	my $plugin = PVE::Network::SDN::Controllers::Plugin->lookup($plugin_config->{type});
+	$rawconfig .= $plugin->generate_controller_rawconfig($plugin_config, $config);
+    }
+    return $rawconfig;
+}
+
 sub write_controller_config {
     my ($config) = @_;
 
-    my $controller_cfg = PVE::Cluster::cfs_read_file('sdn/controllers.cfg');
+    my $cfg = PVE::Network::SDN::config();
+    my $controller_cfg = $cfg->{controllers};
     return if !$controller_cfg;
 
     foreach my $id (keys %{$controller_cfg->{ids}}) {

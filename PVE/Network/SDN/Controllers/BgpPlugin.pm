@@ -138,6 +138,11 @@ sub on_update_hook {
     }
 }
 
+sub generate_controller_rawconfig {
+    my ($class, $plugin_config, $config) = @_;
+    return "";
+}
+
 sub write_controller_config {
     my ($class, $plugin_config, $config) = @_;
     return;

@@ -280,7 +280,7 @@ sub generate_frr_recurse{
     }
 }
 
-sub write_controller_config {
+sub generate_controller_rawconfig {
     my ($class, $plugin_config, $config) = @_;
 
     my $nodename = PVE::INotify::nodename();
@@ -311,6 +311,14 @@ sub write_controller_config {
 
     my $rawconfig = join("\n", @{$final_config});
 
+    return if !$rawconfig;
+    return $rawconfig;
+}
+
+sub write_controller_config {
+    my ($class, $plugin_config, $config) = @_;
+
+    my $rawconfig = $class->generate_controller_rawconfig($plugin_config, $config);
     return if !$rawconfig;
     return if !-d "/etc/frr";
 
