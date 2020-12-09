@@ -57,10 +57,11 @@ sub generate_sdn_config {
     my $vlanprotocol = $plugin_config->{'vlan-protocol'};
     my $ctag = $vnet->{tag};
     my $alias = $vnet->{alias};
-    die "can't find bridge $bridge" if !-d "/sys/class/net/$bridge";
 
-    my $vlan_aware = PVE::Tools::file_read_firstline("/sys/class/net/$bridge/bridge/vlan_filtering");
-    my $is_ovs = !-d "/sys/class/net/$bridge/brif";
+    PVE::Network::SDN::Zones::Plugin::find_bridge($bridge);
+
+    my $vlan_aware = PVE::Network::SDN::Zones::Plugin::is_vlanaware($bridge);
+    my $is_ovs = PVE::Network::SDN::Zones::Plugin::is_ovs($bridge);
 
     my @iface_config = ();
     my $vnet_bridge_ports = "";
@@ -126,11 +127,7 @@ sub generate_sdn_config {
 
 	#eth--->eth.x(svlan)--->eth.x.y(cvlan)---->vnet
 
-	my @bridge_ifaces = ();
-	my $dir = "/sys/class/net/$bridge/brif";
-	PVE::Tools::dir_glob_foreach($dir, '(((eth|bond)\d+|en[^.]+)(\.\d+)?)', sub {
-	    push @bridge_ifaces, $_[0];
-	});
+	my @bridge_ifaces = PVE::Network::SDN::Zones::Plugin::get_bridge_ifaces($bridge);
 
 	foreach my $bridge_iface (@bridge_ifaces) {
 
@@ -181,8 +178,8 @@ sub status {
         return $err_msg;
     }
 
-    my $vlan_aware = PVE::Tools::file_read_firstline("/sys/class/net/$bridge/bridge/vlan_filtering");
-    my $is_ovs = !-d "/sys/class/net/$bridge/brif";
+    my $vlan_aware = PVE::Network::SDN::Zones::Plugin::is_vlanaware($bridge);
+    my $is_ovs = PVE::Network::SDN::Zones::Plugin::is_ovs($bridge);
 
     my $tag = $vnet->{tag};
     my $vnet_uplink = "ln_".$vnetid;

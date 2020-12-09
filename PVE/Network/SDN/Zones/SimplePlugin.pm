@@ -58,6 +58,7 @@ sub generate_sdn_config {
 
     my $address = {};
     my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid, 1);
+
     foreach my $subnetid (sort keys %{$subnets}) {
 	my $subnet = $subnets->{$subnetid};
 	my $cidr = $subnet->{cidr};

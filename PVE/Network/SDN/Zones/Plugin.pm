@@ -302,4 +302,34 @@ sub find_local_ip_interface_peers {
     }
 }
 
+sub find_bridge {
+    my ($bridge) = @_;
+
+    die "can't find bridge $bridge" if !-d "/sys/class/net/$bridge";
+}
+
+sub is_vlanaware {
+    my ($bridge) = @_;
+
+    return PVE::Tools::file_read_firstline("/sys/class/net/$bridge/bridge/vlan_filtering");
+}
+
+sub is_ovs {
+    my ($bridge) = @_;
+
+    my $is_ovs = !-d "/sys/class/net/$bridge/brif";
+    return $is_ovs;    
+}
+
+sub get_bridge_ifaces {
+    my ($bridge) = @_;
+
+    my @bridge_ifaces = ();
+    my $dir = "/sys/class/net/$bridge/brif";
+    PVE::Tools::dir_glob_foreach($dir, '(((eth|bond)\d+|en[^.]+)(\.\d+)?)', sub {
+	push @bridge_ifaces, $_[0];
+    });
+
+    return @bridge_ifaces;
+}
 1;
