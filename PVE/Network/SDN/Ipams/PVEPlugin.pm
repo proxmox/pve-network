@@ -131,7 +131,7 @@ sub add_next_freeip {
 	    die "cannot find free IP in subnet '$cidr'\n" if defined($dbsubnet->{ips}->{$network});
 	    $freeip = $network;
 	} else {
-	    my $iplist = new NetAddr::IP($cidr);
+	    my $iplist = NetAddr::IP->new($cidr);
 	    my $broadcast = $iplist->broadcast();
 
 	    while(1) {

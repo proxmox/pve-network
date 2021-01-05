@@ -234,7 +234,7 @@ sub add_ip {
 
     return if !$subnet || !$ip; 
 
-    my $ipaddr = new NetAddr::IP($ip);
+    my $ipaddr = NetAddr::IP->new($ip);
     $ip = $ipaddr->canon();
 
     my $ipamid = $zone->{ipam};
@@ -281,7 +281,7 @@ sub update_ip {
 
     return if !$subnet || !$ip; 
 
-    my $ipaddr = new NetAddr::IP($ip);
+    my $ipaddr = NetAddr::IP->new($ip);
     $ip = $ipaddr->canon();
 
     my $ipamid = $zone->{ipam};
@@ -325,7 +325,7 @@ sub del_ip {
 
     return if !$subnet || !$ip;
 
-    my $ipaddr = new NetAddr::IP($ip);
+    my $ipaddr = NetAddr::IP->new($ip);
     $ip = $ipaddr->canon();
 
     my $ipamid = $zone->{ipam};

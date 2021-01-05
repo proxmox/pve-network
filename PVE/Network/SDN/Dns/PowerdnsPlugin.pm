@@ -237,7 +237,7 @@ sub get_reversedns_zone {
     if (Net::IP::ip_is_ipv4($ip)) {
 	my ($ipblock1, $ipblock2, $ipblock3, $ipblock4) = split(/\./, $ip);
 
-        my $ipv4 = new NetAddr::IP($cidr);
+        my $ipv4 = NetAddr::IP->new($cidr);
 	#private addresse #powerdns built-in private zone : serve-rfc1918
 	if($ipv4->is_rfc1918()) {
 	    if ($ipblock1 == 192) {
