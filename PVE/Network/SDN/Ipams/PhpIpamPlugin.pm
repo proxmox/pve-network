@@ -51,7 +51,7 @@ sub add_subnet {
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Token' => $token];
 
     #search subnet
-    my $internalid = get_internalid($url, $cidr, $headers);
+    my $internalid = get_prefix_id($url, $cidr, $headers);
 
     #create subnet
     if (!$internalid) {
@@ -80,7 +80,7 @@ sub del_subnet {
     my $section = $plugin_config->{section};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Token' => $token];
 
-    my $internalid = get_internalid($url, $cidr, $headers);
+    my $internalid = get_prefix_id($url, $cidr, $headers);
     return if !$internalid;
 
     return; #fixme: check that prefix is empty exluding gateway, before delete
@@ -103,7 +103,7 @@ sub add_ip {
     my $section = $plugin_config->{section};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Token' => $token];
 
-    my $internalid = get_internalid($url, $cidr, $headers);
+    my $internalid = get_prefix_id($url, $cidr, $headers);
 
     my $params = { ip => $ip,
 		   subnetId => $internalid,
@@ -160,7 +160,7 @@ sub add_next_freeip {
     my $section = $plugin_config->{section};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Token' => $token];
 
-    my $internalid = get_internalid($url, $cidr, $headers);
+    my $internalid = get_prefix_id($url, $cidr, $headers);
 
     my $params = { hostname => $hostname,
 		   description => $description,
@@ -226,7 +226,7 @@ sub on_update_hook {
 
 #helpers
 
-sub get_internalid {
+sub get_prefix_id {
     my ($url, $cidr, $headers) = @_;
 
     my $result = PVE::Network::SDN::api_request("GET", "$url/subnets/cidr/$cidr", $headers);
