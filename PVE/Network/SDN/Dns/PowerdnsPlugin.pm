@@ -69,7 +69,7 @@ sub add_a_record {
     my $params = { rrsets => [ $rrset ] };
 
     eval {
-	PVE::Network::SDN::Dns::Plugin::api_request("PATCH", "$url/zones/$zone", $headers, $params);
+	PVE::Network::SDN::api_request("PATCH", "$url/zones/$zone", $headers, $params);
     };
 
     if ($@) {
@@ -106,7 +106,7 @@ sub add_ptr_record {
     my $params = { rrsets => [ $rrset ] };
 
     eval {
-	PVE::Network::SDN::Dns::Plugin::api_request("PATCH", "$url/zones/$zone", $headers, $params);
+	PVE::Network::SDN::api_request("PATCH", "$url/zones/$zone", $headers, $params);
     };
 
     if ($@) {
@@ -131,7 +131,7 @@ sub del_a_record {
     my $params = { rrsets => [ $rrset ] };
 
     eval {
-	PVE::Network::SDN::Dns::Plugin::api_request("PATCH", "$url/zones/$zone", $headers, $params);
+	PVE::Network::SDN::api_request("PATCH", "$url/zones/$zone", $headers, $params);
     };
 
     if ($@) {
@@ -158,7 +158,7 @@ sub del_ptr_record {
     my $params = { rrsets => [ $rrset ] };
 
     eval {
-	PVE::Network::SDN::Dns::Plugin::api_request("PATCH", "$url/zones/$zone", $headers, $params);
+	PVE::Network::SDN::api_request("PATCH", "$url/zones/$zone", $headers, $params);
     };
 
     if ($@) {
@@ -176,7 +176,7 @@ sub verify_zone {
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'X-API-Key' => $key];
 
     eval {
-        PVE::Network::SDN::Dns::Plugin::api_request("GET", "$url/zones/$zone", $headers);
+        PVE::Network::SDN::api_request("GET", "$url/zones/$zone", $headers);
     };
 
     if ($@) {
@@ -241,7 +241,7 @@ sub on_update_hook {
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'X-API-Key' => $key];
 
     eval {
-	PVE::Network::SDN::Dns::Plugin::api_request("GET", "$url", $headers);
+	PVE::Network::SDN::api_request("GET", "$url", $headers);
     };
 
     if ($@) {

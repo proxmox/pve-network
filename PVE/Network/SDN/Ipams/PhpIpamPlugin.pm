@@ -62,7 +62,7 @@ sub add_subnet {
 		  };
 
 	eval {
-		PVE::Network::SDN::Ipams::Plugin::api_request("POST", "$url/subnets/", $headers, $params);
+		PVE::Network::SDN::api_request("POST", "$url/subnets/", $headers, $params);
 	};
 	if ($@) {
 	    die "error add subnet to ipam: $@";
@@ -86,7 +86,7 @@ sub del_subnet {
     return; #fixme: check that prefix is empty exluding gateway, before delete
 
     eval {
-	PVE::Network::SDN::Ipams::Plugin::api_request("DELETE", "$url/subnets/$internalid", $headers);
+	PVE::Network::SDN::api_request("DELETE", "$url/subnets/$internalid", $headers);
     };
     if ($@) {
 	die "error deleting subnet from ipam: $@";
@@ -114,7 +114,7 @@ sub add_ip {
     $params->{mac} = $mac if $mac;
 
     eval {
-	PVE::Network::SDN::Ipams::Plugin::api_request("POST", "$url/addresses/", $headers, $params);
+	PVE::Network::SDN::api_request("POST", "$url/addresses/", $headers, $params);
     };
 
     if ($@) {
@@ -142,7 +142,7 @@ sub update_ip {
     $params->{mac} = $mac if $mac;
 
     eval {
-	PVE::Network::SDN::Ipams::Plugin::api_request("PATCH", "$url/addresses/$ip_id", $headers, $params);
+	PVE::Network::SDN::api_request("PATCH", "$url/addresses/$ip_id", $headers, $params);
     };
 
     if ($@) {
@@ -170,7 +170,7 @@ sub add_next_freeip {
 
     my $ip = undef;
     eval {
-	my $result = PVE::Network::SDN::Ipams::Plugin::api_request("POST", "$url/addresses/first_free/$internalid/", $headers, $params);
+	my $result = PVE::Network::SDN::api_request("POST", "$url/addresses/first_free/$internalid/", $headers, $params);
 	$ip = $result->{data};
     };
 
@@ -194,7 +194,7 @@ sub del_ip {
     return if !$ip_id;
 
     eval {
-	PVE::Network::SDN::Ipams::Plugin::api_request("DELETE", "$url/addresses/$ip_id", $headers);
+	PVE::Network::SDN::api_request("DELETE", "$url/addresses/$ip_id", $headers);
     };
     if ($@) {
 	die "error delete ip $ip: $@";
@@ -210,7 +210,7 @@ sub verify_api {
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Token' => $token];
 
     eval {
-	PVE::Network::SDN::Ipams::Plugin::api_request("GET", "$url/sections/$sectionid", $headers);
+	PVE::Network::SDN::api_request("GET", "$url/sections/$sectionid", $headers);
     };
     if ($@) {
 	die "Can't connect to phpipam api: $@";
@@ -229,7 +229,7 @@ sub on_update_hook {
 sub get_internalid {
     my ($url, $cidr, $headers) = @_;
 
-    my $result = PVE::Network::SDN::Ipams::Plugin::api_request("GET", "$url/subnets/cidr/$cidr", $headers);
+    my $result = PVE::Network::SDN::api_request("GET", "$url/subnets/cidr/$cidr", $headers);
     my $data = @{$result->{data}}[0];
     my $internalid = $data->{id};
     return $internalid;
@@ -237,7 +237,7 @@ sub get_internalid {
 
 sub get_ip_id {
     my ($url, $ip, $headers) = @_;
-    my $result = PVE::Network::SDN::Ipams::Plugin::api_request("GET", "$url/addresses/search/$ip", $headers);
+    my $result = PVE::Network::SDN::api_request("GET", "$url/addresses/search/$ip", $headers);
     my $data = @{$result->{data}}[0];
     my $ip_id = $data->{id};
     return $ip_id;

@@ -232,5 +232,50 @@ sub encode_value {
     return $value;
 }
 
-1;
 
+#helpers
+sub api_request {
+    my ($method, $url, $headers, $data) = @_;
+
+    my $encoded_data = to_json($data) if $data;
+
+    my $req = HTTP::Request->new($method,$url, $headers, $encoded_data);
+
+    my $ua = LWP::UserAgent->new(protocols_allowed => ['http', 'https'], timeout => 30);
+    my $proxy = undef;
+
+    if ($proxy) {
+        $ua->proxy(['http', 'https'], $proxy);
+    } else {
+        $ua->env_proxy;
+    }
+
+    $ua->ssl_opts(verify_hostname => 0, SSL_verify_mode => 0x00);
+
+    my $response = $ua->request($req);
+    my $code = $response->code;
+
+    if ($code !~ /^2(\d+)$/) {
+        my $msg = $response->message || 'unknown';
+        die "Invalid response from server: $code $msg\n";
+    }
+
+    my $raw = '';
+    if (defined($response->decoded_content)) {
+	$raw = $response->decoded_content;
+    } else {
+	$raw = $response->content;
+    }
+
+    return if $raw eq '';
+
+    my $json = '';
+    eval {
+	$json = from_json($raw);
+    };
+    die "api response is not a json" if $@;
+
+    return $json;
+}
+
+1;

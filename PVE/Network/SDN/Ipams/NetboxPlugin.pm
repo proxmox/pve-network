@@ -44,7 +44,7 @@ sub add_subnet {
 	my $params = { prefix => $cidr };
 
 	eval {
-		my $result = PVE::Network::SDN::Ipams::Plugin::api_request("POST", "$url/ipam/prefixes/", $headers, $params);
+		my $result = PVE::Network::SDN::api_request("POST", "$url/ipam/prefixes/", $headers, $params);
 	};
 	if ($@) {
 	    die "error add subnet to ipam: $@";
@@ -68,7 +68,7 @@ sub del_subnet {
     return; #fixme: check that prefix is empty exluding gateway, before delete
 
     eval {
-	PVE::Network::SDN::Ipams::Plugin::api_request("DELETE", "$url/ipam/prefixes/$internalid/", $headers);
+	PVE::Network::SDN::api_request("DELETE", "$url/ipam/prefixes/$internalid/", $headers);
     };
     if ($@) {
 	die "error deleting subnet from ipam: $@";
@@ -89,7 +89,7 @@ sub add_ip {
     my $params = { address => "$ip/$mask", dns_name => $hostname, description => $description };
 
     eval {
-	PVE::Network::SDN::Ipams::Plugin::api_request("POST", "$url/ipam/ip-addresses/", $headers, $params);
+	PVE::Network::SDN::api_request("POST", "$url/ipam/ip-addresses/", $headers, $params);
     };
 
     if ($@) {
@@ -113,7 +113,7 @@ sub update_ip {
     die "can't find ip $ip in ipam" if !$ip_id;
 
     eval {
-	PVE::Network::SDN::Ipams::Plugin::api_request("PATCH", "$url/ipam/ip-addresses/$ip_id/", $headers, $params);
+	PVE::Network::SDN::api_request("PATCH", "$url/ipam/ip-addresses/$ip_id/", $headers, $params);
     };
     if ($@) {
 	die "error update ip $ip : $@";
@@ -136,7 +136,7 @@ sub add_next_freeip {
 
     my $ip = undef;
     eval {
-	my $result = PVE::Network::SDN::Ipams::Plugin::api_request("POST", "$url/ipam/prefixes/$internalid/available-ips/", $headers, $params);
+	my $result = PVE::Network::SDN::api_request("POST", "$url/ipam/prefixes/$internalid/available-ips/", $headers, $params);
 	$ip = $result->{address};
     };
 
@@ -160,7 +160,7 @@ sub del_ip {
     die "can't find ip $ip in ipam" if !$ip_id;
 
     eval {
-	PVE::Network::SDN::Ipams::Plugin::api_request("DELETE", "$url/ipam/ip-addresses/$ip_id/", $headers);
+	PVE::Network::SDN::api_request("DELETE", "$url/ipam/ip-addresses/$ip_id/", $headers);
     };
     if ($@) {
 	die "error delete ip $ip : $@";
@@ -176,7 +176,7 @@ sub verify_api {
 
 
     eval {
-	PVE::Network::SDN::Ipams::Plugin::api_request("GET", "$url/ipam/aggregates/", $headers);
+	PVE::Network::SDN::api_request("GET", "$url/ipam/aggregates/", $headers);
     };
     if ($@) {
 	die "Can't connect to netbox api: $@";
@@ -194,7 +194,7 @@ sub on_update_hook {
 sub get_prefix_id {
     my ($url, $cidr, $headers) = @_;
 
-    my $result = PVE::Network::SDN::Ipams::Plugin::api_request("GET", "$url/ipam/prefixes/?q=$cidr", $headers);
+    my $result = PVE::Network::SDN::api_request("GET", "$url/ipam/prefixes/?q=$cidr", $headers);
     my $data = @{$result->{results}}[0];
     my $internalid = $data->{id};
     return $internalid;
@@ -202,7 +202,7 @@ sub get_prefix_id {
 
 sub get_ip_id {
     my ($url, $ip, $headers) = @_;
-    my $result = PVE::Network::SDN::Ipams::Plugin::api_request("GET", "$url/ipam/ip-addresses/?q=$ip", $headers);
+    my $result = PVE::Network::SDN::api_request("GET", "$url/ipam/ip-addresses/?q=$ip", $headers);
     my $data = @{$result->{results}}[0];
     my $ip_id = $data->{id};
     return $ip_id;
