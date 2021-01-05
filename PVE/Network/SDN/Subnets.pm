@@ -162,7 +162,7 @@ my $del_dns_ptr_record = sub {
 };
 
 sub next_free_ip {
-    my ($zone, $subnetid, $subnet, $hostname, $description) = @_;
+    my ($zone, $subnetid, $subnet, $hostname, $mac, $description) = @_;
 
     my $cidr = undef;
     my $ip = undef;
@@ -184,7 +184,7 @@ sub next_free_ip {
 	my $plugin_config = $ipam_cfg->{ids}->{$ipamid};
 	my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
 	eval {
-	    $cidr = $plugin->add_next_freeip($plugin_config, $subnetid, $subnet, $hostname, $description);
+	    $cidr = $plugin->add_next_freeip($plugin_config, $subnetid, $subnet, $hostname, $mac, $description);
 	    ($ip, undef) = split(/\//, $cidr);
 	};
 	die $@ if $@;
@@ -210,7 +210,7 @@ sub next_free_ip {
 }
 
 sub add_ip {
-    my ($zone, $subnetid, $subnet, $ip, $hostname, $description) = @_;
+    my ($zone, $subnetid, $subnet, $ip, $hostname, $mac, $description) = @_;
 
     return if !$subnet || !$ip; 
 
@@ -235,7 +235,7 @@ sub add_ip {
 	my $plugin_config = $ipam_cfg->{ids}->{$ipamid};
 	my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
 	eval {
-	    $plugin->add_ip($plugin_config, $subnetid, $subnet, $ip, $hostname, $description);
+	    $plugin->add_ip($plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description);
 	};
 	die $@ if $@;
     }

@@ -75,12 +75,12 @@ sub del_subnet {
 }
 
 sub add_ip {
-    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $description, $is_gateway) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway) = @_;
 
 }
 
 sub add_next_freeip {
-    my ($class, $plugin_config, $subnetid, $subnet) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $hostname, $mac, $description) = @_;
 }
 
 sub del_ip {

@@ -82,7 +82,7 @@ sub del_subnet {
 }
 
 sub add_ip {
-    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $description, $is_gateway) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway) = @_;
 
     my $cidr = $subnet->{cidr};
     my $zone = $subnet->{zone};
@@ -106,7 +106,7 @@ sub add_ip {
 }
 
 sub add_next_freeip {
-    my ($class, $plugin_config, $subnetid, $subnet, $hostname, $description) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $hostname, $mac, $description) = @_;
 
     my $cidr = $subnet->{cidr};
     my $network = $subnet->{network};

@@ -113,11 +113,13 @@ sub on_update_hook {
     my $reversedns = $zone->{reversedns};
 
     my $old_gateway = $old_subnet->{gateway} if $old_subnet;
+    my $mac = undef;
 
     if($vnetid) {
 	my $vnet = PVE::Network::SDN::Vnets::get_vnet($vnetid);
 	raise_param_exc({ vnet => "$vnetid don't exist"}) if !$vnet;
 	raise_param_exc({ vnet => "you can't add a subnet on a vlanaware vnet"}) if $vnet->{vlanaware};
+	$mac = $vnet->{mac};
     }
 
     my $pointopoint = 1 if Net::IP::ip_is_ipv4($gateway) && $mask == 32;
@@ -145,7 +147,7 @@ sub on_update_hook {
         if(!$old_gateway || $gateway && $gateway ne $old_gateway) {
 	    my $hostname = "$vnetid-gw";
 	    my $description = "$vnetid gw";
-	    PVE::Network::SDN::Subnets::add_ip($zone, $subnetid, $subnet, $gateway, $hostname, $description, 1);
+	    PVE::Network::SDN::Subnets::add_ip($zone, $subnetid, $subnet, $gateway, $hostname, $mac, $description, 1);
 	}
 
 	#delete old gateway after update

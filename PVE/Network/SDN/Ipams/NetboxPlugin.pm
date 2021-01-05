@@ -77,13 +77,14 @@ sub del_subnet {
 }
 
 sub add_ip {
-    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $description, $is_gateway) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway) = @_;
 
     my $mask = $subnet->{mask};
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
     my $section = $plugin_config->{section};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Authorization' => "token $token"];
+    $description .= " mac:$mac" if $mac && $description;
 
     my $params = { address => "$ip/$mask", dns_name => $hostname, description => $description };
 
@@ -97,7 +98,7 @@ sub add_ip {
 }
 
 sub add_next_freeip {
-    my ($class, $plugin_config, $subnetid, $subnet, $hostname, $description) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $hostname, $mac, $description) = @_;
 
     my $cidr = $subnet->{cidr};
 
@@ -106,6 +107,7 @@ sub add_next_freeip {
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Authorization' => "token $token"];
 
     my $internalid = get_prefix_id($url, $cidr, $headers);
+    $description .= " mac:$mac" if $mac && $description;
 
     my $params = { dns_name => $hostname, description => $description };
 
