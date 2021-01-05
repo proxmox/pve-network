@@ -256,6 +256,45 @@ sub add_ip {
     }
 }
 
+sub update_ip {
+    my ($zone, $subnetid, $subnet, $ip, $hostname, $mac, $description) = @_;
+
+    return if !$subnet || !$ip; 
+
+    my $ipaddr = new NetAddr::IP($ip);
+    $ip = $ipaddr->canon();
+
+    my $ipamid = $zone->{ipam};
+    my $dns = $zone->{dns};
+    my $dnszone = $zone->{dnszone};
+    my $reversedns = $zone->{reversedns};
+    my $reversednszone = &$get_reversedns_zone($subnetid, $subnet, $reversedns, $ip);
+    my $dnszoneprefix = $subnet->{dnszoneprefix};
+
+    $hostname .= ".$dnszoneprefix" if $dnszoneprefix;
+
+    #verify dns zones before ipam
+    &$verify_dns_zone($dnszone, $dns);
+    &$verify_dns_zone($reversednszone, $reversedns);
+
+    if ($ipamid) {
+	my $ipam_cfg = PVE::Network::SDN::Ipams::config();
+	my $plugin_config = $ipam_cfg->{ids}->{$ipamid};
+	my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
+	eval {
+	    $plugin->update_ip($plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description);
+	};
+	die $@ if $@;
+    }
+
+    eval {
+	#add dns
+	&$add_dns_record($dnszone, $dns, $hostname, $ip);
+	#add reverse dns
+	&$add_dns_ptr_record($reversednszone, $dnszone, $reversedns, $hostname, $ip);
+    };
+}
+
 sub del_ip {
     my ($zone, $subnetid, $subnet, $ip, $hostname) = @_;
 

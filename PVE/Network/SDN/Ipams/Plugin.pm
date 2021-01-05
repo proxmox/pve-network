@@ -68,23 +68,40 @@ sub parse_section_header {
 
 sub add_subnet {
     my ($class, $plugin_config, $subnetid, $subnet) = @_;
+
+    die "please implement inside plugin";
 }
 
 sub del_subnet {
     my ($class, $plugin_config, $subnetid, $subnet) = @_;
+
+    die "please implement inside plugin";
 }
 
 sub add_ip {
     my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway) = @_;
 
+    die "please implement inside plugin";
+}
+
+sub update_ip {
+    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway) = @_;
+    # only update ip attributes (mac,hostname,..). Don't change the ip addresses itself, as some ipam
+    # don't allow ip address change without del/add
+
+    die "please implement inside plugin";
 }
 
 sub add_next_freeip {
     my ($class, $plugin_config, $subnetid, $subnet, $hostname, $mac, $description) = @_;
+
+    die "please implement inside plugin";
 }
 
 sub del_ip {
     my ($class, $plugin_config, $subnetid, $subnet, $ip) = @_;
+
+    die "please implement inside plugin";
 }
 
 sub on_update_hook {

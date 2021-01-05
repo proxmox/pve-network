@@ -97,6 +97,29 @@ sub add_ip {
     }
 }
 
+sub update_ip {
+    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway) = @_;
+
+    my $mask = $subnet->{mask};
+    my $url = $plugin_config->{url};
+    my $token = $plugin_config->{token};
+    my $section = $plugin_config->{section};
+    my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Authorization' => "token $token"];
+    $description .= " mac:$mac" if $mac && $description;
+
+    my $params = { address => "$ip/$mask", dns_name => $hostname, description => $description };
+
+    my $ip_id = get_ip_id($url, $ip, $headers);
+    die "can't find ip $ip in ipam" if !$ip_id;
+
+    eval {
+	PVE::Network::SDN::Ipams::Plugin::api_request("PATCH", "$url/ipam/ip-addresses/$ip_id/", $headers, $params);
+    };
+    if ($@) {
+	die "error update ip $ip : $@";
+    }
+}
+
 sub add_next_freeip {
     my ($class, $plugin_config, $subnetid, $subnet, $hostname, $mac, $description) = @_;
 

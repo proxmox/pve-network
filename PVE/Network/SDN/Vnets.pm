@@ -79,6 +79,22 @@ sub get_subnets {
 
 }
 
+sub get_subnet_from_vnet_cidr {
+    my ($vnetid, $cidr) = @_;
+
+    my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid, 1);
+    my $vnet = PVE::Network::SDN::Vnets::get_vnet($vnetid);
+    my $zoneid = $vnet->{zone};
+    my $zone = PVE::Network::SDN::Zones::get_zone($zoneid);
+
+    my ($ip, $mask) = split(/\//, $cidr);
+    die "ip address is not in cidr format" if !$mask;
+
+    my ($subnetid, $subnet) = PVE::Network::SDN::Subnets::find_ip_subnet($ip, $mask, $subnets);
+
+    return ($zone, $subnetid, $subnet, $ip);
+}
+
 sub get_next_free_cidr {
     my ($vnetid, $hostname, $mac, $description, $ipversion) = @_;
 
@@ -113,31 +129,24 @@ sub get_next_free_cidr {
 sub add_cidr {
     my ($vnetid, $cidr, $hostname, $mac, $description) = @_;
 
-    my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid, 1);
-    my $vnet = PVE::Network::SDN::Vnets::get_vnet($vnetid);
-    my $zoneid = $vnet->{zone};
-    my $zone = PVE::Network::SDN::Zones::get_zone($zoneid);
-
-    my ($ip, $mask) = split(/\//, $cidr);
-    die "ip address is not in cidr format" if !$mask;
-    my ($subnetid, $subnet) = PVE::Network::SDN::Subnets::find_ip_subnet($ip, $mask, $subnets);
-
+    my ($zone, $subnetid, $subnet, $ip) = PVE::Network::SDN::Vnets::get_subnet_from_vnet_cidr($vnetid, $cidr);
     PVE::Network::SDN::Subnets::add_ip($zone, $subnetid, $subnet, $ip, $hostname, $mac, $description);
+}
+
+sub update_cidr {
+    my ($vnetid, $cidr, $hostname, $mac, $description) = @_;
+
+    my ($zone, $subnetid, $subnet, $ip) = PVE::Network::SDN::Vnets::get_subnet_from_vnet_cidr($vnetid, $cidr);
+    PVE::Network::SDN::Subnets::update_ip($zone, $subnetid, $subnet, $ip, $hostname, $mac, $description);
 }
 
 sub del_cidr {
     my ($vnetid, $cidr, $hostname) = @_;
 
-    my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid, 1);
-    my $vnet = PVE::Network::SDN::Vnets::get_vnet($vnetid);
-    my $zoneid = $vnet->{zone};
-    my $zone = PVE::Network::SDN::Zones::get_zone($zoneid);
-
-    my ($ip, $mask) = split(/\//, $cidr);
-    die "ip address is not in cidr format" if !$mask;
-    my ($subnetid, $subnet) = PVE::Network::SDN::Subnets::find_ip_subnet($ip, $mask, $subnets);
-
+    my ($zone, $subnetid, $subnet, $ip) = PVE::Network::SDN::Vnets::get_subnet_from_vnet_cidr($vnetid, $cidr);
     PVE::Network::SDN::Subnets::del_ip($zone, $subnetid, $subnet, $ip, $hostname);
 }
+
+
 
 1;

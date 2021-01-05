@@ -105,6 +105,11 @@ sub add_ip {
     die "$@" if $@;
 }
 
+sub update_ip {
+    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway) = @_;
+    return;
+}
+
 sub add_next_freeip {
     my ($class, $plugin_config, $subnetid, $subnet, $hostname, $mac, $description) = @_;
 
