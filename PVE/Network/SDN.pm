@@ -104,6 +104,7 @@ sub pending_config {
 		$pending->{$id}->{state} = "changed";
 	    }
 	}
+	$pending->{$id}->{"pending"} = {} if $pending->{$id}->{state} && !defined($pending->{$id}->{"pending"});
     }
 
    foreach my $id (sort keys %{$config_objects}) {
@@ -124,6 +125,7 @@ sub pending_config {
 		$pending->{$id}->{state} = "changed";
 	    }
 	}
+	$pending->{$id}->{"pending"} = {} if  $pending->{$id}->{state} && !defined($pending->{$id}->{"pending"});
    }
 
    return {ids => $pending};
