@@ -67,11 +67,39 @@ sub parse_section_header {
 
 
 sub add_a_record {
-    my ($class, $plugin_config, $type, $zone, $reversezone, $hostname, $ip) = @_;
+    my ($class, $plugin_config, $zone, $hostname, $ip) = @_;
+
+    die "please implement inside plugin";
+}
+
+sub add_ptr_record {
+    my ($class, $plugin_config, $zone, $hostname, $ip) = @_;
+
+    die "please implement inside plugin";
+}
+
+sub del_ptr_record {
+    my ($class, $plugin_config, $zone, $ip) = @_;
+
+    die "please implement inside plugin";
 }
 
 sub del_a_record {
-    my ($class, $plugin_config, $hostname, $ip) = @_;
+    my ($class, $plugin_config, $zone, $hostname, $ip) = @_;
+
+    die "please implement inside plugin";
+}
+
+sub verify_zone {
+    my ($class, $plugin_config, $zone) = @_;
+
+    die "please implement inside plugin";
+}
+
+sub get_reversedns_zone {
+    my ($class, $plugin_config, $subnetid, $subnet, $ip) = @_;
+
+    die "please implement inside plugin";
 }
 
 sub on_update_hook {

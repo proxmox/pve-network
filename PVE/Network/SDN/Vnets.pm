@@ -134,10 +134,10 @@ sub add_cidr {
 }
 
 sub update_cidr {
-    my ($vnetid, $cidr, $hostname, $mac, $description) = @_;
+    my ($vnetid, $cidr, $hostname, $oldhostname, $mac, $description) = @_;
 
     my ($zone, $subnetid, $subnet, $ip) = PVE::Network::SDN::Vnets::get_subnet_from_vnet_cidr($vnetid, $cidr);
-    PVE::Network::SDN::Subnets::update_ip($zone, $subnetid, $subnet, $ip, $hostname, $mac, $description);
+    PVE::Network::SDN::Subnets::update_ip($zone, $subnetid, $subnet, $ip, $hostname, $oldhostname, $mac, $description);
 }
 
 sub del_cidr {

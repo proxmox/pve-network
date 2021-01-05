@@ -52,6 +52,19 @@ sub add_a_record {
     my $type = Net::IP::ip_is_ipv6($ip) ? "AAAA" : "A";
     my $fqdn = $hostname.".".$zone.".";
 
+    my $zonecontent = get_zone_content($plugin_config, $zone);
+    my $existing_rrset = get_zone_rrset($zonecontent, $fqdn);
+
+    my $final_records = [];
+    my $foundrecord = undef;
+    foreach my $record (@{$existing_rrset->{records}}) {
+	if($record->{content} eq $ip) {
+	    $foundrecord = 1;
+	    next;
+	}
+	push @$final_records, $record;
+    }
+    return if $foundrecord;
 
     my $record = { content => $ip, 
                    disabled => JSON::false, 
@@ -59,11 +72,13 @@ sub add_a_record {
                    type => $type, 
                    priority => 0 };
 
+    push @$final_records, $record;
+
     my $rrset = { name => $fqdn, 
 		  type => $type, 
                    ttl =>  $ttl, 
 		  changetype => "REPLACE",
-		  records => [ $record ] };
+		  records => $final_records  };
 
 
     my $params = { rrsets => [ $rrset ] };
@@ -123,10 +138,37 @@ sub del_a_record {
     my $fqdn = $hostname.".".$zone.".";
     my $type = Net::IP::ip_is_ipv6($ip) ? "AAAA" : "A";
 
-    my $rrset = { name => $fqdn, 
-		  type => $type, 
-		  changetype => "DELETE",
-		  records => [] };
+    my $zonecontent = get_zone_content($plugin_config, $zone);
+    my $existing_rrset = get_zone_rrset($zonecontent, $fqdn);
+
+    my $final_records = [];
+    my $foundrecord = undef;
+    foreach my $record (@{$existing_rrset->{records}}) {
+        if ($record->{content} eq $ip) {
+	    $foundrecord = 1;
+	    next;
+	}
+	push @$final_records, $record;
+    }
+    return if !$foundrecord;
+ 
+    my $rrset = {};
+   
+    if (scalar (@{$final_records}) > 0) {
+	#if we still have other records, we rewrite them without removed ip
+	$rrset = { name => $fqdn,
+		   type => $type,
+		   ttl =>  $existing_rrset->{ttl},
+		   changetype => "REPLACE",
+		   records => $final_records  };
+
+    } else {
+
+	$rrset = { name => $fqdn, 
+		   type => $type, 
+		   changetype => "DELETE",
+		    records => [] };
+    }
 
     my $params = { rrsets => [ $rrset ] };
 
@@ -176,7 +218,7 @@ sub verify_zone {
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'X-API-Key' => $key];
 
     eval {
-        PVE::Network::SDN::api_request("GET", "$url/zones/$zone", $headers);
+        PVE::Network::SDN::api_request("GET", "$url/zones/$zone?rrsets=false", $headers);
     };
 
     if ($@) {
@@ -247,6 +289,39 @@ sub on_update_hook {
     if ($@) {
 	die "dns api error: $@";
     }
+}
+
+
+sub get_zone_content {
+    my ($plugin_config, $zone) = @_;
+
+    #verify that api is working              
+
+    my $url = $plugin_config->{url};
+    my $key = $plugin_config->{key};
+    my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'X-API-Key' => $key];
+
+    my $result = undef;
+    eval {
+        $result = PVE::Network::SDN::api_request("GET", "$url/zones/$zone", $headers);
+    };
+
+    if ($@) {
+        die "can't read zone $zone: $@";
+    }
+    return $result;
+}
+
+sub get_zone_rrset {
+    my ($zonecontent, $name) = @_;
+
+    my $rrsetresult = undef;
+    foreach my $rrset (@{$zonecontent->{rrsets}}) {
+	next if $rrset->{name} ne $name;
+        $rrsetresult = $rrset;
+	last; 
+    }
+    return $rrsetresult;
 }
 
 1;

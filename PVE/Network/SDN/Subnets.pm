@@ -257,7 +257,7 @@ sub add_ip {
 }
 
 sub update_ip {
-    my ($zone, $subnetid, $subnet, $ip, $hostname, $mac, $description) = @_;
+    my ($zone, $subnetid, $subnet, $ip, $hostname, $oldhostname, $mac, $description) = @_;
 
     return if !$subnet || !$ip; 
 
@@ -287,10 +287,15 @@ sub update_ip {
 	die $@ if $@;
     }
 
+    return if $hostname eq $oldhostname;
+
     eval {
 	#add dns
+	
+	&$del_dns_record($dnszone, $dns, $oldhostname, $ip);
 	&$add_dns_record($dnszone, $dns, $hostname, $ip);
 	#add reverse dns
+	&$del_dns_ptr_record($reversednszone, $reversedns, $ip);
 	&$add_dns_ptr_record($reversednszone, $dnszone, $reversedns, $hostname, $ip);
     };
 }
