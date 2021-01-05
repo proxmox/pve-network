@@ -1,0 +1,13 @@
+bless( {
+                  '_content' => '{"rrsets":[{"changetype":"REPLACE","name":"1.0.0.10.in-addr.arpa.","records":[{"content":"myhostname.","disabled":false,"name":"1.0.0.10.in-addr.arpa.","priority":0,"type":"PTR"}],"ttl":"3600","type":"PTR"}]}',
+                  '_headers' => bless( {
+                                         '::std_case' => {
+                                                           'x-api-key' => 'X-API-Key'
+                                                         },
+                                         'content-type' => 'application/json; charset=UTF-8',
+                                         'x-api-key' => '1234'
+                                       }, 'HTTP::Headers' ),
+                  '_method' => 'PATCH',
+                  '_uri' => bless( do{\(my $o = 'http://localhost:8881/api/v1/servers/localhost/zones/domain.com')}, 'URI::http' )
+                }, 'HTTP::Request' );
+

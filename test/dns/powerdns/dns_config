@@ -1,0 +1,10 @@
+{
+          'ids' => {
+                     'powerdns' => {
+                                    'url' => 'http://localhost:8881/api/v1/servers/localhost',
+                                    'type' => 'powerdns',
+                                    'key' => '1234',
+                                    'ttl' => '3600'
+                                  },
+                   },
+}
