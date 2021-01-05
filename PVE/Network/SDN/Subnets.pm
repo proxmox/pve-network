@@ -202,7 +202,7 @@ sub next_free_ip {
 	#rollback
 	my $err = $@;
 	eval {
-	    PVE::Network::SDN::Subnets::del_ip($subnetid, $subnet, $ip, $hostname)
+	    PVE::Network::SDN::Subnets::del_ip($zone, $subnetid, $subnet, $ip, $hostname)
 	};
 	die $err;
     }
@@ -250,7 +250,7 @@ sub add_ip {
 	#rollback
 	my $err = $@;
 	eval {
-	    PVE::Network::SDN::Subnets::del_ip($subnetid, $subnet, $ip, $hostname)
+	    PVE::Network::SDN::Subnets::del_ip($zone, $subnetid, $subnet, $ip, $hostname)
 	};
 	die $err;
     }
