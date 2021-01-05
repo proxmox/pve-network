@@ -94,7 +94,7 @@ sub find_ip_subnet {
     return ($subnetid, $subnet);
 }
 
-my $verify_dns_zone = sub {
+sub verify_dns_zone {
     my ($zone, $dns) = @_;
 
     return if !$zone || !$dns;
@@ -103,9 +103,9 @@ my $verify_dns_zone = sub {
     my $plugin_config = $dns_cfg->{ids}->{$dns};
     my $plugin = PVE::Network::SDN::Dns::Plugin->lookup($plugin_config->{type});
     $plugin->verify_zone($plugin_config, $zone);
-};
+}
 
-my $get_reversedns_zone = sub {
+sub get_reversedns_zone {
     my ($subnetid, $subnet, $dns, $ip) = @_;
 
     return if !$subnetid || !$dns || !$ip;
@@ -114,9 +114,9 @@ my $get_reversedns_zone = sub {
     my $plugin_config = $dns_cfg->{ids}->{$dns};
     my $plugin = PVE::Network::SDN::Dns::Plugin->lookup($plugin_config->{type});
     $plugin->get_reversedns_zone($plugin_config, $subnetid, $subnet, $ip);
-};
+}
 
-my $add_dns_record = sub {
+sub add_dns_record {
     my ($zone, $dns, $hostname, $ip) = @_;
     return if !$zone || !$dns || !$hostname || !$ip;
 
@@ -125,9 +125,9 @@ my $add_dns_record = sub {
     my $plugin = PVE::Network::SDN::Dns::Plugin->lookup($plugin_config->{type});
     $plugin->add_a_record($plugin_config, $zone, $hostname, $ip);
 
-};
+}
 
-my $add_dns_ptr_record = sub {
+sub add_dns_ptr_record {
     my ($reversezone, $zone, $dns, $hostname, $ip) = @_;
 
     return if !$zone || !$reversezone || !$dns || !$hostname || !$ip;
@@ -137,9 +137,9 @@ my $add_dns_ptr_record = sub {
     my $plugin_config = $dns_cfg->{ids}->{$dns};
     my $plugin = PVE::Network::SDN::Dns::Plugin->lookup($plugin_config->{type});
     $plugin->add_ptr_record($plugin_config, $reversezone, $hostname, $ip);
-};
+}
 
-my $del_dns_record = sub {
+sub del_dns_record {
     my ($zone, $dns, $hostname, $ip) = @_;
 
     return if !$zone || !$dns || !$hostname || !$ip;
@@ -148,9 +148,9 @@ my $del_dns_record = sub {
     my $plugin_config = $dns_cfg->{ids}->{$dns};
     my $plugin = PVE::Network::SDN::Dns::Plugin->lookup($plugin_config->{type});
     $plugin->del_a_record($plugin_config, $zone, $hostname, $ip);
-};
+}
 
-my $del_dns_ptr_record = sub {
+sub del_dns_ptr_record {
     my ($reversezone, $dns, $ip) = @_;
 
     return if !$reversezone || !$dns || !$ip;
@@ -159,7 +159,7 @@ my $del_dns_ptr_record = sub {
     my $plugin_config = $dns_cfg->{ids}->{$dns};
     my $plugin = PVE::Network::SDN::Dns::Plugin->lookup($plugin_config->{type});
     $plugin->del_ptr_record($plugin_config, $reversezone, $ip);
-};
+}
 
 sub next_free_ip {
     my ($zone, $subnetid, $subnet, $hostname, $mac, $description) = @_;
@@ -177,7 +177,7 @@ sub next_free_ip {
     $hostname .= ".$dnszoneprefix" if $dnszoneprefix;
 
     #verify dns zones before ipam
-    &$verify_dns_zone($dnszone, $dns);
+    verify_dns_zone($dnszone, $dns);
 
     if($ipamid) {
 	my $ipam_cfg = PVE::Network::SDN::Ipams::config();
@@ -191,12 +191,12 @@ sub next_free_ip {
     }
 
     eval {
-	my $reversednszone = &$get_reversedns_zone($subnetid, $subnet, $reversedns, $ip);
+	my $reversednszone = get_reversedns_zone($subnetid, $subnet, $reversedns, $ip);
 
 	#add dns
-	&$add_dns_record($dnszone, $dns, $hostname, $ip);
+	add_dns_record($dnszone, $dns, $hostname, $ip);
 	#add reverse dns
-	&$add_dns_ptr_record($reversednszone, $dnszone, $reversedns, $hostname, $ip);
+	add_dns_ptr_record($reversednszone, $dnszone, $reversedns, $hostname, $ip);
     };
     if ($@) {
 	#rollback
@@ -221,14 +221,14 @@ sub add_ip {
     my $dns = $zone->{dns};
     my $dnszone = $zone->{dnszone};
     my $reversedns = $zone->{reversedns};
-    my $reversednszone = &$get_reversedns_zone($subnetid, $subnet, $reversedns, $ip);
+    my $reversednszone = get_reversedns_zone($subnetid, $subnet, $reversedns, $ip);
     my $dnszoneprefix = $subnet->{dnszoneprefix};
 
     $hostname .= ".$dnszoneprefix" if $dnszoneprefix;
 
     #verify dns zones before ipam
-    &$verify_dns_zone($dnszone, $dns);
-    &$verify_dns_zone($reversednszone, $reversedns);
+    verify_dns_zone($dnszone, $dns);
+    verify_dns_zone($reversednszone, $reversedns);
 
     if ($ipamid) {
 	my $ipam_cfg = PVE::Network::SDN::Ipams::config();
@@ -242,9 +242,9 @@ sub add_ip {
 
     eval {
 	#add dns
-	&$add_dns_record($dnszone, $dns, $hostname, $ip);
+	add_dns_record($dnszone, $dns, $hostname, $ip);
 	#add reverse dns
-	&$add_dns_ptr_record($reversednszone, $dnszone, $reversedns, $hostname, $ip);
+	add_dns_ptr_record($reversednszone, $dnszone, $reversedns, $hostname, $ip);
     };
     if ($@) {
 	#rollback
@@ -268,14 +268,14 @@ sub update_ip {
     my $dns = $zone->{dns};
     my $dnszone = $zone->{dnszone};
     my $reversedns = $zone->{reversedns};
-    my $reversednszone = &$get_reversedns_zone($subnetid, $subnet, $reversedns, $ip);
+    my $reversednszone = get_reversedns_zone($subnetid, $subnet, $reversedns, $ip);
     my $dnszoneprefix = $subnet->{dnszoneprefix};
 
     $hostname .= ".$dnszoneprefix" if $dnszoneprefix;
 
     #verify dns zones before ipam
-    &$verify_dns_zone($dnszone, $dns);
-    &$verify_dns_zone($reversednszone, $reversedns);
+    verify_dns_zone($dnszone, $dns);
+    verify_dns_zone($reversednszone, $reversedns);
 
     if ($ipamid) {
 	my $ipam_cfg = PVE::Network::SDN::Ipams::config();
@@ -292,11 +292,11 @@ sub update_ip {
     eval {
 	#add dns
 	
-	&$del_dns_record($dnszone, $dns, $oldhostname, $ip);
-	&$add_dns_record($dnszone, $dns, $hostname, $ip);
+	del_dns_record($dnszone, $dns, $oldhostname, $ip);
+	add_dns_record($dnszone, $dns, $hostname, $ip);
 	#add reverse dns
-	&$del_dns_ptr_record($reversednszone, $reversedns, $ip);
-	&$add_dns_ptr_record($reversednszone, $dnszone, $reversedns, $hostname, $ip);
+	del_dns_ptr_record($reversednszone, $reversedns, $ip);
+	add_dns_ptr_record($reversednszone, $dnszone, $reversedns, $hostname, $ip);
     };
 }
 
@@ -312,13 +312,13 @@ sub del_ip {
     my $dns = $zone->{dns};
     my $dnszone = $zone->{dnszone};
     my $reversedns = $zone->{reversedns};
-    my $reversednszone = &$get_reversedns_zone($subnetid, $subnet, $reversedns, $ip);
+    my $reversednszone = get_reversedns_zone($subnetid, $subnet, $reversedns, $ip);
     my $dnszoneprefix = $subnet->{dnszoneprefix};
     $hostname .= ".$dnszoneprefix" if $dnszoneprefix;
 
 
-    &$verify_dns_zone($dnszone, $dns);
-    &$verify_dns_zone($reversednszone, $reversedns);
+    verify_dns_zone($dnszone, $dns);
+    verify_dns_zone($reversednszone, $reversedns);
 
     if ($ipamid) {
 	my $ipam_cfg = PVE::Network::SDN::Ipams::config();
@@ -328,8 +328,8 @@ sub del_ip {
     }
 
     eval {
-	&$del_dns_record($dnszone, $dns, $hostname, $ip);
-	&$del_dns_ptr_record($reversednszone, $reversedns, $ip);
+	del_dns_record($dnszone, $dns, $hostname, $ip);
+	del_dns_ptr_record($reversednszone, $reversedns, $ip);
     };
     if ($@) {
 	warn $@;
