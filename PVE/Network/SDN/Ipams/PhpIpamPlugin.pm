@@ -38,7 +38,7 @@ sub options {
 # Plugin implementation
 
 sub add_subnet {
-    my ($class, $plugin_config, $subnetid, $subnet) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $noerr) = @_;
 
     my $cidr = $subnet->{cidr};
     my $network = $subnet->{network};
@@ -55,7 +55,6 @@ sub add_subnet {
 
     #create subnet
     if (!$internalid) {
-
 	my $params = { subnet => $network,
 		   mask => $mask,
 		   sectionId => $section,
@@ -65,14 +64,14 @@ sub add_subnet {
 		PVE::Network::SDN::api_request("POST", "$url/subnets/", $headers, $params);
 	};
 	if ($@) {
-	    die "error add subnet to ipam: $@";
+	    die "error add subnet to ipam: $@" if !$noerr;
 	}
     }
 
 }
 
 sub del_subnet {
-    my ($class, $plugin_config, $subnetid, $subnet) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $noerr) = @_;
 
     my $cidr = $subnet->{cidr};
     my $url = $plugin_config->{url};
@@ -89,13 +88,13 @@ sub del_subnet {
 	PVE::Network::SDN::api_request("DELETE", "$url/subnets/$internalid", $headers);
     };
     if ($@) {
-	die "error deleting subnet from ipam: $@";
+	die "error deleting subnet from ipam: $@" if !$noerr;
     }
 
 }
 
 sub add_ip {
-    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway, $noerr) = @_;
 
     my $cidr = $subnet->{cidr};
     my $url = $plugin_config->{url};
@@ -118,12 +117,12 @@ sub add_ip {
     };
 
     if ($@) {
-	die "error add subnet ip to ipam: ip $ip already exist: $@";
+	die "error add subnet ip to ipam: ip $ip already exist: $@" if !$noerr;
     }
 }
 
 sub update_ip {
-    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway, $noerr) = @_;
 
     my $cidr = $subnet->{cidr};
     my $url = $plugin_config->{url};
@@ -146,12 +145,12 @@ sub update_ip {
     };
 
     if ($@) {
-	die "ipam: error update subnet ip $ip: $@";
+	die "ipam: error update subnet ip $ip: $@" if !$noerr;
     }
 }
 
 sub add_next_freeip {
-    my ($class, $plugin_config, $subnetid, $subnet, $hostname, $mac, $description) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $hostname, $mac, $description, $noerr) = @_;
 
     my $cidr = $subnet->{cidr};  
     my $mask = $subnet->{mask};  
@@ -175,14 +174,14 @@ sub add_next_freeip {
     };
 
     if ($@) {
-        die "can't find free ip in subnet $cidr: $@";
+        die "can't find free ip in subnet $cidr: $@" if !$noerr;
     }
 
-    return "$ip/$mask";
+    return "$ip/$mask" if $ip && $mask;
 }
 
 sub del_ip {
-    my ($class, $plugin_config, $subnetid, $subnet, $ip) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $ip, $noerr) = @_;
 
     return if !$ip;
 
@@ -197,7 +196,7 @@ sub del_ip {
 	PVE::Network::SDN::api_request("DELETE", "$url/addresses/$ip_id", $headers);
     };
     if ($@) {
-	die "error delete ip $ip: $@";
+	die "error delete ip $ip: $@" if !$noerr;
     }
 }
 
