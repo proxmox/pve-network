@@ -42,7 +42,7 @@ sub options {
 # Plugin implementation
 
 sub add_a_record {
-    my ($class, $plugin_config, $zone, $hostname, $ip) = @_;
+    my ($class, $plugin_config, $zone, $hostname, $ip, $noerr) = @_;
 
     my $url = $plugin_config->{url};
     my $key = $plugin_config->{key};
@@ -88,12 +88,12 @@ sub add_a_record {
     };
 
     if ($@) {
-	die "error add $fqdn to zone $zone: $@";
+	die "error add $fqdn to zone $zone: $@" if !$noerr;
     }
 }
 
 sub add_ptr_record {
-    my ($class, $plugin_config, $zone, $hostname, $ip) = @_;
+    my ($class, $plugin_config, $zone, $hostname, $ip, $noerr) = @_;
 
     my $url = $plugin_config->{url};
     my $key = $plugin_config->{key};
@@ -125,12 +125,12 @@ sub add_ptr_record {
     };
 
     if ($@) {
-	die "error add $reverseip to zone $zone: $@";
+	die "error add $reverseip to zone $zone: $@" if !$noerr;
     }
 }
 
 sub del_a_record {
-    my ($class, $plugin_config, $zone, $hostname, $ip) = @_;
+    my ($class, $plugin_config, $zone, $hostname, $ip, $noerr) = @_;
 
     my $url = $plugin_config->{url};
     my $key = $plugin_config->{key};
@@ -151,7 +151,7 @@ sub del_a_record {
 	push @$final_records, $record;
     }
     return if !$foundrecord;
- 
+
     my $rrset = {};
    
     if (scalar (@{$final_records}) > 0) {
@@ -177,12 +177,12 @@ sub del_a_record {
     };
 
     if ($@) {
-	die "error delete $fqdn from zone $zone: $@";
+	die "error delete $fqdn from zone $zone: $@" if !$noerr;
     }
 }
 
 sub del_ptr_record {
-    my ($class, $plugin_config, $zone, $ip) = @_;
+    my ($class, $plugin_config, $zone, $ip, $noerr) = @_;
 
     my $url = $plugin_config->{url};
     my $key = $plugin_config->{key};
@@ -204,12 +204,12 @@ sub del_ptr_record {
     };
 
     if ($@) {
-	die "error delete $reverseip from zone $zone: $@";
+	die "error delete $reverseip from zone $zone: $@" if !$noerr;
     }
 }
 
 sub verify_zone {
-    my ($class, $plugin_config, $zone) = @_;
+    my ($class, $plugin_config, $zone, $noerr) = @_;
 
     #verify that api is working              
 
@@ -222,7 +222,7 @@ sub verify_zone {
     };
 
     if ($@) {
-        die "can't read zone $zone: $@";
+        die "can't read zone $zone: $@" if !$noerr;
     }
 }
 

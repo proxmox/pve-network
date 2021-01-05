@@ -67,31 +67,31 @@ sub parse_section_header {
 
 
 sub add_a_record {
-    my ($class, $plugin_config, $zone, $hostname, $ip) = @_;
+    my ($class, $plugin_config, $zone, $hostname, $ip, $noerr) = @_;
 
     die "please implement inside plugin";
 }
 
 sub add_ptr_record {
-    my ($class, $plugin_config, $zone, $hostname, $ip) = @_;
+    my ($class, $plugin_config, $zone, $hostname, $ip, $noerr) = @_;
 
     die "please implement inside plugin";
 }
 
 sub del_ptr_record {
-    my ($class, $plugin_config, $zone, $ip) = @_;
+    my ($class, $plugin_config, $zone, $ip, $noerr) = @_;
 
     die "please implement inside plugin";
 }
 
 sub del_a_record {
-    my ($class, $plugin_config, $zone, $hostname, $ip) = @_;
+    my ($class, $plugin_config, $zone, $hostname, $ip, $noerr) = @_;
 
     die "please implement inside plugin";
 }
 
 sub verify_zone {
-    my ($class, $plugin_config, $zone) = @_;
+    my ($class, $plugin_config, $zone, $noerr) = @_;
 
     die "please implement inside plugin";
 }
