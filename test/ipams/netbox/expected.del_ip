@@ -1,0 +1,9 @@
+bless( {
+                  '_content' => '',
+                  '_headers' => bless( {
+                                         'authorization' => 'token 0123456789abcdef0123456789abcdef01234567',
+                                         'content-type' => 'application/json; charset=UTF-8'
+                                       }, 'HTTP::Headers' ),
+                  '_method' => 'DELETE',
+                  '_uri' => bless( do{\(my $o = 'http://localhost:8000/api/ipam/ip-addresses/1/')}, 'URI::http' )
+                }, 'HTTP::Request' );

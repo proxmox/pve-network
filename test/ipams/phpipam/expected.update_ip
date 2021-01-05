@@ -1,0 +1,12 @@
+bless( {
+                  '_content' => '{"description":"mydescription","hostname":"myhostname","is_gateway":1,"mac":"da:65:8f:18:9b:6f"}',
+                  '_headers' => bless( {
+                                         '::std_case' => {
+                                                           'token' => 'Token'
+                                                         },
+                                         'content-type' => 'application/json; charset=UTF-8',
+                                         'token' => 'JPHkPSLB4O_XL-GQz4qtEFmNpx-99Htw'
+                                       }, 'HTTP::Headers' ),
+                  '_method' => 'PATCH',
+                  '_uri' => bless( do{\(my $o = 'https://localhost/api/apiadmin/addresses/1')}, 'URI::https' )
+                }, 'HTTP::Request' );
