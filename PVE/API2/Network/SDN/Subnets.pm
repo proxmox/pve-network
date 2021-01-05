@@ -277,21 +277,18 @@ __PACKAGE__->register_method ({
 	    sub {
 		my $cfg = PVE::Network::SDN::Subnets::config();
 
-		my $scfg = PVE::Network::SDN::Subnets::sdn_subnets_config($cfg, $id);
+		my $scfg = PVE::Network::SDN::Subnets::sdn_subnets_config($cfg, $id, 1);
 
-		my $subnets_cfg = PVE::Network::SDN::Subnets::config();
 		my $vnets_cfg = PVE::Network::SDN::Vnets::config();
 
-		PVE::Network::SDN::SubnetPlugin->on_delete_hook($id, $subnets_cfg, $vnets_cfg);
+		PVE::Network::SDN::SubnetPlugin->on_delete_hook($id, $cfg, $vnets_cfg);
 
-		my $ipam_cfg = PVE::Network::SDN::Ipams::config();
-		my $ipam = $cfg->{ids}->{$id}->{ipam};
-		if ($ipam) {
-		    raise_param_exc({ ipam => "$ipam not existing"}) if !$ipam_cfg->{ids}->{$ipam};
-		    my $plugin_config = $ipam_cfg->{ids}->{$ipam};
-		    my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
-		    $plugin->del_subnet($plugin_config, $id, $scfg);
-		}
+		my $zone_cfg = PVE::Network::SDN::Zones::config();
+		my $vnet = $param->{vnet};
+		my $zoneid = $vnets_cfg->{ids}->{$vnet}->{zone};
+		my $zone = $zone_cfg->{ids}->{$zoneid};
+
+		PVE::Network::SDN::Subnets::del_subnet($zone, $id, $scfg);
 
 		delete $cfg->{ids}->{$id};
 

@@ -129,10 +129,7 @@ sub on_update_hook {
 
 
     if ($ipam) {
-	my $ipam_cfg = PVE::Network::SDN::Ipams::config();
-	my $plugin_config = $ipam_cfg->{ids}->{$ipam};
-	my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
-	$plugin->add_subnet($plugin_config, $subnetid, $subnet);
+	PVE::Network::SDN::Subnets::add_subnet($zone, $subnetid, $subnet);
 
 	#don't register gateway for pointopoint
 	return if $pointopoint;

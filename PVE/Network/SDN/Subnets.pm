@@ -161,6 +161,26 @@ sub del_dns_ptr_record {
     $plugin->del_ptr_record($plugin_config, $reversezone, $ip);
 }
 
+sub add_subnet {
+    my ($zone, $subnetid, $subnet) = @_;
+
+    my $ipam = $zone->{ipam};
+    my $ipam_cfg = PVE::Network::SDN::Ipams::config();
+    my $plugin_config = $ipam_cfg->{ids}->{$ipam};
+    my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
+    $plugin->add_subnet($plugin_config, $subnetid, $subnet);
+}
+
+sub del_subnet {
+    my ($zone, $subnetid, $subnet) = @_;
+
+    my $ipam = $zone->{ipam};
+    my $ipam_cfg = PVE::Network::SDN::Ipams::config();
+    my $plugin_config = $ipam_cfg->{ids}->{$ipam};
+    my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
+    $plugin->del_subnet($plugin_config, $subnetid, $subnet);
+}
+
 sub next_free_ip {
     my ($zone, $subnetid, $subnet, $hostname, $mac, $description) = @_;
 
