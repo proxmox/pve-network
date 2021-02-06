@@ -4,6 +4,7 @@ Priority: optional
 Maintainer: Proxmox Support Team <support@proxmox.com>
 Build-Depends: debhelper (>= 11~),
                lintian,
+               libnet-subnet-perl,
                perl,
                pve-cluster (>= 6.0~),
                pve-doc-generator (>= 5.3-3),
