@@ -251,9 +251,11 @@ sub add_ip {
     verify_dns_zone($reversednszone, $reversedns);
 
     if ($ipamid) {
+
 	my $ipam_cfg = PVE::Network::SDN::Ipams::config();
 	my $plugin_config = $ipam_cfg->{ids}->{$ipamid};
 	my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
+
 	eval {
 	    $plugin->add_ip($plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description);
 	};
