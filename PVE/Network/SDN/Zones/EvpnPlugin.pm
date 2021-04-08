@@ -134,6 +134,7 @@ sub generate_sdn_config {
 	#vrf interface
 	@iface_config = ();
 	push @iface_config, "vrf-table auto";
+	push @iface_config, "post-up ip route add vrf $vrf_iface unreachable default metric 4278198272";
 	push(@{$config->{$vrf_iface}}, @iface_config) if !$config->{$vrf_iface};
 
 	if ($vrfvxlan) {
