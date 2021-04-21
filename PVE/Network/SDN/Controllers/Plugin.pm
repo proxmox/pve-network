@@ -28,7 +28,7 @@ sub parse_sdn_controller_id {
         return undef if $noerr;
         die "controller ID '$id' contains illegal characters\n";
     }
-    die "controller ID '$id' can't be more length than 10 characters\n" if length($id) > 10;
+    die "controller ID '$id' can't be more length than 64 characters\n" if length($id) > 64;
     return $id;
 }
 
