@@ -28,6 +28,11 @@ sub properties {
 	    type => 'string',
 	    description => "Frr router name",
 	},
+        'mac' => {
+            type => 'string',
+            description => "Anycast logical router mac address",
+            optional => 1, format => 'mac-addr'
+        },
 	'exitnodes' => get_standard_option('pve-node-list'),
     };
 }
@@ -40,6 +45,7 @@ sub options {
         controller => { optional => 0 },
 	exitnodes => { optional => 1 },
 	mtu => { optional => 1 },
+	mac => { optional => 1 },
 	dns => { optional => 1 },
 	reversedns => { optional => 1 },
 	dnszone => { optional => 1 },
@@ -55,7 +61,7 @@ sub generate_sdn_config {
     my $alias = $vnet->{alias};
     my $ipv4 = $vnet->{ipv4};
     my $ipv6 = $vnet->{ipv6};
-    my $mac = $vnet->{mac};
+    my $mac = $plugin_config->{'mac'};
 
     my $vrf_iface = "vrf_$zoneid";
     my $vrfvxlan = $plugin_config->{'vrf-vxlan'};
@@ -184,6 +190,10 @@ sub on_update_hook {
 		if (defined($zone_cfg->{ids}->{$id}->{'vrf-vxlan'}) && $zone_cfg->{ids}->{$id}->{'vrf-vxlan'} eq $vrfvxlan);
     }
 
+    if (!defined($zone_cfg->{ids}->{$zoneid}->{'mac'})) {
+	my $dc = PVE::Cluster::cfs_read_file('datacenter.cfg');
+	$zone_cfg->{ids}->{$zoneid}->{'mac'} = PVE::Tools::random_ether_addr($dc->{mac_prefix});
+    }
 }
 
 
@@ -205,11 +215,6 @@ sub vnet_update_hook {
 	my $other_zone = $zone_cfg->{ids}->{$other_zoneid};
 	next if $other_zone->{type} ne 'vxlan' && $other_zone->{type} ne 'evpn';
 	raise_param_exc({ tag => "vxlan tag $tag already exist in vnet $id in zone $other_zoneid "}) if $other_tag && $tag eq $other_tag;
-    }
-
-    if (!defined($vnet->{mac})) {
-	my $dc = PVE::Cluster::cfs_read_file('datacenter.cfg');
-	$vnet->{mac} = PVE::Tools::random_ether_addr($dc->{mac_prefix});
     }
 }
 

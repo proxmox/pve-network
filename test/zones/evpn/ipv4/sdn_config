@@ -7,7 +7,7 @@
              },
 
   zones   => {
-               ids => { myzone => { ipam => "pve", type => "evpn", controller => "evpnctl", 'vrf-vxlan' => 1000 } },
+               ids => { myzone => { ipam => "pve", type => "evpn", controller => "evpnctl", 'vrf-vxlan' => 1000, 'mac' => 'A2:1D:CB:1A:C0:8B' } },
              },
   controllers  => {
                ids => { evpnctl => { type => "evpn", 'peers' => '192.168.0.1,192.168.0.2,192.168.0.3', asn => "65000" } },

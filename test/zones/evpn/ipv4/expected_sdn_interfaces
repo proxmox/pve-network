@@ -3,6 +3,7 @@
 auto myvnet
 iface myvnet
 	address 10.0.0.1/24
+	hwaddress A2:1D:CB:1A:C0:8B
 	bridge_ports vxlan_myvnet
 	bridge_stp off
 	bridge_fd 0

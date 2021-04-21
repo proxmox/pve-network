@@ -70,11 +70,6 @@ sub properties {
             description => "alias name of the vnet",
 	    optional => 1,
         },
-        mac => {
-            type => 'string',
-            description => "Anycast router mac address",
-	    optional => 1, format => 'mac-addr'
-        }
     };
 }
 
@@ -83,7 +78,6 @@ sub options {
         zone => { optional => 0},
         tag => { optional => 1},
         alias => { optional => 1 },
-        mac => { optional => 1 },
         vlanaware => { optional => 1 },
     };
 }
