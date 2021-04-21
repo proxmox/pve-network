@@ -2,12 +2,13 @@
 
 auto myvnet
 iface myvnet
-	address 10.0.0.1/24
+	address 2a08:2142:302:3::1/64
+	hwaddress A2:1D:CB:1A:C0:8B
 	bridge_ports vxlan_myvnet
 	bridge_stp off
 	bridge_fd 0
 	mtu 1450
-	ip-forward on
+	ip6-forward on
 	arp-accept on
 	vrf vrf_myzone
 

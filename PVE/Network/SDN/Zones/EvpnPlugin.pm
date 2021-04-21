@@ -9,6 +9,7 @@ use PVE::Tools qw($IPV4RE);
 use PVE::INotify;
 use PVE::Cluster;
 use PVE::Tools;
+use Net::IP;
 
 use PVE::Network::SDN::Controllers::EvpnPlugin;
 
@@ -59,8 +60,6 @@ sub generate_sdn_config {
 
     my $tag = $vnet->{tag};
     my $alias = $vnet->{alias};
-    my $ipv4 = $vnet->{ipv4};
-    my $ipv6 = $vnet->{ipv6};
     my $mac = $plugin_config->{'mac'};
 
     my $vrf_iface = "vrf_$zoneid";
@@ -95,6 +94,8 @@ sub generate_sdn_config {
     @iface_config = ();
 
     my $address = {};
+    my $ipv4 = undef;
+    my $ipv6 = undef;
     my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid, 1);
     foreach my $subnetid (sort keys %{$subnets}) {
 	my $subnet = $subnets->{$subnetid};
@@ -107,19 +108,33 @@ sub generate_sdn_config {
 	    $address->{$gateway} = 1;
 	}
 
+        my $iptables = undef;
+        my $checkrouteip = undef;
+        my $ipversion = Net::IP::ip_is_ipv6($gateway) ? 6 : 4;
+
+	if ($ipversion == 6) {
+	    $ipv6 = 1;
+	    $iptables = "ip6tables";
+	    $checkrouteip = '2001:4860:4860::8888';
+	} else {
+	    $ipv4 = 1;
+	    $iptables = "iptables";
+	    $checkrouteip = '8.8.8.8';
+	}
+
 	if ($subnet->{snat}) {
 
 	    my $is_evpn_gateway = $plugin_config->{'exitnodes'}->{$local_node};
 
             #find outgoing interface
-            my ($outip, $outiface) = PVE::Network::SDN::Zones::Plugin::get_local_route_ip('8.8.8.8');
+            my ($outip, $outiface) = PVE::Network::SDN::Zones::Plugin::get_local_route_ip($checkrouteip);
             if ($outip && $outiface && $is_evpn_gateway) {
                 #use snat, faster than masquerade
-                push @iface_config, "post-up iptables -t nat -A POSTROUTING -s '$cidr' -o $outiface -j SNAT --to-source $outip";
-                push @iface_config, "post-down iptables -t nat -D POSTROUTING -s '$cidr' -o $outiface -j SNAT --to-source $outip";
+                push @iface_config, "post-up $iptables -t nat -A POSTROUTING -s '$cidr' -o $outiface -j SNAT --to-source $outip";
+                push @iface_config, "post-down $iptables -t nat -D POSTROUTING -s '$cidr' -o $outiface -j SNAT --to-source $outip";
                 #add conntrack zone once on outgoing interface
-                push @iface_config, "post-up iptables -t raw -I PREROUTING -i fwbr+ -j CT --zone 1";
-                push @iface_config, "post-down iptables -t raw -D PREROUTING -i fwbr+ -j CT --zone 1";
+                push @iface_config, "post-up $iptables -t raw -I PREROUTING -i fwbr+ -j CT --zone 1";
+                push @iface_config, "post-down $iptables -t raw -D PREROUTING -i fwbr+ -j CT --zone 1";
             }
         }
     }

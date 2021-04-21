@@ -7,6 +7,8 @@ iface myvnet
 	bridge_stp off
 	bridge_fd 0
 	mtu 1450
+	ip-forward on
+	arp-accept on
 	vrf vrf_myzone
 
 auto vrf_myzone

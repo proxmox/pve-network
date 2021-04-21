@@ -11,6 +11,23 @@ iface myvnet
 	bridge_stp off
 	bridge_fd 0
 	mtu 1450
+	ip-forward on
+	arp-accept on
+	vrf vrf_myzone
+
+auto myvnet2
+iface myvnet2
+	address 2a08:2142:302:3::1/64
+	post-up ip6tables -t nat -A POSTROUTING -s '2a08:2142:302:3::/64' -o vmbr0 -j SNAT --to-source 192.168.0.1
+	post-down ip6tables -t nat -D POSTROUTING -s '2a08:2142:302:3::/64' -o vmbr0 -j SNAT --to-source 192.168.0.1
+	post-up ip6tables -t raw -I PREROUTING -i fwbr+ -j CT --zone 1
+	post-down ip6tables -t raw -D PREROUTING -i fwbr+ -j CT --zone 1
+	bridge_ports vxlan_myvnet2
+	bridge_stp off
+	bridge_fd 0
+	mtu 1450
+	ip6-forward on
+	arp-accept on
 	vrf vrf_myzone
 
 auto vrf_myzone
@@ -37,6 +54,14 @@ iface vrfvx_myzone
 auto vxlan_myvnet
 iface vxlan_myvnet
 	vxlan-id 100
+	vxlan-local-tunnelip 192.168.0.1
+	bridge-learning off
+	bridge-arp-nd-suppress on
+	mtu 1450
+
+auto vxlan_myvnet2
+iface vxlan_myvnet2
+	vxlan-id 200
 	vxlan-local-tunnelip 192.168.0.1
 	bridge-learning off
 	bridge-arp-nd-suppress on

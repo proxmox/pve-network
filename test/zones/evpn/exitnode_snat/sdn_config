@@ -3,6 +3,7 @@
   vnets   => {
                ids => {
                         myvnet => { tag => "100", type => "vnet", zone => "myzone" },
+                        myvnet2 => { tag => "200", type => "vnet", zone => "myzone" },
                       },
              },
 
@@ -14,12 +15,19 @@
              },
 
   subnets => {
-              ids => { 'myzone-10.0.0.0-24' => {
+              ids => { 
+			'myzone-10.0.0.0-24' => {
 							'type' => 'subnet',
 							'vnet' => 'myvnet',
 							'gateway' => '10.0.0.1',
 							'snat' => 1
-						  }
+						  },
+                        'myzone-2a08:2142:302:3::-64' => {
+                                                        'type' => 'subnet',
+                                                        'vnet' => 'myvnet2',
+                                                        'gateway' => '2a08:2142:302:3::1',
+							'snat' => 1
+                                                  }
 		     }
 	     }
 }
