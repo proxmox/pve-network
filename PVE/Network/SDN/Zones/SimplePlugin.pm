@@ -47,8 +47,6 @@ sub generate_sdn_config {
 
     return $config if$config->{$vnetid}; # nothing to do
 
-    my $ipv4 = $vnet->{ipv4};
-    my $ipv6 = $vnet->{ipv6};
     my $mac = $vnet->{mac};
     my $alias = $vnet->{alias};
     my $mtu = $plugin_config->{mtu} if $plugin_config->{mtu};
@@ -58,6 +56,9 @@ sub generate_sdn_config {
 
     my $address = {};
     my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid, 1);
+
+    my $ipv4 = undef;
+    my $ipv6 = undef;
 
     foreach my $subnetid (sort keys %{$subnets}) {
 	my $subnet = $subnets->{$subnetid};
@@ -69,18 +70,33 @@ sub generate_sdn_config {
 	    push @iface_config, "address $gateway/$mask" if !defined($address->{$gateway});
 	    $address->{$gateway} = 1;
 	}
+
+	my $iptables = undef;
+	my $checkrouteip = undef;
+	my $ipversion = Net::IP::ip_is_ipv6($gateway) ? 6 : 4;
+
+	if ( $ipversion == 6) {
+	    $ipv6 = 1;
+	    $iptables = "ip6tables";
+	    $checkrouteip = '2001:4860:4860::8888';
+	} else {
+	    $ipv4 = 1;
+	    $iptables = "iptables";
+	    $checkrouteip = '8.8.8.8';
+	}
+
 	#add route for /32 pointtopoint
-	push @iface_config, "up ip route add $cidr dev $vnetid" if $mask == 32;
+	push @iface_config, "up ip route add $cidr dev $vnetid" if $mask == 32 && $ipversion == 4;
 	if ($subnet->{snat}) {
 	    #find outgoing interface
-	    my ($outip, $outiface) = PVE::Network::SDN::Zones::Plugin::get_local_route_ip('8.8.8.8');
+	    my ($outip, $outiface) = PVE::Network::SDN::Zones::Plugin::get_local_route_ip($checkrouteip);
 	    if ($outip && $outiface) {
 		#use snat, faster than masquerade
-		push @iface_config, "post-up iptables -t nat -A POSTROUTING -s '$cidr' -o $outiface -j SNAT --to-source $outip";
-		push @iface_config, "post-down iptables -t nat -D POSTROUTING -s '$cidr' -o $outiface -j SNAT --to-source $outip";
+		push @iface_config, "post-up $iptables -t nat -A POSTROUTING -s '$cidr' -o $outiface -j SNAT --to-source $outip";
+		push @iface_config, "post-down $iptables -t nat -D POSTROUTING -s '$cidr' -o $outiface -j SNAT --to-source $outip";
 		#add conntrack zone once on outgoing interface
-		push @iface_config, "post-up iptables -t raw -I PREROUTING -i fwbr+ -j CT --zone 1";
-		push @iface_config, "post-down iptables -t raw -D PREROUTING -i fwbr+ -j CT --zone 1";
+		push @iface_config, "post-up $iptables -t raw -I PREROUTING -i fwbr+ -j CT --zone 1";
+		push @iface_config, "post-down $iptables -t raw -D PREROUTING -i fwbr+ -j CT --zone 1";
 	    }
 	}
     }
@@ -95,6 +111,8 @@ sub generate_sdn_config {
     }
     push @iface_config, "mtu $mtu" if $mtu;
     push @iface_config, "alias $alias" if $alias;
+    push @iface_config, "ip-forward on" if $ipv4;
+    push @iface_config, "ip6-forward on" if $ipv6;
 
     push @{$config->{$vnetid}}, @iface_config;
 

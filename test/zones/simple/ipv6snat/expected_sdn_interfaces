@@ -1,0 +1,13 @@
+#version:1
+
+auto myvnet
+iface myvnet
+	address 2a08:2142:302:3::1/64
+	post-up ip6tables -t nat -A POSTROUTING -s '2a08:2142:302:3::/64' -o vmbr0 -j SNAT --to-source 192.168.0.1
+	post-down ip6tables -t nat -D POSTROUTING -s '2a08:2142:302:3::/64' -o vmbr0 -j SNAT --to-source 192.168.0.1
+	post-up ip6tables -t raw -I PREROUTING -i fwbr+ -j CT --zone 1
+	post-down ip6tables -t raw -D PREROUTING -i fwbr+ -j CT --zone 1
+	bridge_ports none
+	bridge_stp off
+	bridge_fd 0
+	ip6-forward on

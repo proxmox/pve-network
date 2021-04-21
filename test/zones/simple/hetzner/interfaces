@@ -1,0 +1,6 @@
+auto eth0
+iface eth0 inet static
+  address 144.76.0.1
+  netmask 255.255.255.255
+  pointopoint 172.31.1.1
+  gateway 172.31.1.1

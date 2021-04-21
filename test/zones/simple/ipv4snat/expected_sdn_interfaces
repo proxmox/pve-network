@@ -10,3 +10,4 @@ iface myvnet
 	bridge_ports none
 	bridge_stp off
 	bridge_fd 0
+	ip-forward on

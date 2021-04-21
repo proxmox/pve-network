@@ -1,0 +1,19 @@
+#version:1
+
+auto myvnet
+iface myvnet
+	address 144.76.100.65/29
+	bridge_ports none
+	bridge_stp off
+	bridge_fd 0
+	ip-forward on
+
+auto myvnet2
+iface myvnet2
+	address 144.76.0.1/32
+	up ip route add 144.76.200.65/32 dev myvnet2
+	up ip route add 144.76.200.66/32 dev myvnet2
+	bridge_ports none
+	bridge_stp off
+	bridge_fd 0
+	ip-forward on

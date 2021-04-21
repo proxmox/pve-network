@@ -1,0 +1,34 @@
+{
+  version => 1,
+  vnets   => {
+               ids => {
+                        myvnet => { type => "vnet", zone => "myzone" },
+                        myvnet2 => { type => "vnet", zone => "myzone" },
+                      },
+             },
+  zones   => {
+               ids => { myzone => { ipam => "pve", type => "simple" } },
+             },
+
+  subnets => {
+                ids => {
+                        'myzone-144.76.100.64-29' => {
+                                                        'type' => 'subnet',
+                                                        'vnet' => 'myvnet',
+                                                        'gateway' => '144.76.100.65',
+                                                },
+                        'myzone-144.76.200.65-32' => {
+                                                        'type' => 'subnet',
+                                                        'vnet' => 'myvnet2',
+                                                        'gateway' => '144.76.0.1',
+                                                },
+                        'myzone-144.76.200.66-32' => {
+                                                        'type' => 'subnet',
+                                                        'vnet' => 'myvnet2',
+                                                        'gateway' => '144.76.0.1',
+                                                },
+                }
+             }
+}
+
+
