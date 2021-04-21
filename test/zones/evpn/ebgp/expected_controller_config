@@ -23,6 +23,7 @@ router bgp 65001
  neighbor BGP peer-group
  neighbor BGP remote-as external
  neighbor BGP bfd
+ neighbor BGP ebgp-multihop 3
  neighbor 192.168.0.252 peer-group BGP
  neighbor 192.168.0.253 peer-group BGP
  !

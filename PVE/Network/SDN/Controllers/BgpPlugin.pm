@@ -24,6 +24,10 @@ sub properties {
 	    optional => 1,
 	    description => "Enable ebgp. (remote-as external)",
 	},
+	'ebgp-multihop' => {
+	    type => 'integer',
+	    optional => 1,
+	},
 	loopback => {
 	    description => "source loopback interface.",
 	    type => 'string'
@@ -38,6 +42,7 @@ sub options {
 	'asn' => { optional => 0 },
 	'peers' => { optional => 0 },
 	'ebgp' => { optional => 1 },
+	'ebgp-multihop' => { optional => 1 },
 	'loopback' => { optional => 1 },
     };
 }
@@ -51,6 +56,7 @@ sub generate_controller_config {
 
     my $asn = $plugin_config->{asn};
     my $ebgp = $plugin_config->{ebgp};
+    my $ebgp_multihop = $plugin_config->{'ebgp-multihop'};
     my $loopback = $plugin_config->{loopback};
     my $local_node = PVE::INotify::nodename();
 
@@ -85,6 +91,7 @@ sub generate_controller_config {
 	push @controller_config, "neighbor BGP peer-group";
 	push @controller_config, "neighbor BGP remote-as $remoteas";
 	push @controller_config, "neighbor BGP bfd";
+	push @controller_config, "neighbor BGP ebgp-multihop $ebgp_multihop" if $ebgp && $ebgp_multihop;
     }
 
     # BGP peers
