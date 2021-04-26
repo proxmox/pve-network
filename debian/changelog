@@ -1,3 +1,40 @@
+libpve-network-perl (0.5-1) pve; urgency=medium
+
+  * add foundation for IP Adresss Management (IPAM)
+    + add subnet plugin
+    + vnets: add subnets
+    + zones: simple|evpn: add gateway ip from subnets to vnet
+    + add IPAMs plugins
+    + add DNS plugin
+
+  * fix vnet gateway for routed setup + /32 pointopoint subnet
+
+  * api: generate 'running-config' state instead of version increase on apply
+
+  * api: add running/pending zones/vnets/subnets/controllers
+
+  * zones: evpn : add support for loopback
+
+  * zones: evpn/simple: add missing mask to gateway address
+
+  * evpn: frr: use datacenter default profile (lower timeouts)
+
+  * get local VNets: display vnet alias in comments
+
+  * use canonical ipv6 address (RFC 5952) everywhere
+
+  * zones: evpn: fix exitnodes for SNAT
+
+  * zones: evpn: move vnet mac option to evpn zone plugin
+
+  * zones: evpn: fix arp-accept and ip-forward with IPv6 SNAT
+
+  * zones: simple: fix ip-forward && IPv6 SNAT
+
+  * controllers: increase controllerid to 64 characters max
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 26 Apr 2021 16:51:32 +0200
+
 libpve-network-perl (0.4-7) pve; urgency=medium
 
   * improve status API
