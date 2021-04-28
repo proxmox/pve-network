@@ -244,6 +244,13 @@ sub status {
 	next if !defined($zone);
 
 	my $plugin_config = $zone_cfg->{ids}->{$zone};
+
+	if (!defined($plugin_config)) {
+	    $vnet_status->{$id}->{status} = 'error';
+	    $vnet_status->{$id}->{statusmsg} = "unknown zone '$zone' configured";
+	    next;
+	}
+
 	next if defined($plugin_config->{nodes}) && !$plugin_config->{nodes}->{$nodename};
 
 	$vnet_status->{$id}->{zone} = $zone;
