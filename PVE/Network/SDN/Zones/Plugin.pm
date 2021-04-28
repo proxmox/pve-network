@@ -49,6 +49,7 @@ my $defaultData = {
 	ipam => {
 	    type => 'string',
 	    description => "use a specific ipam",
+	    optional => 1,
 	},
     },
 };
