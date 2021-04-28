@@ -29,21 +29,20 @@ sub properties {
 	    type => 'string',
 	    description => "Frr router name",
 	},
-        'mac' => {
-            type => 'string',
-            description => "Anycast logical router mac address",
-            optional => 1, format => 'mac-addr'
-        },
+	'mac' => {
+	    type => 'string',
+	    description => "Anycast logical router mac address",
+	    optional => 1, format => 'mac-addr'
+	},
 	'exitnodes' => get_standard_option('pve-node-list'),
     };
 }
 
 sub options {
-
     return {
-        nodes => { optional => 1},
-        'vrf-vxlan' => { optional => 0 },
-        controller => { optional => 0 },
+	nodes => { optional => 1},
+	'vrf-vxlan' => { optional => 0 },
+	controller => { optional => 0 },
 	exitnodes => { optional => 1 },
 	mtu => { optional => 1 },
 	mac => { optional => 1 },

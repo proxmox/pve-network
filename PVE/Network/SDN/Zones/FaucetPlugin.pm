@@ -22,12 +22,12 @@ sub properties {
 sub options {
 
     return {
-        nodes => { optional => 1},
+	nodes => { optional => 1},
 	'dp-id' => { optional => 0 },
 #	'uplink-id' => { optional => 0 },
-        'controller' => { optional => 0 },
-        dns => { optional => 1 },
-        reversedns => { optional => 1 },
+	'controller' => { optional => 0 },
+	dns => { optional => 1 },
+	reversedns => { optional => 1 },
 	dnszone => { optional => 1 },
 	ipam => { optional => 0 },
     };

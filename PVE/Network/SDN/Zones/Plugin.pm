@@ -8,13 +8,14 @@ use PVE::JSONSchema;
 use PVE::Cluster;
 use PVE::Network;
 
-use Data::Dumper;
 use PVE::JSONSchema qw(get_standard_option);
 use base qw(PVE::SectionConfig);
 
-PVE::Cluster::cfs_register_file('sdn/zones.cfg',
-				 sub { __PACKAGE__->parse_config(@_); },
-				 sub { __PACKAGE__->write_config(@_); });
+PVE::Cluster::cfs_register_file(
+    'sdn/zones.cfg',
+    sub { __PACKAGE__->parse_config(@_); },
+    sub { __PACKAGE__->write_config(@_); },
+);
 
 PVE::JSONSchema::register_standard_option('pve-sdn-zone-id', {
     description => "The SDN zone object identifier.",
@@ -41,13 +42,14 @@ my $defaultData = {
 	    type => 'string', format => 'pve-configid',
 	    type => 'string',
 	},
-        nodes => get_standard_option('pve-node-list', { optional => 1 }),
-        zone => get_standard_option('pve-sdn-zone-id',
-            { completion => \&PVE::Network::SDN::Zones::complete_sdn_zone }),
-        ipam => {
-            type => 'string',
-            description => "use a specific ipam",
-        },
+	nodes => get_standard_option('pve-node-list', { optional => 1 }),
+	zone => get_standard_option('pve-sdn-zone-id', {
+	    completion => \&PVE::Network::SDN::Zones::complete_sdn_zone,
+	}),
+	ipam => {
+	    type => 'string',
+	    description => "use a specific ipam",
+	},
     },
 };
 

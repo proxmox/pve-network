@@ -33,10 +33,9 @@ sub properties {
 }
 
 sub options {
-
     return {
-        nodes => { optional => 1},
-        peers => { optional => 0 },
+	nodes => { optional => 1},
+	peers => { optional => 0 },
 	mtu => { optional => 1 },
 	dns => { optional => 1 },
 	reversedns => { optional => 1 },
@@ -68,7 +67,7 @@ sub generate_sdn_config {
     my @iface_config = ();
     push @iface_config, "vxlan-id $tag";
 
-    foreach my $address (@peers) {
+    for my $address (@peers) {
 	next if $address eq $ifaceip;
 	push @iface_config, "vxlan_remoteip $address";
     }
@@ -82,9 +81,9 @@ sub generate_sdn_config {
     push @iface_config, "bridge_ports $vxlan_iface";
     push @iface_config, "bridge_stp off";
     push @iface_config, "bridge_fd 0";
-    if($vnet->{vlanaware}) {
-        push @iface_config, "bridge-vlan-aware yes";
-        push @iface_config, "bridge-vids 2-4094";
+    if ($vnet->{vlanaware}) {
+	push @iface_config, "bridge-vlan-aware yes";
+	push @iface_config, "bridge-vids 2-4094";
     }
     push @iface_config, "mtu $mtu" if $mtu;
     push @iface_config, "alias $alias" if $alias;
@@ -103,7 +102,7 @@ sub vnet_update_hook {
     raise_param_exc({ tag => "vxlan tag max value is 16777216"}) if $tag > 16777216;
 
     # verify that tag is not already defined globally (vxlan-id are unique)
-    foreach my $id (keys %{$vnet_cfg->{ids}}) {
+    for my $id (sort keys %{$vnet_cfg->{ids}}) {
 	next if $id eq $vnetid;
 	my $othervnet = $vnet_cfg->{ids}->{$id};
 	my $other_tag = $othervnet->{tag};
