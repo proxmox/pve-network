@@ -241,7 +241,7 @@ sub status {
     foreach my $id (sort keys %{$vnet_cfg->{ids}}) {
 	my $vnet = $vnet_cfg->{ids}->{$id};
 	my $zone = $vnet->{zone};
-	next if !$zone;
+	next if !defined($zone);
 
 	my $plugin_config = $zone_cfg->{ids}->{$zone};
 	next if defined($plugin_config->{nodes}) && !$plugin_config->{nodes}->{$nodename};
