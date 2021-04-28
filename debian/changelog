@@ -1,3 +1,12 @@
+libpve-network-perl (0.5-2) pve; urgency=medium
+
+  * zones: make IPAM config optional for all zone plugins
+
+  * zone status: mark VNets with unknown zone as failed and early return to
+    avoid spamming the log with 'Use of uninitialized value' messages.
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 28 Apr 2021 18:25:18 +0200
+
 libpve-network-perl (0.5-1) pve; urgency=medium
 
   * add foundation for IP Adresss Management (IPAM)
