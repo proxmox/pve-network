@@ -54,7 +54,7 @@ sub get_vnet {
 
     my $cfg = {};
     if($running) {
-	my $cfg = PVE::Network::SDN::config();
+	my $cfg = PVE::Network::SDN::running_config();
 	$cfg = $cfg->{vnets};
     } else {
 	$cfg = PVE::Network::SDN::Vnets::config();

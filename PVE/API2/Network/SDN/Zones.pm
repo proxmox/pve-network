@@ -113,11 +113,11 @@ __PACKAGE__->register_method ({
 
 	my $cfg = {};
 	if($param->{pending}) {
-	    my $running_cfg = PVE::Network::SDN::config();
+	    my $running_cfg = PVE::Network::SDN::running_config();
 	    my $config = PVE::Network::SDN::Zones::config();
 	    $cfg = PVE::Network::SDN::pending_config($running_cfg, $config, 'zones');
         } elsif ($param->{running}) {
-	    my $running_cfg = PVE::Network::SDN::config();
+	    my $running_cfg = PVE::Network::SDN::running_config();
 	    $cfg = $running_cfg->{zones};
         } else {
 	    $cfg = PVE::Network::SDN::Zones::config();
@@ -171,11 +171,11 @@ __PACKAGE__->register_method ({
 
 	my $cfg = {};
 	if($param->{pending}) {
-	    my $running_cfg = PVE::Network::SDN::config();
+	    my $running_cfg = PVE::Network::SDN::running_config();
 	    my $config = PVE::Network::SDN::Zones::config();
 	    $cfg = PVE::Network::SDN::pending_config($running_cfg, $config, 'zones');
         } elsif ($param->{running}) {
-	    my $running_cfg = PVE::Network::SDN::config();
+	    my $running_cfg = PVE::Network::SDN::running_config();
 	    $cfg = $running_cfg->{zones};
         } else {
 	    $cfg = PVE::Network::SDN::Zones::config();

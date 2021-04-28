@@ -91,11 +91,11 @@ __PACKAGE__->register_method ({
 
 	my $cfg = {};
 	if($param->{pending}) {
-	    my $running_cfg = PVE::Network::SDN::config();
+	    my $running_cfg = PVE::Network::SDN::running_config();
 	    my $config = PVE::Network::SDN::Vnets::config();
 	    $cfg = PVE::Network::SDN::pending_config($running_cfg, $config, 'vnets');
 	} elsif ($param->{running}) {
-	    my $running_cfg = PVE::Network::SDN::config();
+	    my $running_cfg = PVE::Network::SDN::running_config();
 	    $cfg = $running_cfg->{vnets};
 	} else {
 	    $cfg = PVE::Network::SDN::Vnets::config();
@@ -146,11 +146,11 @@ __PACKAGE__->register_method ({
 
 	my $cfg = {};
 	if($param->{pending}) {
-	    my $running_cfg = PVE::Network::SDN::config();
+	    my $running_cfg = PVE::Network::SDN::running_config();
 	    my $config = PVE::Network::SDN::Vnets::config();
 	    $cfg = PVE::Network::SDN::pending_config($running_cfg, $config, 'vnets');
 	} elsif ($param->{running}) {
-	    my $running_cfg = PVE::Network::SDN::config();
+	    my $running_cfg = PVE::Network::SDN::running_config();
 	    $cfg = $running_cfg->{vnets};
 	} else {
 	    $cfg = PVE::Network::SDN::Vnets::config();

@@ -77,7 +77,7 @@ sub status {
     return($zone_status, $vnet_status);
 }
 
-sub config {
+sub running_config {
     return cfs_read_file($running_cfg);
 }
 
@@ -176,7 +176,7 @@ sub get_local_vnets {
 
     my $nodename = PVE::INotify::nodename();
 
-    my $cfg = PVE::Network::SDN::config();
+    my $cfg = PVE::Network::SDN::running_config();
     my $vnets_cfg = $cfg->{vnets};
     my $zones_cfg = $cfg->{zones};
 

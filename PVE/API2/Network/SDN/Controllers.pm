@@ -84,11 +84,11 @@ __PACKAGE__->register_method ({
 
         my $cfg = {};
         if($param->{pending}) {
-            my $running_cfg = PVE::Network::SDN::config();
+            my $running_cfg = PVE::Network::SDN::running_config();
             my $config = PVE::Network::SDN::Controllers::config();
             $cfg = PVE::Network::SDN::pending_config($running_cfg, $config, 'controllers');
         } elsif ($param->{running}) {
-            my $running_cfg = PVE::Network::SDN::config();
+            my $running_cfg = PVE::Network::SDN::running_config();
             $cfg = $running_cfg->{controllers};
         } else {
             $cfg = PVE::Network::SDN::Controllers::config();
@@ -142,11 +142,11 @@ __PACKAGE__->register_method ({
 
         my $cfg = {};
         if($param->{pending}) {
-            my $running_cfg = PVE::Network::SDN::config();
+            my $running_cfg = PVE::Network::SDN::running_config();
             my $config = PVE::Network::SDN::Controllers::config();
             $cfg = PVE::Network::SDN::pending_config($running_cfg, $config, 'controllers');
         } elsif ($param->{running}) {
-            my $running_cfg = PVE::Network::SDN::config();
+            my $running_cfg = PVE::Network::SDN::running_config();
             $cfg = $running_cfg->{controllers};
         } else {
             $cfg = PVE::Network::SDN::Controllers::config();

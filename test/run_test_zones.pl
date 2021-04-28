@@ -83,7 +83,7 @@ foreach my $test (@tests) {
 
     my $sdn_module = Test::MockModule->new("PVE::Network::SDN");
     $sdn_module->mock(
-	config => sub {
+	running_config => sub {
 	    return $sdn_config;
 	},
     );

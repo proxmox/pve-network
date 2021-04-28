@@ -63,7 +63,7 @@ sub get_subnet {
 
     my $cfg = {};
     if($running) {
-	my $cfg = PVE::Network::SDN::config();
+	my $cfg = PVE::Network::SDN::running_config();
 	$cfg = $cfg->{subnets};
     } else {
 	$cfg = PVE::Network::SDN::Subnets::config();

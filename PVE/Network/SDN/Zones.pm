@@ -66,7 +66,7 @@ sub sdn_zones_ids {
 sub complete_sdn_zone {
     my ($cmdname, $pname, $cvalue) = @_;
 
-    my $cfg = PVE::Network::SDN::config();
+    my $cfg = PVE::Network::SDN::running_config();
 
     return  $cmdname eq 'add' ? [] : [ PVE::Network::SDN::sdn_zones_ids($cfg) ];
 }
@@ -76,7 +76,7 @@ sub get_zone {
 
     my $cfg = {};
     if($running) {
-        my $cfg = PVE::Network::SDN::config();
+        my $cfg = PVE::Network::SDN::running_config();
         $cfg = $cfg->{vnets};
     } else {
         $cfg = PVE::Network::SDN::Zones::config();
@@ -90,7 +90,7 @@ sub get_zone {
 
 sub generate_etc_network_config {
 
-    my $cfg = PVE::Network::SDN::config();
+    my $cfg = PVE::Network::SDN::running_config();
 
     my $version = $cfg->{version};
     my $vnet_cfg = $cfg->{vnets};
@@ -204,7 +204,7 @@ sub status {
     my $err_config = undef;
 
     my $local_version = PVE::Network::SDN::Zones::read_etc_network_config_version();
-    my $cfg = PVE::Network::SDN::config();
+    my $cfg = PVE::Network::SDN::running_config();
     my $sdn_version = $cfg->{version};
 
     return if !$sdn_version;

@@ -63,14 +63,14 @@ sub sdn_controllers_ids {
 sub complete_sdn_controller {
     my ($cmdname, $pname, $cvalue) = @_;
 
-    my $cfg = PVE::Network::SDN::config();
+    my $cfg = PVE::Network::SDN::running_config();
 
     return  $cmdname eq 'add' ? [] : [ PVE::Network::SDN::sdn_controllers_ids($cfg) ];
 }
 
 sub generate_controller_config {
 
-    my $cfg = PVE::Network::SDN::config();
+    my $cfg = PVE::Network::SDN::running_config();
     my $vnet_cfg = $cfg->{vnets};
     my $zone_cfg = $cfg->{zones};
     my $controller_cfg = $cfg->{controllers};
@@ -135,7 +135,7 @@ sub generate_controller_config {
 
 sub reload_controller {
 
-    my $cfg = PVE::Network::SDN::config();
+    my $cfg = PVE::Network::SDN::running_config();
     my $controller_cfg = $cfg->{controllers};
 
     return if !$controller_cfg;
@@ -150,7 +150,7 @@ sub reload_controller {
 sub generate_controller_rawconfig {
     my ($config) = @_;
 
-    my $cfg = PVE::Network::SDN::config();
+    my $cfg = PVE::Network::SDN::running_config();
     my $controller_cfg = $cfg->{controllers};
     return if !$controller_cfg;
 
@@ -166,7 +166,7 @@ sub generate_controller_rawconfig {
 sub write_controller_config {
     my ($config) = @_;
 
-    my $cfg = PVE::Network::SDN::config();
+    my $cfg = PVE::Network::SDN::running_config();
     my $controller_cfg = $cfg->{controllers};
     return if !$controller_cfg;
 
