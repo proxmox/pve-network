@@ -21,7 +21,7 @@ sub read_sdn_config {
     open my $in, '<', $file or die $!;
     my $sdn_config;
     {
-	local $/;    # slurp mode
+	local $/; # slurp mode
 	$sdn_config = eval <$in>;
     }
     close $in;
@@ -92,7 +92,7 @@ foreach my $test (@tests) {
     my $expected = read_file("./$test/expected_sdn_interfaces");
 
     my $result = "";
-    eval { 
+    eval {
 	$result = PVE::Network::SDN::Zones::generate_etc_network_config();
     };
 
@@ -106,11 +106,10 @@ foreach my $test (@tests) {
 	my $expected = read_file("./$test/expected_controller_config");
 	my $controller_rawconfig = "";
 
-	eval { 
+	eval {
 	    my $config = PVE::Network::SDN::Controllers::generate_controller_config();
 	    $controller_rawconfig = PVE::Network::SDN::Controllers::generate_controller_rawconfig($config);
 	};
-
 	if (my $err = $@) {
 	    fail($name);
 	} else {

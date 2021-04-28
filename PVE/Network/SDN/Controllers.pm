@@ -83,7 +83,7 @@ sub generate_controller_config {
     my $interfaces_config = PVE::INotify::read_etc_network_interfaces(1,$fh);
     $fh->close();
 
-    #check uplinks
+    # check uplinks
     my $uplinks = {};
     foreach my $id (keys %{$interfaces_config->{ifaces}}) {
 	my $interface = $interfaces_config->{ifaces}->{$id};
@@ -94,7 +94,7 @@ sub generate_controller_config {
 	}
     }
 
-    #generate configuration
+    # generate configuration
     my $config = {};
 
     foreach my $id (sort keys %{$controller_cfg->{ids}}) {

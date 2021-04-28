@@ -227,7 +227,6 @@ sub status {
 
     my $status = ifquery_check();
 
-    
     my $vnet_cfg = $cfg->{vnets};
     my $zone_cfg = $cfg->{zones};
     my $nodename = PVE::INotify::nodename();
