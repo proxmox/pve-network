@@ -82,10 +82,10 @@ sub generate_sdn_config {
 	push @iface_config, "ovs_options vlan_mode=dot1q-tunnel tag=$stag other_config:qinq-ethtype=$vlanprotocol";
 	push(@{$config->{$svlan_iface}}, @iface_config) if !$config->{$svlan_iface};
 
-	#redefine main ovs bridge, ifupdown2 will merge ovs_ports
-	@iface_config = ();
-	push @iface_config, "ovs_ports $svlan_iface";
-	push(@{$config->{$bridge}}, @iface_config);
+        #redefine main ovs bridge, ifupdown2 will merge ovs_ports
+	@{$config->{$bridge}}[0] = "ovs_ports" if !@{$config->{$bridge}}[0];
+	my @ovs_ports = split / / , @{$config->{$bridge}}[0];
+	@{$config->{$bridge}}[0] .= " $svlan_iface" if !grep( $_ eq $svlan_iface, @ovs_ports );
 
 	#zone vlan aware bridge
 	@iface_config = ();

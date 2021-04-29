@@ -6,20 +6,46 @@ iface myvnet
 	bridge_stp off
 	bridge_fd 0
 
+auto myvnet2
+iface myvnet2
+	bridge_ports z_myzone.101
+	bridge_stp off
+	bridge_fd 0
+
+auto myvnet3
+iface myvnet3
+	bridge_ports z_myzone2.100
+	bridge_stp off
+	bridge_fd 0
+
 auto sv_myzone
 iface sv_myzone
 	ovs_type OVSIntPort
 	ovs_bridge vmbr0
 	ovs_options vlan_mode=dot1q-tunnel tag=10 other_config:qinq-ethtype=802.1q
 
+auto sv_myzone2
+iface sv_myzone2
+	ovs_type OVSIntPort
+	ovs_bridge vmbr0
+	ovs_options vlan_mode=dot1q-tunnel tag=20 other_config:qinq-ethtype=802.1q
+
 auto vmbr0
 iface vmbr0
-	ovs_ports sv_myzone
+	ovs_ports sv_myzone sv_myzone2
 
 auto z_myzone
 iface z_myzone
 	bridge-stp off
 	bridge-ports sv_myzone
+	bridge-fd 0
+	bridge-vlan-aware yes
+	bridge-vids 2-4094
+
+auto z_myzone2
+iface z_myzone2
+	bridge-stp off
+	bridge-ports sv_myzone2
 	bridge-fd 0
 	bridge-vlan-aware yes
 	bridge-vids 2-4094
