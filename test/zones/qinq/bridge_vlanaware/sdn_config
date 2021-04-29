@@ -3,9 +3,14 @@
   vnets   => {
                ids => {
                         myvnet => { tag => 100, type => "vnet", zone => "myzone" },
+                        myvnet2 => { tag => 101, type => "vnet", zone => "myzone" },
+                        myvnet3 => { tag => 100, type => "vnet", zone => "myzone2" },
                       },
              },
   zones   => {
-               ids => { myzone => { bridge => "vmbr0", tag => 10, ipam => "pve", type => "qinq" } },
+               ids => { 
+			myzone => { bridge => "vmbr0", tag => 10, ipam => "pve", type => "qinq" },
+			myzone2 => { bridge => "vmbr0", tag => 20, ipam => "pve", type => "qinq" },
+		      },
              },
 }

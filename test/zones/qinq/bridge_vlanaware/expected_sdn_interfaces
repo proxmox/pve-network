@@ -6,10 +6,30 @@ iface myvnet
 	bridge_stp off
 	bridge_fd 0
 
+auto myvnet2
+iface myvnet2
+	bridge_ports z_myzone.101
+	bridge_stp off
+	bridge_fd 0
+
+auto myvnet3
+iface myvnet3
+	bridge_ports z_myzone2.100
+	bridge_stp off
+	bridge_fd 0
+
 auto z_myzone
 iface z_myzone
 	bridge-stp off
 	bridge-ports vmbr0.10
+	bridge-fd 0
+	bridge-vlan-aware yes
+	bridge-vids 2-4094
+
+auto z_myzone2
+iface z_myzone2
+	bridge-stp off
+	bridge-ports vmbr0.20
 	bridge-fd 0
 	bridge-vlan-aware yes
 	bridge-vids 2-4094
