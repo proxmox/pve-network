@@ -1,0 +1,11 @@
+{
+  version => 1,
+  vnets   => {
+               ids => {
+                        myvnet => { type => "vnet", vlanaware => "1", zone => "myzone" },
+                      },
+             },
+  zones   => {
+               ids => { myzone => { bridge => "vmbr0", tag => 10, ipam => "pve", type => "qinq" } },
+             },
+}

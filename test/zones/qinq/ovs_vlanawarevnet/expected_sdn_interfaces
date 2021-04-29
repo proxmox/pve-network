@@ -1,5 +1,10 @@
 #version:1
 
+auto ln_myzone
+iface ln_myzone
+	link-type veth
+	veth-peer-name pr_myzone
+
 auto myvnet
 iface myvnet
 	bridge_ports z_myzone.100
@@ -7,6 +12,11 @@ iface myvnet
 	bridge_fd 0
 	bridge-vlan-aware yes
 	bridge-vids 2-4094
+
+auto pr_myzone
+iface pr_myzone
+	link-type veth
+	veth-peer-name ln_myzone
 
 auto sv_myzone
 iface sv_myzone
@@ -21,7 +31,7 @@ iface vmbr0
 auto z_myzone
 iface z_myzone
 	bridge-stp off
-	bridge-ports sv_myzone
+	bridge-ports sv_myzone ln_myzone
 	bridge-fd 0
 	bridge-vlan-aware yes
 	bridge-vids 2-4094

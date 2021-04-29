@@ -65,6 +65,16 @@ sub generate_sdn_config {
 
     my @iface_config = ();
     my $vnet_bridge_ports = "";
+    my $zone_bridge_ports = "";
+    my $zone_notag_uplink = "ln_".$zoneid;
+    my $zone_notag_uplinkpeer = "pr_".$zoneid;
+    my $zone = "z_$zoneid";
+
+    if($ctag) {
+	$vnet_bridge_ports = "$zone.$ctag";
+    } else {
+	$vnet_bridge_ports = $zone_notag_uplinkpeer;
+    }
 
     if($is_ovs) {
 
@@ -72,7 +82,6 @@ sub generate_sdn_config {
 
 	$vlanprotocol = "802.1q" if !$vlanprotocol;
 	my $svlan_iface = "sv_".$zoneid;
-	my $zone = "z_$zoneid";
 
 	#ovs dot1q-tunnel port
 	@iface_config = ();
@@ -87,23 +96,11 @@ sub generate_sdn_config {
 	my @ovs_ports = split / / , @{$config->{$bridge}}[0];
 	@{$config->{$bridge}}[0] .= " $svlan_iface" if !grep( $_ eq $svlan_iface, @ovs_ports );
 
-	#zone vlan aware bridge
-	@iface_config = ();
-	push @iface_config, "mtu $mtu" if $mtu;
-	push @iface_config, "bridge-stp off";
-	push @iface_config, "bridge-ports $svlan_iface";
-	push @iface_config, "bridge-fd 0";
-	push @iface_config, "bridge-vlan-aware yes";
-	push @iface_config, "bridge-vids 2-4094";
-	push(@{$config->{$zone}}, @iface_config) if !$config->{$zone};
-
-	$vnet_bridge_ports = "$zone.$ctag";
+	$zone_bridge_ports = $svlan_iface;
 
     } elsif ($vlan_aware) {
 
         #vlanawarebrige-(tag)----->vlanwarebridge-(tag)----->vnet
-
-	my $zone = "z_$zoneid";
 
 	if($vlanprotocol) {
 	    @iface_config = ();
@@ -111,21 +108,11 @@ sub generate_sdn_config {
 	    push(@{$config->{$bridge}}, @iface_config) if !$config->{$bridge};
 	}
 
-	#zone vlan bridge
-	@iface_config = ();
-	push @iface_config, "mtu $mtu" if $mtu;
-	push @iface_config, "bridge-stp off";
-	push @iface_config, "bridge-ports $bridge.$stag";
-	push @iface_config, "bridge-fd 0";
-	push @iface_config, "bridge-vlan-aware yes";
-	push @iface_config, "bridge-vids 2-4094";
-	push(@{$config->{$zone}}, @iface_config) if !$config->{$zone};
-
-	$vnet_bridge_ports = "$zone.$ctag";
+	$zone_bridge_ports = "$bridge.$stag";
 
     } else {
 
-	#eth--->eth.x(svlan)--->eth.x.y(cvlan)---->vnet
+	#eth--->eth.x(svlan)----->vlanwarebridge-(tag)----->vnet---->vnet
 
 	my @bridge_ifaces = PVE::Network::SDN::Zones::Plugin::get_bridge_ifaces($bridge);
 
@@ -133,7 +120,6 @@ sub generate_sdn_config {
 
 	    # use named vlan interface to avoid too long names
 	    my $svlan_iface = "sv_$zoneid";
-	    my $cvlan_iface = "cv_$vnetid";
 
 	    #svlan
 	    @iface_config = ();
@@ -142,15 +128,31 @@ sub generate_sdn_config {
 	    push @iface_config, "vlan-protocol $vlanprotocol" if $vlanprotocol;
 	    push(@{$config->{$svlan_iface}}, @iface_config) if !$config->{$svlan_iface};
 
-	    #cvlan
-	    @iface_config = ();
-	    push @iface_config, "vlan-raw-device $svlan_iface";
-	    push @iface_config, "vlan-id $ctag";
-	    push(@{$config->{$cvlan_iface}}, @iface_config) if !$config->{$cvlan_iface};
-
-	    $vnet_bridge_ports .= " $cvlan_iface";
+	    $zone_bridge_ports = $svlan_iface;
+	    last;
         }
    }
+
+    #veth peer for notag vnet
+    @iface_config = ();
+    push @iface_config, "link-type veth";
+    push @iface_config, "veth-peer-name $zone_notag_uplinkpeer";
+    push(@{$config->{$zone_notag_uplink}}, @iface_config) if !$config->{$zone_notag_uplink};
+
+    @iface_config = ();
+    push @iface_config, "link-type veth";
+    push @iface_config, "veth-peer-name $zone_notag_uplink";
+    push(@{$config->{$zone_notag_uplinkpeer}}, @iface_config) if !$config->{$zone_notag_uplinkpeer};
+
+    #zone vlan aware bridge
+    @iface_config = ();
+    push @iface_config, "mtu $mtu" if $mtu;
+    push @iface_config, "bridge-stp off";
+    push @iface_config, "bridge-ports $zone_bridge_ports $zone_notag_uplink";
+    push @iface_config, "bridge-fd 0";
+    push @iface_config, "bridge-vlan-aware yes";
+    push @iface_config, "bridge-vids 2-4094";
+    push(@{$config->{$zone}}, @iface_config) if !$config->{$zone};
 
     #vnet bridge
     @iface_config = ();
@@ -179,27 +181,24 @@ sub status {
     }
 
     my $vlan_aware = PVE::Network::SDN::Zones::Plugin::is_vlanaware($bridge);
-    my $is_ovs = PVE::Network::SDN::Zones::Plugin::is_ovs($bridge);
 
     my $tag = $vnet->{tag};
     my $vnet_uplink = "ln_".$vnetid;
     my $vnet_uplinkpeer = "pr_".$vnetid;
+    my $zone_notag_uplink = "ln_".$zone;
+    my $zone_notag_uplinkpeer = "pr_".$zone;
+    my $zonebridge = "z_$zone";
 
     # ifaces to check
     my $ifaces = [ $vnetid, $bridge ];
-    if($is_ovs) {
-	my $svlan_iface = "sv_".$zone;
-	my $zonebridge = "z_$zone";
+
+    push @$ifaces, $zonebridge;
+    push @$ifaces, $zone_notag_uplink;
+    push @$ifaces, $zone_notag_uplinkpeer;
+
+    if (!$vlan_aware) {
+	my $svlan_iface = "sv_$zone";
 	push @$ifaces, $svlan_iface;
-	push @$ifaces, $zonebridge;
-    } elsif ($vlan_aware) {
-	my $zonebridge = "z_$zone";
-	push @$ifaces, $zonebridge;
-    } else {
-	my $svlan_iface = "sv_$vnetid";
-	my $cvlan_iface = "cv_$vnetid";
-	push @$ifaces, $svlan_iface;
-	push @$ifaces, $cvlan_iface;
     }
 
     foreach my $iface (@{$ifaces}) {
@@ -218,8 +217,7 @@ sub vnet_update_hook {
     my $vnet = $vnet_cfg->{ids}->{$vnetid};
     my $tag = $vnet->{tag};
 
-    raise_param_exc({ tag => "missing vlan tag"}) if !defined($vnet->{tag});
-    raise_param_exc({ tag => "vlan tag max value is 4096"}) if $vnet->{tag} > 4096;
+    raise_param_exc({ tag => "vlan tag max value is 4096"}) if $tag && $tag > 4096;
 
     # verify that tag is not already defined in another vnet on same zone
     foreach my $id (keys %{$vnet_cfg->{ids}}) {
@@ -228,6 +226,7 @@ sub vnet_update_hook {
 	my $other_tag = $othervnet->{tag};
 	next if $vnet->{zone} ne $othervnet->{zone};
         raise_param_exc({ tag => "tag $tag already exist in vnet $id"}) if $other_tag && $tag eq $other_tag;
+	raise_param_exc({ tag => "vnet $id without tag already exist in this zone"}) if !$other_tag && !$tag;
     }
 }
 

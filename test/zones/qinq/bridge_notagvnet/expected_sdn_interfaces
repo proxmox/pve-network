@@ -11,19 +11,26 @@ iface myvnet
 	bridge_stp off
 	bridge_fd 0
 
+auto myvnet2
+iface myvnet2
+	bridge_ports pr_myzone
+	bridge_stp off
+	bridge_fd 0
+
 auto pr_myzone
 iface pr_myzone
 	link-type veth
 	veth-peer-name ln_myzone
 
-auto vmbr0
-iface vmbr0
-	bridge-vlan-protocol 802.1ad
+auto sv_myzone
+iface sv_myzone
+	vlan-raw-device eth0
+	vlan-id 10
 
 auto z_myzone
 iface z_myzone
 	bridge-stp off
-	bridge-ports vmbr0.10 ln_myzone
+	bridge-ports sv_myzone ln_myzone
 	bridge-fd 0
 	bridge-vlan-aware yes
 	bridge-vids 2-4094
