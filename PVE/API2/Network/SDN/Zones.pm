@@ -272,13 +272,13 @@ __PACKAGE__->register_method ({
 	    my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($scfg->{type});
 	    my $opts = $plugin->check_config($id, $param, 0, 1);
 
-	    if($opts->{ipam} ne $scfg->{ipam}) {
+	    if($opts->{ipam} && !$scfg->{ipam} || $opts->{ipam} ne $scfg->{ipam}) {
 
-		#don't allow ipam change if subnet are defined
+		#don't allow ipam change if subnet are defined for now, need to implement resync ipam content
 		my $subnets_cfg = PVE::Network::SDN::Subnets::config();
 		foreach my $subnetid (sort keys %{$subnets_cfg->{ids}}) {
 		    my $subnet = PVE::Network::SDN::Subnets::sdn_subnets_config($subnets_cfg, $subnetid);
-		    raise_param_exc({ ipam => "can't change ipam if subnet if already defined for this zone"}) if $subnet->{zone} eq $id;
+		    raise_param_exc({ ipam => "can't change ipam if a subnet is already defined in this zone"}) if $subnet->{zone} eq $id;
 		}
 	    }
 
