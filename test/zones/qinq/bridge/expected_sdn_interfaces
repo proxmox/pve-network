@@ -2,7 +2,17 @@
 
 auto cv_myvnet
 iface cv_myvnet
-	vlan-raw-device sv_myvnet
+	vlan-raw-device sv_myzone
+	vlan-id 100
+
+auto cv_myvnet2
+iface cv_myvnet2
+	vlan-raw-device sv_myzone
+	vlan-id 101
+
+auto cv_myvnet3
+iface cv_myvnet3
+	vlan-raw-device sv_myzone2
 	vlan-id 100
 
 auto myvnet
@@ -11,7 +21,24 @@ iface myvnet
 	bridge_stp off
 	bridge_fd 0
 
-auto sv_myvnet
-iface sv_myvnet
+auto myvnet2
+iface myvnet2
+	bridge_ports  cv_myvnet2
+	bridge_stp off
+	bridge_fd 0
+
+auto myvnet3
+iface myvnet3
+	bridge_ports  cv_myvnet3
+	bridge_stp off
+	bridge_fd 0
+
+auto sv_myzone
+iface sv_myzone
 	vlan-raw-device eth0
 	vlan-id 10
+
+auto sv_myzone2
+iface sv_myzone2
+	vlan-raw-device eth0
+	vlan-id 20

@@ -132,7 +132,7 @@ sub generate_sdn_config {
 	foreach my $bridge_iface (@bridge_ifaces) {
 
 	    # use named vlan interface to avoid too long names
-	    my $svlan_iface = "sv_$vnetid";
+	    my $svlan_iface = "sv_$zoneid";
 	    my $cvlan_iface = "cv_$vnetid";
 
 	    #svlan
