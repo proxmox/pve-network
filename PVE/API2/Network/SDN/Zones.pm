@@ -3,29 +3,30 @@ package PVE::API2::Network::SDN::Zones;
 use strict;
 use warnings;
 
-use PVE::SafeSyslog;
-use PVE::Tools qw(extract_param);
-use PVE::Cluster qw(cfs_read_file cfs_write_file);
-use PVE::Network::SDN;
-use PVE::Network::SDN::Vnets;
-use PVE::Network::SDN::Zones;
-use PVE::Network::SDN::Subnets;
-use PVE::Network::SDN::Dns;
-use PVE::Network::SDN::Zones::Plugin;
-use PVE::Network::SDN::Zones::VlanPlugin;
-use PVE::Network::SDN::Zones::QinQPlugin;
-use PVE::Network::SDN::Zones::VxlanPlugin;
-use PVE::Network::SDN::Zones::EvpnPlugin;
-use PVE::Network::SDN::Zones::FaucetPlugin;
-use PVE::Network::SDN::Zones::SimplePlugin;
-
 use Storable qw(dclone);
+
+use PVE::Cluster qw(cfs_read_file cfs_write_file);
+use PVE::Exception qw(raise raise_param_exc);
 use PVE::JSONSchema qw(get_standard_option);
 use PVE::RPCEnvironment;
-use PVE::Exception qw(raise raise_param_exc);
+use PVE::SafeSyslog;
+use PVE::Tools qw(extract_param);
+
+use PVE::Network::SDN::Dns;
+use PVE::Network::SDN::Subnets;
+use PVE::Network::SDN::Vnets;
+use PVE::Network::SDN;
+
+use PVE::Network::SDN::Zones::EvpnPlugin;
+use PVE::Network::SDN::Zones::FaucetPlugin;
+use PVE::Network::SDN::Zones::Plugin;
+use PVE::Network::SDN::Zones::QinQPlugin;
+use PVE::Network::SDN::Zones::SimplePlugin;
+use PVE::Network::SDN::Zones::VlanPlugin;
+use PVE::Network::SDN::Zones::VxlanPlugin;
+use PVE::Network::SDN::Zones;
 
 use PVE::RESTHandler;
-
 use base qw(PVE::RESTHandler);
 
 my $sdn_zones_type_enum = PVE::Network::SDN::Zones::Plugin->lookup_types();
@@ -70,7 +71,7 @@ __PACKAGE__->register_method ({
     	additionalProperties => 0,
 	properties => {
 	    type => {
-		description => "Only list sdn zones of specific type",
+		description => "Only list SDN zones of specific type",
 		type => 'string',
 		enum => $sdn_zones_type_enum,
 		optional => 1,
@@ -112,7 +113,7 @@ __PACKAGE__->register_method ({
 	my $authuser = $rpcenv->get_user();
 
 	my $cfg = {};
-	if($param->{pending}) {
+	if ($param->{pending}) {
 	    my $running_cfg = PVE::Network::SDN::running_config();
 	    my $config = PVE::Network::SDN::Zones::config();
 	    $cfg = PVE::Network::SDN::pending_config($running_cfg, $config, 'zones');
@@ -125,7 +126,7 @@ __PACKAGE__->register_method ({
 
 	my @sids = PVE::Network::SDN::Zones::sdn_zones_ids($cfg);
 	my $res = [];
-	foreach my $id (@sids) {
+	for my $id (@sids) {
 	    my $privs = [ 'SDN.Audit', 'SDN.Allocate' ];
 	    next if !$rpcenv->check_any($authuser, "/sdn/zones/$id", $privs, 1);
 
@@ -170,7 +171,7 @@ __PACKAGE__->register_method ({
 	my ($param) = @_;
 
 	my $cfg = {};
-	if($param->{pending}) {
+	if ($param->{pending}) {
 	    my $running_cfg = PVE::Network::SDN::running_config();
 	    my $config = PVE::Network::SDN::Zones::config();
 	    $cfg = PVE::Network::SDN::pending_config($running_cfg, $config, 'zones');
@@ -204,41 +205,43 @@ __PACKAGE__->register_method ({
 	my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($type);
 	my $opts = $plugin->check_config($id, $param, 1, 1);
 
-        # create /etc/pve/sdn directory
-        PVE::Cluster::check_cfs_quorum();
-        mkdir("/etc/pve/sdn");
+	PVE::Cluster::check_cfs_quorum();
+	mkdir("/etc/pve/sdn");
 
-        PVE::Network::SDN::lock_sdn_config(
-	    sub {
+	PVE::Network::SDN::lock_sdn_config(sub {
+	    my $zone_cfg = PVE::Network::SDN::Zones::config();
+	    my $controller_cfg = PVE::Network::SDN::Controllers::config();
+	    my $dns_cfg = PVE::Network::SDN::Dns::config();
 
-		my $zone_cfg = PVE::Network::SDN::Zones::config();
-		my $controller_cfg = PVE::Network::SDN::Controllers::config();
-		my $dns_cfg = PVE::Network::SDN::Dns::config();
+	    my $scfg = undef;
+	    if ($scfg = PVE::Network::SDN::Zones::sdn_zones_config($zone_cfg, $id, 1)) {
+		die "sdn zone object ID '$id' already defined\n";
+	    }
 
-		my $scfg = undef;
-		if ($scfg = PVE::Network::SDN::Zones::sdn_zones_config($zone_cfg, $id, 1)) {
-		    die "sdn zone object ID '$id' already defined\n";
-		}
-		
-		my $dnsserver = $opts->{dns};
-		my $reversednsserver = $opts->{reversedns};
-		my $dnszone = $opts->{dnszone};
-		raise_param_exc({ dns => "$dnsserver don't exist"}) if $dnsserver && !$dns_cfg->{ids}->{$dnsserver};
-		raise_param_exc({ reversedns => "$reversednsserver don't exist"}) if $reversednsserver && !$dns_cfg->{ids}->{$reversednsserver};
-		raise_param_exc({ dnszone => "missing dns server"}) if $dnszone && !$dnsserver;
+	    my $dnsserver = $opts->{dns};
+	    raise_param_exc({ dns => "$dnsserver don't exist"})
+		if $dnsserver && !$dns_cfg->{ids}->{$dnsserver};
 
-		my $ipam = $opts->{ipam};
-		my $ipam_cfg = PVE::Network::SDN::Ipams::config();
-		raise_param_exc({ ipam => "$ipam not existing"}) if $ipam && !$ipam_cfg->{ids}->{$ipam};
+	    my $reversednsserver = $opts->{reversedns};
+	    raise_param_exc({ reversedns => "$reversednsserver don't exist"})
+		if $reversednsserver && !$dns_cfg->{ids}->{$reversednsserver};
 
-		$zone_cfg->{ids}->{$id} = $opts;
-		$plugin->on_update_hook($id, $zone_cfg, $controller_cfg);
+	    my $dnszone = $opts->{dnszone};
+	    raise_param_exc({ dnszone => "missing dns server"})
+		if $dnszone && !$dnsserver;
 
-		PVE::Network::SDN::Zones::write_config($zone_cfg);
+	    my $ipam = $opts->{ipam};
+	    my $ipam_cfg = PVE::Network::SDN::Ipams::config();
+	    raise_param_exc({ ipam => "$ipam not existing"}) if $ipam && !$ipam_cfg->{ids}->{$ipam};
 
-	    }, "create sdn zone object failed");
+	    $zone_cfg->{ids}->{$id} = $opts;
+	    $plugin->on_update_hook($id, $zone_cfg, $controller_cfg);
 
-	return undef;
+	    PVE::Network::SDN::Zones::write_config($zone_cfg);
+
+	}, "create sdn zone object failed");
+
+	return;
     }});
 
 __PACKAGE__->register_method ({
@@ -258,9 +261,7 @@ __PACKAGE__->register_method ({
 	my $id = extract_param($param, 'zone');
 	my $digest = extract_param($param, 'digest');
 
-        PVE::Network::SDN::lock_sdn_config(
-	 sub {
-
+	PVE::Network::SDN::lock_sdn_config(sub {
 	    my $zone_cfg = PVE::Network::SDN::Zones::config();
 	    my $controller_cfg = PVE::Network::SDN::Controllers::config();
 	    my $dns_cfg = PVE::Network::SDN::Dns::config();
@@ -272,25 +273,28 @@ __PACKAGE__->register_method ({
 	    my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($scfg->{type});
 	    my $opts = $plugin->check_config($id, $param, 0, 1);
 
-	    if($opts->{ipam} && !$scfg->{ipam} || $opts->{ipam} ne $scfg->{ipam}) {
+	    if ($opts->{ipam} && !$scfg->{ipam} || $opts->{ipam} ne $scfg->{ipam}) {
 
-		#don't allow ipam change if subnet are defined for now, need to implement resync ipam content
+		# don't allow ipam change if subnet are defined for now, need to implement resync ipam content
 		my $subnets_cfg = PVE::Network::SDN::Subnets::config();
-		foreach my $subnetid (sort keys %{$subnets_cfg->{ids}}) {
+		for my $subnetid (sort keys %{$subnets_cfg->{ids}}) {
 		    my $subnet = PVE::Network::SDN::Subnets::sdn_subnets_config($subnets_cfg, $subnetid);
-		    raise_param_exc({ ipam => "can't change ipam if a subnet is already defined in this zone"}) if $subnet->{zone} eq $id;
+		    raise_param_exc({ ipam => "can't change ipam if a subnet is already defined in this zone"})
+			if $subnet->{zone} eq $id;
 		}
 	    }
 
-	    foreach my $k (%$opts) {
+	    for my $k (%$opts) {
 		$scfg->{$k} = $opts->{$k};
 	    }
 
 	    my $dnsserver = $opts->{dns};
-	    my $reversednsserver = $opts->{reversedns};
-	    my $dnszone = $opts->{dnszone};
 	    raise_param_exc({ dns => "$dnsserver don't exist"}) if $dnsserver && !$dns_cfg->{ids}->{$dnsserver};
+
+	    my $reversednsserver = $opts->{reversedns};
 	    raise_param_exc({ reversedns => "$reversednsserver don't exist"}) if $reversednsserver && !$dns_cfg->{ids}->{$reversednsserver};
+
+	    my $dnszone = $opts->{dnszone};
 	    raise_param_exc({ dnszone => "missing dns server"}) if $dnszone && !$dnsserver;
 
 	    my $ipam = $opts->{ipam};
@@ -301,9 +305,9 @@ __PACKAGE__->register_method ({
 
 	    PVE::Network::SDN::Zones::write_config($zone_cfg);
 
-	    }, "update sdn zone object failed");
+	}, "update sdn zone object failed");
 
-	return undef;
+	return;
     }});
 
 __PACKAGE__->register_method ({
@@ -316,11 +320,11 @@ __PACKAGE__->register_method ({
 	check => ['perm', '/sdn/zones', ['SDN.Allocate']],
     },
     parameters => {
-    	additionalProperties => 0,
+	additionalProperties => 0,
 	properties => {
 	    zone => get_standard_option('pve-sdn-zone-id', {
-                completion => \&PVE::Network::SDN::Zones::complete_sdn_zones,
-            }),
+		completion => \&PVE::Network::SDN::Zones::complete_sdn_zones,
+	    }),
 	},
     },
     returns => { type => 'null' },
@@ -329,26 +333,21 @@ __PACKAGE__->register_method ({
 
 	my $id = extract_param($param, 'zone');
 
-        PVE::Network::SDN::lock_sdn_config(
-	    sub {
+        PVE::Network::SDN::lock_sdn_config(sub {
+	    my $cfg = PVE::Network::SDN::Zones::config();
+	    my $scfg = PVE::Network::SDN::Zones::sdn_zones_config($cfg, $id);
 
-		my $cfg = PVE::Network::SDN::Zones::config();
+	    my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($scfg->{type});
+	    my $vnet_cfg = PVE::Network::SDN::Vnets::config();
 
-		my $scfg = PVE::Network::SDN::Zones::sdn_zones_config($cfg, $id);
+	    $plugin->on_delete_hook($id, $vnet_cfg);
 
-		my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($scfg->{type});
+	    delete $cfg->{ids}->{$id};
 
-		my $vnet_cfg = PVE::Network::SDN::Vnets::config();
+	    PVE::Network::SDN::Zones::write_config($cfg);
+	}, "delete sdn zone object failed");
 
-		$plugin->on_delete_hook($id, $vnet_cfg);
-
-		delete $cfg->{ids}->{$id};
-		PVE::Network::SDN::Zones::write_config($cfg);
-
-	    }, "delete sdn zone object failed");
-
-
-	return undef;
+	return;
     }});
 
 1;
