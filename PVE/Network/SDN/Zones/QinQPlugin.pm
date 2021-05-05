@@ -2,8 +2,10 @@ package PVE::Network::SDN::Zones::QinQPlugin;
 
 use strict;
 use warnings;
-use PVE::Network::SDN::Zones::Plugin;
+
 use PVE::Exception qw(raise raise_param_exc);
+
+use PVE::Network::SDN::Zones::Plugin;
 
 use base('PVE::Network::SDN::Zones::Plugin');
 
@@ -23,7 +25,7 @@ sub properties {
 	    description => "MTU",
 	    optional => 1,
 	},
-       'vlan-protocol' => {
+	'vlan-protocol' => {
 	    type => 'string',
 	    enum => ['802.1q', '802.1ad'],
 	    default => '802.1q',
@@ -33,9 +35,8 @@ sub properties {
 }
 
 sub options {
-
     return {
-        nodes => { optional => 1},
+	nodes => { optional => 1},
 	'tag' => { optional => 0 },
 	'bridge' => { optional => 0 },
 	'mtu' => { optional => 1 },
@@ -51,12 +52,8 @@ sub options {
 sub generate_sdn_config {
     my ($class, $plugin_config, $zoneid, $vnetid, $vnet, $controller, $controller_cfg, $subnet_cfg, $interfaces_config, $config) = @_;
 
-    my $stag = $plugin_config->{tag};
-    my $mtu = $plugin_config->{mtu};
-    my $bridge = $plugin_config->{'bridge'};
+    my ($bridge, $mtu, $stag) = $plugin_config->@{'bridge', 'mtu', 'tag'};
     my $vlanprotocol = $plugin_config->{'vlan-protocol'};
-    my $ctag = $vnet->{tag};
-    my $alias = $vnet->{alias};
 
     PVE::Network::SDN::Zones::Plugin::find_bridge($bridge);
 
@@ -64,26 +61,25 @@ sub generate_sdn_config {
     my $is_ovs = PVE::Network::SDN::Zones::Plugin::is_ovs($bridge);
 
     my @iface_config = ();
-    my $vnet_bridge_ports = "";
-    my $zone_bridge_ports = "";
-    my $zone_notag_uplink = "ln_".$zoneid;
-    my $zone_notag_uplinkpeer = "pr_".$zoneid;
-    my $zone = "z_$zoneid";
+    my $zone_notag_uplink = "ln_${zoneid}";
+    my $zone_notag_uplinkpeer = "pr_${zoneid}";
+    my $zone = "z_${zoneid}";
 
-    if($ctag) {
+    my $vnet_bridge_ports = "";
+    if (my $ctag = $vnet->{tag}) {
 	$vnet_bridge_ports = "$zone.$ctag";
     } else {
 	$vnet_bridge_ports = $zone_notag_uplinkpeer;
     }
 
-    if($is_ovs) {
-
-        #ovs--->ovsintport(dot1q-tunnel tag)------->vlanawarebrige-----(tag)--->vnet
+    my $zone_bridge_ports = "";
+    if ($is_ovs) {
+        # ovs--->ovsintport(dot1q-tunnel tag)------->vlanawarebrige-----(tag)--->vnet
 
 	$vlanprotocol = "802.1q" if !$vlanprotocol;
 	my $svlan_iface = "sv_".$zoneid;
 
-	#ovs dot1q-tunnel port
+	# ovs dot1q-tunnel port
 	@iface_config = ();
 	push @iface_config, "ovs_type OVSIntPort";
 	push @iface_config, "ovs_bridge $bridge";
@@ -91,7 +87,7 @@ sub generate_sdn_config {
 	push @iface_config, "ovs_options vlan_mode=dot1q-tunnel tag=$stag other_config:qinq-ethtype=$vlanprotocol";
 	push(@{$config->{$svlan_iface}}, @iface_config) if !$config->{$svlan_iface};
 
-        #redefine main ovs bridge, ifupdown2 will merge ovs_ports
+        # redefine main ovs bridge, ifupdown2 will merge ovs_ports
 	@{$config->{$bridge}}[0] = "ovs_ports" if !@{$config->{$bridge}}[0];
 	my @ovs_ports = split / / , @{$config->{$bridge}}[0];
 	@{$config->{$bridge}}[0] .= " $svlan_iface" if !grep( $_ eq $svlan_iface, @ovs_ports );
@@ -99,10 +95,9 @@ sub generate_sdn_config {
 	$zone_bridge_ports = $svlan_iface;
 
     } elsif ($vlan_aware) {
+        # VLAN_aware_brige-(tag)----->vlanwarebridge-(tag)----->vnet
 
-        #vlanawarebrige-(tag)----->vlanwarebridge-(tag)----->vnet
-
-	if($vlanprotocol) {
+	if ($vlanprotocol) {
 	    @iface_config = ();
 	    push @iface_config, "bridge-vlan-protocol $vlanprotocol";
 	    push(@{$config->{$bridge}}, @iface_config) if !$config->{$bridge};
@@ -111,17 +106,15 @@ sub generate_sdn_config {
 	$zone_bridge_ports = "$bridge.$stag";
 
     } else {
-
-	#eth--->eth.x(svlan)----->vlanwarebridge-(tag)----->vnet---->vnet
+	# eth--->eth.x(svlan)----->vlanwarebridge-(tag)----->vnet---->vnet
 
 	my @bridge_ifaces = PVE::Network::SDN::Zones::Plugin::get_bridge_ifaces($bridge);
 
-	foreach my $bridge_iface (@bridge_ifaces) {
-
+	for my $bridge_iface (@bridge_ifaces) {
 	    # use named vlan interface to avoid too long names
 	    my $svlan_iface = "sv_$zoneid";
 
-	    #svlan
+	    # svlan
 	    @iface_config = ();
 	    push @iface_config, "vlan-raw-device $bridge_iface";
 	    push @iface_config, "vlan-id $stag";
@@ -133,7 +126,7 @@ sub generate_sdn_config {
         }
    }
 
-    #veth peer for notag vnet
+    # veth peer for notag vnet
     @iface_config = ();
     push @iface_config, "link-type veth";
     push @iface_config, "veth-peer-name $zone_notag_uplinkpeer";
@@ -144,7 +137,7 @@ sub generate_sdn_config {
     push @iface_config, "veth-peer-name $zone_notag_uplink";
     push(@{$config->{$zone_notag_uplinkpeer}}, @iface_config) if !$config->{$zone_notag_uplinkpeer};
 
-    #zone vlan aware bridge
+    # zone vlan aware bridge
     @iface_config = ();
     push @iface_config, "mtu $mtu" if $mtu;
     push @iface_config, "bridge-stp off";
@@ -154,7 +147,7 @@ sub generate_sdn_config {
     push @iface_config, "bridge-vids 2-4094";
     push(@{$config->{$zone}}, @iface_config) if !$config->{$zone};
 
-    #vnet bridge
+    # vnet bridge
     @iface_config = ();
     push @iface_config, "bridge_ports $vnet_bridge_ports";
     push @iface_config, "bridge_stp off";
@@ -164,9 +157,8 @@ sub generate_sdn_config {
 	push @iface_config, "bridge-vids 2-4094";
     }
     push @iface_config, "mtu $mtu" if $mtu;
-    push @iface_config, "alias $alias" if $alias;
+    push @iface_config, "alias $vnet->{alias}" if $vnet->{alias};
     push(@{$config->{$vnetid}}, @iface_config) if !$config->{$vnetid};
-
 }
 
 sub status {
@@ -215,18 +207,23 @@ sub vnet_update_hook {
     my ($class, $vnet_cfg, $vnetid, $zone_cfg) = @_;
 
     my $vnet = $vnet_cfg->{ids}->{$vnetid};
-    my $tag = $vnet->{tag};
 
-    raise_param_exc({ tag => "vlan tag max value is 4096"}) if $tag && $tag > 4096;
+    my $tag = $vnet->{tag};
+    raise_param_exc({ tag => "VLAN tag maximal value is 4096" }) if $tag && $tag > 4096;
 
     # verify that tag is not already defined in another vnet on same zone
-    foreach my $id (keys %{$vnet_cfg->{ids}}) {
+    for my $id (sort keys %{$vnet_cfg->{ids}}) {
 	next if $id eq $vnetid;
-	my $othervnet = $vnet_cfg->{ids}->{$id};
-	my $other_tag = $othervnet->{tag};
-	next if $vnet->{zone} ne $othervnet->{zone};
-        raise_param_exc({ tag => "tag $tag already exist in vnet $id"}) if $other_tag && $tag eq $other_tag;
-	raise_param_exc({ tag => "vnet $id without tag already exist in this zone"}) if !$other_tag && !$tag;
+	my $other_vnet = $vnet_cfg->{ids}->{$id};
+	next if $vnet->{zone} ne $other_vnet->{zone};
+	my $other_tag = $other_vnet->{tag};
+	if ($tag) {
+	    raise_param_exc({ tag => "tag $tag already exist in zone $vnet->{zone} vnet $id"})
+		if $other_tag && $tag eq $other_tag;
+	} else {
+	    raise_param_exc({ tag => "tag-less vnet already exists in zone $vnet->{zone} vnet $id"})
+		if !$other_tag;
+	}
     }
 }
 
