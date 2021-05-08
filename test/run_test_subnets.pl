@@ -39,6 +39,7 @@ foreach my $path (@plugins) {
 
     my (undef, $testid) = split(/\//, $path);
 
+    print "test: $testid\n";
     my $sdn_config = read_sdn_config ("$path/sdn_config");
 
 
@@ -83,17 +84,31 @@ foreach my $path (@plugins) {
     my $ipamdb = {};
 
     my $zone = $sdn_config->{zones}->{ids}->{"myzone"};
+    my $ipam = $zone->{ipam};
 
-    my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup('pve');
-    my $sdn_ipam_plugin = Test::MockModule->new($plugin);
-    $sdn_ipam_plugin->mock(
-	read_db => sub {
-	    return $ipamdb;
+    my $plugin;
+    my $sdn_ipam_plugin;
+    if($ipam) {
+	$plugin = PVE::Network::SDN::Ipams::Plugin->lookup($ipam);
+	$sdn_ipam_plugin = Test::MockModule->new($plugin);
+	$sdn_ipam_plugin->mock(
+	    read_db => sub {
+		return $ipamdb;
+	    },
+	    write_db => sub {
+		my ($cfg) = @_;
+		$ipamdb = $cfg;
+	    }
+	);
+    }
+
+    my $pve_sdn_ipams;
+    $pve_sdn_ipams = Test::MockModule->new('PVE::Network::SDN::Ipams');
+    $pve_sdn_ipams->mock(
+	config => sub {
+	    my $ipam_config = read_sdn_config ("$path/ipam_config");
+	    return $ipam_config;
 	},
-	write_db => sub {
-	    my ($cfg) = @_;
-	    $ipamdb = $cfg;
-	}
     );
 
     ## add_subnet
@@ -103,14 +118,17 @@ foreach my $path (@plugins) {
     my $expected = '{"zones":{"myzone":{"subnets":{"'.$subnet_cidr.'":{"ips":{}}}}}}';
 
     eval {
-	$plugin->add_subnet(undef, $subnetid, $subnet, 1);
+        PVE::Network::SDN::Subnets::add_subnet($zone, $subnetid, $subnet);
+
     };
 
     if ($@) {
-        fail($name);
-    } else {
+        fail("$name : $@");
+    } elsif($ipam) {
         $result = $js->encode($plugin->read_db());
         is ($result, $expected, $name);
+    } else {
+        is (undef, undef, $name);
     }
 
     ## add_ip
@@ -125,23 +143,27 @@ foreach my $path (@plugins) {
 
     if ($@) {
         fail("$name : $@");
-    } else {
+    } elsif($ipam) {
         $result = $js->encode($plugin->read_db());
         is ($result, $expected, $name);
+    } else {
+        is (undef, undef, $name);
     }
 
-    ## add_already_exist_ip
-    $test = "add_already_exist_ip";
-    $name = "$testid $test";
+    if($ipam) {
+	## add_already_exist_ip
+	$test = "add_already_exist_ip";
+	$name = "$testid $test";
 
-    eval {
-	PVE::Network::SDN::Subnets::add_ip($zone, $subnetid, $subnet, $ip, $hostname, $mac, $description);
-    };
+	eval {
+	    PVE::Network::SDN::Subnets::add_ip($zone, $subnetid, $subnet, $ip, $hostname, $mac, $description);
+	};
 
-    if ($@) {
-        is (undef, undef, $name);
-    } else {
-        fail("$name : $@");
+	if ($@) {
+	    is (undef, undef, $name);
+	} else {
+	    fail("$name : $@");
+	}
     }
 
     ## add_second_ip
@@ -156,11 +178,12 @@ foreach my $path (@plugins) {
 
     if ($@) {
         fail("$name : $@");
-    } else {
+    } elsif($ipam) {
         $result = $js->encode($plugin->read_db());
         is ($result, $expected, $name);
+    } else {
+        is (undef, undef, $name);
     }
-
 
     ## add_next_free
     $test = "add_next_freeip";
@@ -174,7 +197,7 @@ foreach my $path (@plugins) {
 
     if ($@) {
         fail("$name : $@");
-    } else {
+    } elsif($ipam) {
         $result = $js->encode($plugin->read_db());
         is ($result, $expected, $name);
     }
@@ -191,27 +214,30 @@ foreach my $path (@plugins) {
 
     if ($@) {
         fail("$name : $@");
-    } else {
+    } elsif($ipam) {
         $result = $js->encode($plugin->read_db());
         is ($result, $expected, $name);
-    }
-
-    ## del_subnet_not_empty
-    $test = "del_subnet_not_empty";
-    $name = "$testid $test";
-    $result = undef;
-    $expected = undef;
-
-    eval {
-	PVE::Network::SDN::Subnets::del_subnet($zone, $subnetid, $subnet);
-    };
-
-    if ($@) {
-        is ($result, $expected, $name);
     } else {
-        fail("$name : $@");
+        is (undef, undef, $name);
     }
 
+    if($ipam){
+	## del_subnet_not_empty
+	$test = "del_subnet_not_empty";
+	$name = "$testid $test";
+	$result = undef;
+	$expected = undef;
+
+	eval {
+	    PVE::Network::SDN::Subnets::del_subnet($zone, $subnetid, $subnet);
+	};
+
+	if ($@) {
+	    is ($result, $expected, $name);
+	} else {
+	    fail("$name : $@");
+	}
+    }
 
 
     ## add_ip_rollback_failing_dns
@@ -239,8 +265,12 @@ foreach my $path (@plugins) {
     };
 
     if ($@) {
-        $result = $js->encode($plugin->read_db());
-        is ($result, $expected, $name);
+	if($ipam) {
+	    $result = $js->encode($plugin->read_db());
+	    is ($result, $expected, $name);
+	} else {
+	    is (undef, undef, $name);
+	}
     } else {
         fail("$name : $@");
     }
@@ -261,9 +291,11 @@ foreach my $path (@plugins) {
 
     if ($@) {
         fail("$name : $@");
-    } else {
+    } elsif($ipam) {
         $result = $js->encode($plugin->read_db());
         is ($result, $expected, $name);
+    } else {
+        is (undef, undef, $name);
     }
 
 }

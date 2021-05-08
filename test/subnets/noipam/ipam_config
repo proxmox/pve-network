@@ -1,0 +1,18 @@
+{
+          'ids' => {
+                     'phpipam' => {
+                                    'url' => 'https://localhost/api/apiadmin',
+                                    'type' => 'phpipam',
+                                    'section' => 1,
+                                    'token' => 'JPHkPSLB4O_XL-GQz4qtEFmNpx-99Htw'
+                                  },
+                     'pve' => {
+                                'type' => 'pve'
+                              },
+                     'netbox' => {
+                                   'token' => '0123456789abcdef0123456789abcdef01234567',
+                                   'type' => 'netbox',
+                                   'url' => 'http://localhost:8000/api'
+                                 }
+                   },
+}
