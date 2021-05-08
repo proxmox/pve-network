@@ -165,6 +165,7 @@ sub add_subnet {
     my ($zone, $subnetid, $subnet) = @_;
 
     my $ipam = $zone->{ipam};
+    return if !$ipam;
     my $ipam_cfg = PVE::Network::SDN::Ipams::config();
     my $plugin_config = $ipam_cfg->{ids}->{$ipam};
     my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
@@ -175,6 +176,7 @@ sub del_subnet {
     my ($zone, $subnetid, $subnet) = @_;
 
     my $ipam = $zone->{ipam};
+    return if !$ipam;
     my $ipam_cfg = PVE::Network::SDN::Ipams::config();
     my $plugin_config = $ipam_cfg->{ids}->{$ipam};
     my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
