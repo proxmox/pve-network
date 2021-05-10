@@ -1,0 +1,25 @@
+{
+  version => 1,
+  vnets   => {
+               ids => {
+                        myvnet => { type => "vnet", zone => "myzone" },
+                      },
+             },
+  zones   => {
+               ids => { myzone => { ipam => "pve", type => "simple" } },
+             },
+  subnets => {
+		ids => {
+			'myzone-192.168.0.0-24' => {
+							'type' => 'subnet',
+							'vnet' => 'myvnet',
+						},
+			'myzone-2a08:2142:302:3::-64' => {
+							'type' => 'subnet',
+							'vnet' => 'myvnet',
+							}
+		}
+             }
+}
+
+

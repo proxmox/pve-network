@@ -59,6 +59,8 @@ sub generate_sdn_config {
 
     my $ipv4 = undef;
     my $ipv6 = undef;
+    my $enable_forward_v4 = undef;
+    my $enable_forward_v6 = undef;
 
     foreach my $subnetid (sort keys %{$subnets}) {
 	my $subnet = $subnets->{$subnetid};
@@ -79,10 +81,12 @@ sub generate_sdn_config {
 	    $ipv6 = 1;
 	    $iptables = "ip6tables";
 	    $checkrouteip = '2001:4860:4860::8888';
+	    $enable_forward_v6 = 1 if $gateway;
 	} else {
 	    $ipv4 = 1;
 	    $iptables = "iptables";
 	    $checkrouteip = '8.8.8.8';
+	    $enable_forward_v4 = 1 if $gateway;
 	}
 
 	#add route for /32 pointtopoint
@@ -111,8 +115,8 @@ sub generate_sdn_config {
     }
     push @iface_config, "mtu $mtu" if $mtu;
     push @iface_config, "alias $alias" if $alias;
-    push @iface_config, "ip-forward on" if $ipv4;
-    push @iface_config, "ip6-forward on" if $ipv6;
+    push @iface_config, "ip-forward on" if $enable_forward_v4;
+    push @iface_config, "ip6-forward on" if $enable_forward_v6;
 
     push @{$config->{$vnetid}}, @iface_config;
 
