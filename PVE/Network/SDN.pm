@@ -198,7 +198,9 @@ sub get_local_vnets {
 	my $zone_config = PVE::Network::SDN::Zones::sdn_zones_config($zones_cfg, $zoneid);
 
 	next if defined($zone_config->{nodes}) && !$zone_config->{nodes}->{$nodename};
-	$vnets->{$vnetid} = { type => 'vnet', active => '1', comments => $comments };
+	my $ipam = $zone_config->{ipam} ? 1 : 0;
+	my $vlanaware = $vnet->{vlanaware} ? 1 : 0;
+	$vnets->{$vnetid} = { type => 'vnet', active => '1', ipam => $ipam, vlanaware => $vlanaware, comments => $comments };
     }
 
     return $vnets;
