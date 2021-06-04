@@ -99,6 +99,9 @@ foreach my $path (@plugins) {
 	},
 	get_ip_id => sub {
 	    return 1;
+	},
+	is_ip_gateway => sub {
+	    return 1;
 	}
     );
 
@@ -146,8 +149,21 @@ foreach my $path (@plugins) {
     $test = "update_ip";
     $expected = Dumper read_sdn_config("$path/expected.$test");
     $name = "$ipamid $test";
-
     $plugin->update_ip($plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway, 1);
+
+    if ($@) {
+	is ($@, $expected, $name);
+    } else {
+	fail($name);
+    }
+
+    ## add_ip_notgateway
+    $is_gateway = undef;
+    $test = "add_ip_notgateway";
+    $expected = Dumper read_sdn_config("$path/expected.$test");
+    $name = "$ipamid $test";
+
+    $plugin->add_ip($plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway, 1);
 
     if ($@) {
 	is ($@, $expected, $name);

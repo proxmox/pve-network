@@ -95,9 +95,9 @@ sub add_ip {
 	my $dbsubnet = $dbzone->{subnets}->{$cidr};
 	die "subnet '$cidr' doesn't exist in IPAM DB\n" if !$dbsubnet;
 
-	die "IP '$ip' already exist\n" if defined($dbsubnet->{ips}->{$ip});
-
+	die "IP '$ip' already exist\n" if (!$is_gateway && defined($dbsubnet->{ips}->{$ip})) || ($is_gateway && defined($dbsubnet->{ips}->{$ip}) && !defined($dbsubnet->{ips}->{$ip}->{gateway}));
 	$dbsubnet->{ips}->{$ip} = {};
+	$dbsubnet->{ips}->{$ip} = {gateway => 1} if $is_gateway;
 
 	write_db($db);
     });

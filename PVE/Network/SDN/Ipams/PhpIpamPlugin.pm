@@ -106,10 +106,10 @@ sub add_ip {
 
     my $params = { ip => $ip,
 		   subnetId => $internalid,
-		   is_gateway => $is_gateway,
 		   hostname => $hostname,
 		   description => $description,
 		  };
+    $params->{is_gateway} = 1 if $is_gateway;
     $params->{mac} = $mac if $mac;
 
     eval {
@@ -117,7 +117,11 @@ sub add_ip {
     };
 
     if ($@) {
-	die "error add subnet ip to ipam: ip $ip already exist: $@" if !$noerr;
+	if($is_gateway) {
+	    die "error add subnet ip to ipam: ip $ip already exist: $@" if !is_ip_gateway($url, $ip, $headers) && !$noerr;
+	} else {
+	    die "error add subnet ip to ipam: ip $ip already exist: $@" if !$noerr;
+	}
     }
 }
 
@@ -134,10 +138,10 @@ sub update_ip {
     die "can't find ip addresse in ipam" if !$ip_id;
 
     my $params = { 
-		   is_gateway => $is_gateway,
 		   hostname => $hostname,
 		   description => $description,
 		  };
+    $params->{is_gateway} = 1 if $is_gateway;
     $params->{mac} = $mac if $mac;
 
     eval {
@@ -240,6 +244,14 @@ sub get_ip_id {
     my $data = @{$result->{data}}[0];
     my $ip_id = $data->{id};
     return $ip_id;
+}
+
+sub is_ip_gateway {
+    my ($url, $ip, $headers) = @_;
+    my $result = PVE::Network::SDN::api_request("GET", "$url/addresses/search/$ip", $headers);
+    my $data = @{$result->{data}}[0];
+    my $is_gateway = $data->{is_gateway};
+    return $is_gateway;
 }
 
 1;

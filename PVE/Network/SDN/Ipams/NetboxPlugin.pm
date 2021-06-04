@@ -93,7 +93,11 @@ sub add_ip {
     };
 
     if ($@) {
-	die "error add subnet ip to ipam: ip already exist: $@" if !$noerr;
+        if($is_gateway) {
+           die "error add subnet ip to ipam: ip $ip already exist: $@" if !is_ip_gateway($url, $ip, $headers) && !$noerr;
+        } else {
+	    die "error add subnet ip to ipam: ip already exist: $@" if !$noerr;
+	}
     }
 }
 
@@ -208,6 +212,14 @@ sub get_ip_id {
     return $ip_id;
 }
 
+sub is_ip_gateway {
+    my ($url, $ip, $headers) = @_;
+    my $result = PVE::Network::SDN::api_request("GET", "$url/addresses/search/$ip", $headers);
+    my $data = @{$result->{data}}[0];
+    my $description = $data->{description};
+    my $is_gateway = 1 if $description eq 'gateway';
+    return $is_gateway;
+}
 
 1;
 

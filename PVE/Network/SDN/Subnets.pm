@@ -232,7 +232,7 @@ sub next_free_ip {
 }
 
 sub add_ip {
-    my ($zone, $subnetid, $subnet, $ip, $hostname, $mac, $description) = @_;
+    my ($zone, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway) = @_;
 
     return if !$subnet || !$ip; 
 
@@ -259,7 +259,7 @@ sub add_ip {
 	my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
 
 	eval {
-	    $plugin->add_ip($plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description);
+	    $plugin->add_ip($plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway);
 	};
 	die $@ if $@;
     }
