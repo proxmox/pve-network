@@ -69,7 +69,7 @@ foreach my $path (@plugins) {
 
     my $subnet_cidr = $subnet->{cidr};
     my $iplist = NetAddr::IP->new($subnet_cidr);
-    $iplist++;
+    $iplist++ if Net::IP::ip_is_ipv4($iplist->canon()); #skip network address for ipv4
     my $ip = $iplist->canon();
     $iplist++;
     my $ipnextfree = $iplist->canon();
@@ -112,7 +112,7 @@ foreach my $path (@plugins) {
     );
 
     ## add_subnet
-    my $test = "add_subnet";
+    my $test = "add_subnet $subnetid";
     my $name = "$testid $test";
     my $result = undef;
     my $expected = '{"zones":{"myzone":{"subnets":{"'.$subnet_cidr.'":{"ips":{}}}}}}';
@@ -132,7 +132,7 @@ foreach my $path (@plugins) {
     }
 
     ## add_ip
-    $test = "add_ip";
+    $test = "add_ip $ip";
     $name = "$testid $test";
     $result = undef;
     $expected = '{"zones":{"myzone":{"subnets":{"'.$subnet_cidr.'":{"ips":{"'.$ip.'":{}}}}}}}';
@@ -152,7 +152,7 @@ foreach my $path (@plugins) {
 
     if($ipam) {
 	## add_already_exist_ip
-	$test = "add_already_exist_ip";
+	$test = "add_already_exist_ip $ip";
 	$name = "$testid $test";
 
 	eval {
@@ -167,7 +167,7 @@ foreach my $path (@plugins) {
     }
 
     ## add_second_ip
-    $test = "add_second_ip";
+    $test = "add_second_ip $ip2";
     $name = "$testid $test";
     $result = undef;
     $expected = '{"zones":{"myzone":{"subnets":{"'.$subnet_cidr.'":{"ips":{"'.$ip.'":{},"'.$ip2.'":{}}}}}}}';
@@ -186,7 +186,7 @@ foreach my $path (@plugins) {
     }
 
     ## add_next_free
-    $test = "add_next_freeip";
+    $test = "find_next_freeip ($ipnextfree)";
     $name = "$testid $test";
     $result = undef;
     $expected = '{"zones":{"myzone":{"subnets":{"'.$subnet_cidr.'":{"ips":{"'.$ip.'":{},"'.$ipnextfree.'":{},"'.$ip2.'":{}}}}}}}';
@@ -203,7 +203,7 @@ foreach my $path (@plugins) {
     }
 
     ## del_ip
-    $test = "del_ip";
+    $test = "del_ip $ip";
     $name = "$testid $test";
     $result = undef;
     $expected = '{"zones":{"myzone":{"subnets":{"'.$subnet_cidr.'":{"ips":{"'.$ipnextfree.'":{},"'.$ip2.'":{}}}}}}}';
@@ -223,7 +223,7 @@ foreach my $path (@plugins) {
 
     if($ipam){
 	## del_subnet_not_empty
-	$test = "del_subnet_not_empty";
+	$test = "del_subnet_not_empty $subnetid";
 	$name = "$testid $test";
 	$result = undef;
 	$expected = undef;

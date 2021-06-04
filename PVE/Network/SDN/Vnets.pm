@@ -102,6 +102,8 @@ sub get_next_free_cidr {
     my $zoneid = $vnet->{zone};
     my $zone = PVE::Network::SDN::Zones::get_zone($zoneid);
 
+    return if !$zone->{ipam};
+
     $ipversion = 4 if !$ipversion;
     my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid, 1);
     my $ip = undef;
@@ -113,12 +115,11 @@ sub get_next_free_cidr {
 
 	next if $ipversion != Net::IP::ip_get_version($network);
 	$subnetcount++;
-	if ($zone->{ipam}) {
-	    eval {
-		$ip = PVE::Network::SDN::Subnets::next_free_ip($zone, $subnetid, $subnet, $hostname, $mac, $description);
-	    };
-	    warn $@ if $@;
-	}
+
+	eval {
+	    $ip = PVE::Network::SDN::Subnets::next_free_ip($zone, $subnetid, $subnet, $hostname, $mac, $description);
+	};
+	warn $@ if $@;
 	last if $ip;
     }
     die "can't find any free ip" if !$ip && $subnetcount > 0;

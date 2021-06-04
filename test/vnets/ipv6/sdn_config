@@ -1,0 +1,26 @@
+{
+  version => 1,
+  vnets   => {
+               ids => {
+                        myvnet => { type => "vnet", zone => "myzone" },
+                      },
+             },
+
+  zones   => {
+               ids => { myzone => { ipam => "pve", type =>"simple" } },
+             },
+
+  subnets => {
+              ids => { 
+			'myzone-2001:db8:85a3::8a2e:370:7334-127' => {
+                                                        'type' => 'subnet',
+                                                        'vnet' => 'myvnet',
+                                                  },
+			'myzone-2001:db8:85a3::8a2e:371:7334-127' => {
+                                                        'type' => 'subnet',
+                                                        'vnet' => 'myvnet',
+                                                  },
+                     }
+
+             }
+}

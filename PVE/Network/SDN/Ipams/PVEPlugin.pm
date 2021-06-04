@@ -90,7 +90,6 @@ sub add_ip {
     cfs_lock_file($ipamdb_file, undef, sub {
 
 	my $db = read_db();
-
 	my $dbzone = $db->{zones}->{$zone};
 	die "zone '$zone' doesn't exist in IPAM DB\n" if !$dbzone;
 	my $dbsubnet = $dbzone->{subnets}->{$cidr};
@@ -132,13 +131,15 @@ sub add_next_freeip {
 	    $freeip = $network;
 	} else {
 	    my $iplist = NetAddr::IP->new($cidr);
-	    my $broadcast = $iplist->broadcast();
-
+	    my $lastip = $iplist->last()->canon();
+	    $iplist++ if Net::IP::ip_is_ipv4($network); #skip network address for ipv4
 	    while(1) {
-		$iplist++;
-		last if $iplist eq $broadcast;
 		my $ip = $iplist->canon();
-		next if defined($dbsubnet->{ips}->{$ip});
+		if (defined($dbsubnet->{ips}->{$ip})) {
+		    last if $ip eq $lastip;
+		    $iplist++;
+		    next;
+		} 
 		$freeip = $ip;
 		last;
 	    }
