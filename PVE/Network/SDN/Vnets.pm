@@ -52,6 +52,8 @@ sub complete_sdn_vnet {
 sub get_vnet {
     my ($vnetid, $running) = @_;
 
+    return if !$vnetid;
+
     my $cfg = {};
     if($running) {
 	my $cfg = PVE::Network::SDN::running_config();
@@ -67,6 +69,8 @@ sub get_vnet {
 
 sub get_subnets {
     my ($vnetid) = @_;
+
+    return if !$vnetid;
 
     my $subnets = undef;
     my $subnets_cfg = PVE::Network::SDN::Subnets::config();
@@ -130,6 +134,8 @@ sub get_next_free_cidr {
 sub add_cidr {
     my ($vnetid, $cidr, $hostname, $mac, $description) = @_;
 
+    return if !$vnetid;
+    
     my ($zone, $subnetid, $subnet, $ip) = PVE::Network::SDN::Vnets::get_subnet_from_vnet_cidr($vnetid, $cidr);
     PVE::Network::SDN::Subnets::add_ip($zone, $subnetid, $subnet, $ip, $hostname, $mac, $description);
 }
@@ -137,12 +143,16 @@ sub add_cidr {
 sub update_cidr {
     my ($vnetid, $cidr, $hostname, $oldhostname, $mac, $description) = @_;
 
+    return if !$vnetid;
+
     my ($zone, $subnetid, $subnet, $ip) = PVE::Network::SDN::Vnets::get_subnet_from_vnet_cidr($vnetid, $cidr);
     PVE::Network::SDN::Subnets::update_ip($zone, $subnetid, $subnet, $ip, $hostname, $oldhostname, $mac, $description);
 }
 
 sub del_cidr {
     my ($vnetid, $cidr, $hostname) = @_;
+
+    return if !$vnetid;
 
     my ($zone, $subnetid, $subnet, $ip) = PVE::Network::SDN::Vnets::get_subnet_from_vnet_cidr($vnetid, $cidr);
     PVE::Network::SDN::Subnets::del_ip($zone, $subnetid, $subnet, $ip, $hostname);
