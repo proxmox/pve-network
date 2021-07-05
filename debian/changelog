@@ -1,3 +1,13 @@
+libpve-network-perl (0.6.1) pve; urgency=medium
+
+  * sdn: get local vnets : add IPAM and VLAN-aware values
+
+  * IPAM: IPv6 fixes
+
+  * subnets/ipam: fix is_gateway helper usage
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 05 Jul 2021 19:07:52 +0200
+
 libpve-network-perl (0.6.0) pve; urgency=medium
 
   * zones: QinQ: classic bridge: fix bridge zone name with multiple zones/vnets
