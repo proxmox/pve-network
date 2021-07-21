@@ -73,6 +73,7 @@ sub generate_sdn_config {
     my $bgprouter = PVE::Network::SDN::Controllers::EvpnPlugin::find_bgp_controller($local_node, $controller_cfg);
     my $loopback = $bgprouter->{loopback} if $bgprouter->{loopback};
     my ($ifaceip, $iface) = PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers, $loopback);
+    my $is_evpn_gateway = $plugin_config->{'exitnodes'}->{$local_node};
 
     my $mtu = 1450;
     $mtu = $interfaces_config->{$iface}->{mtu} - 50 if $interfaces_config->{$iface}->{mtu};
@@ -127,8 +128,6 @@ sub generate_sdn_config {
 
 	if ($subnet->{snat}) {
 
-	    my $is_evpn_gateway = $plugin_config->{'exitnodes'}->{$local_node};
-
             #find outgoing interface
             my ($outip, $outiface) = PVE::Network::SDN::Zones::Plugin::get_local_route_ip($checkrouteip);
             if ($outip && $outiface && $is_evpn_gateway) {
@@ -158,7 +157,7 @@ sub generate_sdn_config {
 	#vrf interface
 	@iface_config = ();
 	push @iface_config, "vrf-table auto";
-	push @iface_config, "post-up ip route add vrf $vrf_iface unreachable default metric 4278198272";
+	push @iface_config, "post-up ip route add vrf $vrf_iface unreachable default metric 4278198272" if !$is_evpn_gateway;
 	push(@{$config->{$vrf_iface}}, @iface_config) if !$config->{$vrf_iface};
 
 	if ($vrfvxlan) {
