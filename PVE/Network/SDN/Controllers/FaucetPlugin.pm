@@ -43,7 +43,7 @@ sub generate_controller_zone_config {
 
 
 sub generate_controller_vnet_config {
-    my ($class, $plugin_config, $controller, $zoneid, $vnetid, $config) = @_;
+    my ($class, $plugin_config, $controller, $zone, $zoneid, $vnetid, $config) = @_;
 
     my $mac = $plugin_config->{mac};
     my $ipv4 = $plugin_config->{ipv4};

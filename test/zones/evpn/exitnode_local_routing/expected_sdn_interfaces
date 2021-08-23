@@ -1,0 +1,56 @@
+#version:1
+
+auto myvnet
+iface myvnet
+	address 10.0.0.1/24
+	bridge_ports vxlan_myvnet
+	bridge_stp off
+	bridge_fd 0
+	mtu 1450
+	ip-forward on
+	arp-accept on
+	vrf vrf_myzone
+
+auto vrf_myzone
+iface vrf_myzone
+	vrf-table auto
+	post-up ip route del vrf vrf_myzone unreachable default metric 4278198272
+
+auto vrfbr_myzone
+iface vrfbr_myzone
+	bridge-ports vrfvx_myzone
+	bridge_stp off
+	bridge_fd 0
+	mtu 1450
+	vrf vrf_myzone
+
+auto vrfvx_myzone
+iface vrfvx_myzone
+	vxlan-id 1000
+	vxlan-local-tunnelip 192.168.0.1
+	bridge-learning off
+	bridge-arp-nd-suppress on
+	mtu 1450
+
+auto vxlan_myvnet
+iface vxlan_myvnet
+	vxlan-id 100
+	vxlan-local-tunnelip 192.168.0.1
+	bridge-learning off
+	bridge-arp-nd-suppress on
+	mtu 1450
+
+auto xvrf_myzone
+iface xvrf_myzone
+	link-type veth
+	address 10.255.255.1/30
+	veth-peer-name xvrfp_myzone
+	mtu 1500
+
+auto xvrfp_myzone
+iface xvrfp_myzone
+	link-type veth
+	address 10.255.255.2/30
+	veth-peer-name xvrf_myzone
+	vrf vrf_myzone
+	mtu 1500

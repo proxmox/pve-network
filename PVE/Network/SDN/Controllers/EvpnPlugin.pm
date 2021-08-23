@@ -114,6 +114,7 @@ sub generate_controller_zone_config {
     my $vrfvxlan = $plugin_config->{'vrf-vxlan'};
     my $exitnodes = $plugin_config->{'exitnodes'};
     my $advertisesubnets = $plugin_config->{'advertise-subnets'};
+    my $exitnodes_local_routing = $plugin_config->{'exitnodes-local-routing'};
 
     my $asn = $controller->{asn};
     my $ebgp = undef;
@@ -149,17 +150,19 @@ sub generate_controller_zone_config {
 
     if ($is_gateway) {
 
-	@controller_config = ();
-	#import /32 routes of evpn network from vrf1 to default vrf (for packet return)
-	push @controller_config, "import vrf $vrf";
-	push(@{$config->{frr}->{router}->{"bgp $asn"}->{"address-family"}->{"ipv4 unicast"}}, @controller_config);
-	push(@{$config->{frr}->{router}->{"bgp $asn"}->{"address-family"}->{"ipv6 unicast"}}, @controller_config);
+	if (!$exitnodes_local_routing) {
+	    @controller_config = ();
+	    #import /32 routes of evpn network from vrf1 to default vrf (for packet return)
+	    push @controller_config, "import vrf $vrf";
+	    push(@{$config->{frr}->{router}->{"bgp $asn"}->{"address-family"}->{"ipv4 unicast"}}, @controller_config);
+	    push(@{$config->{frr}->{router}->{"bgp $asn"}->{"address-family"}->{"ipv6 unicast"}}, @controller_config);
 
-	@controller_config = ();
-	#redistribute connected to be able to route to local vms on the gateway
-	push @controller_config, "redistribute connected";
-	push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"ipv4 unicast"}}, @controller_config);
-	push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"ipv6 unicast"}}, @controller_config);
+	    @controller_config = ();
+	    #redistribute connected to be able to route to local vms on the gateway
+	    push @controller_config, "redistribute connected";
+	    push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"ipv4 unicast"}}, @controller_config);
+	    push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"ipv6 unicast"}}, @controller_config);
+	}
 
 	@controller_config = ();
 	#add default originate to announce 0.0.0.0/0 type5 route in evpn
@@ -182,6 +185,29 @@ sub generate_controller_zone_config {
     }
 
     return $config;
+}
+
+sub generate_controller_vnet_config {
+    my ($class, $plugin_config, $controller, $zone, $zoneid, $vnetid, $config) = @_;
+
+    my $exitnodes = $zone->{'exitnodes'};
+    my $exitnodes_local_routing = $zone->{'exitnodes-local-routing'};
+
+    return if !$exitnodes_local_routing;
+
+    my $local_node = PVE::INotify::nodename();
+    my $is_gateway = $exitnodes->{$local_node};
+    
+    return if !$is_gateway;
+
+    my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid, 1);
+    my @controller_config = ();
+    foreach my $subnetid (sort keys %{$subnets}) {
+        my $subnet = $subnets->{$subnetid};
+	my $cidr = $subnet->{cidr};
+	push @controller_config, "ip route $cidr 10.255.255.2 xvrf_$zoneid";
+    }
+    push(@{$config->{frr}->{''}}, @controller_config);
 }
 
 sub on_delete_hook {

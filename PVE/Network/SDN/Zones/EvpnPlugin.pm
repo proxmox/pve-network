@@ -35,6 +35,11 @@ sub properties {
 	    optional => 1, format => 'mac-addr'
 	},
 	'exitnodes' => get_standard_option('pve-node-list'),
+	'exitnodes-local-routing' => {
+	    type => 'boolean',
+	    description => "Allow exitnodes to connect to evpn guests",
+	    optional => 1
+	},
 	'advertise-subnets' => {
 	    type => 'boolean',
 	    description => "Advertise evpn subnets if you have silent hosts",
@@ -49,6 +54,7 @@ sub options {
 	'vrf-vxlan' => { optional => 0 },
 	controller => { optional => 0 },
 	exitnodes => { optional => 1 },
+	'exitnodes-local-routing' => { optional => 1 },
 	'advertise-subnets' => { optional => 1 },
 	mtu => { optional => 1 },
 	mac => { optional => 1 },
@@ -80,6 +86,8 @@ sub generate_sdn_config {
     my $loopback = $bgprouter->{loopback} if $bgprouter->{loopback};
     my ($ifaceip, $iface) = PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers, $loopback);
     my $is_evpn_gateway = $plugin_config->{'exitnodes'}->{$local_node};
+    my $exitnodes_local_routing = $plugin_config->{'exitnodes-local-routing'};
+
 
     my $mtu = 1450;
     $mtu = $interfaces_config->{$iface}->{mtu} - 50 if $interfaces_config->{$iface}->{mtu};
@@ -192,8 +200,28 @@ sub generate_sdn_config {
 	    push @iface_config, "vrf $vrf_iface";
 	    push(@{$config->{$brvrf}}, @iface_config) if !$config->{$brvrf};
 	}
-    }
 
+	if ( $is_evpn_gateway && $exitnodes_local_routing ) {
+	    #add a veth pair for local cross-vrf routing
+	    my $iface_xvrf = "xvrf_$zoneid";
+	    my $iface_xvrfp = "xvrfp_$zoneid";
+
+	    @iface_config = ();
+	    push @iface_config, "link-type veth";
+	    push @iface_config, "address 10.255.255.1/30";
+	    push @iface_config, "veth-peer-name $iface_xvrfp";
+	    push @iface_config, "mtu ".($mtu+50) if $mtu;
+	    push(@{$config->{$iface_xvrf}}, @iface_config) if !$config->{$iface_xvrf};
+
+	    @iface_config = ();
+	    push @iface_config, "link-type veth";
+	    push @iface_config, "address 10.255.255.2/30";
+	    push @iface_config, "veth-peer-name $iface_xvrf";
+	    push @iface_config, "vrf $vrf_iface";
+	    push @iface_config, "mtu ".($mtu+50) if $mtu;
+	    push(@{$config->{$iface_xvrfp}}, @iface_config) if !$config->{$iface_xvrfp};
+	}
+    }
     return $config;
 }
 

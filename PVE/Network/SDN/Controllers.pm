@@ -125,7 +125,7 @@ sub generate_controller_config {
 	my $controller = $controller_cfg->{ids}->{$controllerid};
 	if ($controller) {
 	    my $controller_plugin = PVE::Network::SDN::Controllers::Plugin->lookup($controller->{type});
-	    $controller_plugin->generate_controller_vnet_config($plugin_config, $controller, $zoneid, $id, $config);
+	    $controller_plugin->generate_controller_vnet_config($plugin_config, $controller, $zone, $zoneid, $id, $config);
 	}
     }
 
