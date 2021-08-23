@@ -1,0 +1,44 @@
+log syslog informational
+ip forwarding
+ipv6 forwarding
+frr defaults datacenter
+service integrated-vtysh-config
+hostname localhost
+!
+!
+vrf vrf_myzone
+ vni 1000
+exit-vrf
+!
+router bgp 65000
+ bgp router-id 192.168.0.1
+ no bgp default ipv4-unicast
+ coalesce-time 1000
+ neighbor VTEP peer-group
+ neighbor VTEP remote-as 65000
+ neighbor VTEP bfd
+ neighbor 192.168.0.2 peer-group VTEP
+ neighbor 192.168.0.3 peer-group VTEP
+ !
+ address-family l2vpn evpn
+  neighbor VTEP activate
+  advertise-all-vni
+ exit-address-family
+!
+router bgp 65000 vrf vrf_myzone
+ !
+ address-family ipv4 unicast
+  redistribute connected
+ exit-address-family
+ !
+ address-family ipv6 unicast
+  redistribute connected
+ exit-address-family
+ !
+ address-family l2vpn evpn
+  advertise ipv4 unicast
+  advertise ipv6 unicast
+ exit-address-family
+!
+line vty
+!

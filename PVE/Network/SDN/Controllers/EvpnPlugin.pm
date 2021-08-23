@@ -113,6 +113,7 @@ sub generate_controller_zone_config {
     my $vrf = "vrf_$id";
     my $vrfvxlan = $plugin_config->{'vrf-vxlan'};
     my $exitnodes = $plugin_config->{'exitnodes'};
+    my $advertisesubnets = $plugin_config->{'advertise-subnets'};
 
     my $asn = $controller->{asn};
     my $ebgp = undef;
@@ -164,6 +165,19 @@ sub generate_controller_zone_config {
 	#add default originate to announce 0.0.0.0/0 type5 route in evpn
 	push @controller_config, "default-originate ipv4";
 	push @controller_config, "default-originate ipv6";
+	push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"l2vpn evpn"}}, @controller_config);
+    } elsif ($advertisesubnets) {
+
+	@controller_config = ();
+	#redistribute connected networks
+	push @controller_config, "redistribute connected";
+	push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"ipv4 unicast"}}, @controller_config);
+	push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"ipv6 unicast"}}, @controller_config);
+
+	@controller_config = ();
+	#advertise connected networks type5 route in evpn
+	push @controller_config, "advertise ipv4 unicast";
+	push @controller_config, "advertise ipv6 unicast";
 	push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"l2vpn evpn"}}, @controller_config);
     }
 

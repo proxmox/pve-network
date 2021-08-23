@@ -35,6 +35,11 @@ sub properties {
 	    optional => 1, format => 'mac-addr'
 	},
 	'exitnodes' => get_standard_option('pve-node-list'),
+	'advertise-subnets' => {
+	    type => 'boolean',
+	    description => "Advertise evpn subnets if you have silent hosts",
+	    optional => 1
+	}
     };
 }
 
@@ -44,6 +49,7 @@ sub options {
 	'vrf-vxlan' => { optional => 0 },
 	controller => { optional => 0 },
 	exitnodes => { optional => 1 },
+	'advertise-subnets' => { optional => 1 },
 	mtu => { optional => 1 },
 	mac => { optional => 1 },
 	dns => { optional => 1 },
