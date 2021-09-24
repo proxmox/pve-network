@@ -308,7 +308,9 @@ sub tap_plug {
 
     my $vnet = PVE::Network::SDN::Vnets::get_vnet($bridge, 1);
     if (!$vnet) { # fallback for classic bridge
-	PVE::Network::tap_plug($iface, $bridge, $tag, $firewall, $trunks, $rate);
+	my $interfaces_config = PVE::INotify::read_file('interfaces');
+	my $disablelearning = 1 if $interfaces_config->{ifaces}->{$bridge} && $interfaces_config->{ifaces}->{$bridge}->{'bridge-disable-mac-learning'};
+	PVE::Network::tap_plug($iface, $bridge, $tag, $firewall, $trunks, $rate, $disablelearning);
 	return;
     }
 

@@ -25,6 +25,10 @@ sub properties {
 	'bridge' => {
 	    type => 'string',
 	},
+	'bridge-disable-mac-learning' => {
+	    type => 'boolean',
+            description => "Disable auto mac learning.",
+	}
     };
 }
 
@@ -33,6 +37,7 @@ sub options {
     return {
 	nodes => { optional => 1},
 	'bridge' => { optional => 0 },
+	'bridge-disable-mac-learning' => { optional => 1 },
 	mtu => { optional => 1 },
 	dns => { optional => 1 },
 	reversedns => { optional => 1 },

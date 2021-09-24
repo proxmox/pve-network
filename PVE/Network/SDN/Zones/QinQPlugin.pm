@@ -39,6 +39,7 @@ sub options {
 	nodes => { optional => 1},
 	'tag' => { optional => 0 },
 	'bridge' => { optional => 0 },
+        'bridge-disable-mac-learning' => { optional => 1 },
 	'mtu' => { optional => 1 },
 	'vlan-protocol' => { optional => 1 },
 	dns => { optional => 1 },
