@@ -54,15 +54,15 @@ sub get_vnet {
 
     return if !$vnetid;
 
-    my $cfg = {};
+    my $scfg = {};
     if($running) {
 	my $cfg = PVE::Network::SDN::running_config();
-	$cfg = $cfg->{vnets};
+	$scfg = $cfg->{vnets};
     } else {
-	$cfg = PVE::Network::SDN::Vnets::config();
+	$scfg = PVE::Network::SDN::Vnets::config();
     }
 
-    my $vnet = PVE::Network::SDN::Vnets::sdn_vnets_config($cfg, $vnetid, 1);
+    my $vnet = PVE::Network::SDN::Vnets::sdn_vnets_config($scfg, $vnetid, 1);
 
     return $vnet;
 }
