@@ -338,5 +338,19 @@ sub add_bridge_fdb {
     PVE::Network::add_bridge_fdb($iface, $macaddr, $firewall) if $plugin_config->{'bridge-disable-mac-learning'};
 }
 
+sub del_bridge_fdb {
+    my ($iface, $macaddr, $bridge, $firewall) = @_;
+
+    my $vnet = PVE::Network::SDN::Vnets::get_vnet($bridge, 1);
+    if (!$vnet) { # fallback for classic bridge
+	PVE::Network::del_bridge_fdb($iface, $macaddr, $firewall);
+	return;
+    }
+
+    my $plugin_config = get_plugin_config($vnet);
+    my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
+    PVE::Network::del_bridge_fdb($iface, $macaddr, $firewall) if $plugin_config->{'bridge-disable-mac-learning'};
+}
+
 1;
 
