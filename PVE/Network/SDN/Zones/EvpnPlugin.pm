@@ -44,6 +44,11 @@ sub properties {
 	    type => 'boolean',
 	    description => "Advertise evpn subnets if you have silent hosts",
 	    optional => 1
+	},
+	'disable-arp-nd-suppression' => {
+	    type => 'boolean',
+	    description => "Disable ipv4 arp && ipv6 neighbour discovery suppression",
+	    optional => 1
 	}
     };
 }
@@ -56,6 +61,7 @@ sub options {
 	exitnodes => { optional => 1 },
 	'exitnodes-local-routing' => { optional => 1 },
 	'advertise-subnets' => { optional => 1 },
+	'disable-arp-nd-suppression' => { optional => 1 },
 	mtu => { optional => 1 },
 	mac => { optional => 1 },
 	dns => { optional => 1 },
@@ -99,7 +105,7 @@ sub generate_sdn_config {
     push @iface_config, "vxlan-id $tag";
     push @iface_config, "vxlan-local-tunnelip $ifaceip" if $ifaceip;
     push @iface_config, "bridge-learning off";
-    push @iface_config, "bridge-arp-nd-suppress on";
+    push @iface_config, "bridge-arp-nd-suppress on" if !$plugin_config->{'disable-arp-nd-suppression'};
 
     push @iface_config, "mtu $mtu" if $mtu;
     push(@{$config->{$vxlan_iface}}, @iface_config) if !$config->{$vxlan_iface};
@@ -186,7 +192,7 @@ sub generate_sdn_config {
 	    push @iface_config, "vxlan-id $vrfvxlan";
 	    push @iface_config, "vxlan-local-tunnelip $ifaceip" if $ifaceip;
 	    push @iface_config, "bridge-learning off";
-	    push @iface_config, "bridge-arp-nd-suppress on";
+	    push @iface_config, "bridge-arp-nd-suppress on" if !$plugin_config->{'disable-arp-nd-suppression'};
 	    push @iface_config, "mtu $mtu" if $mtu;
 	    push(@{$config->{$iface_vrf_vxlan}}, @iface_config) if !$config->{$iface_vrf_vxlan};
 
