@@ -100,7 +100,7 @@ sub get_subnet_from_vnet_cidr {
 }
 
 sub get_next_free_cidr {
-    my ($vnetid, $hostname, $mac, $description, $ipversion) = @_;
+    my ($vnetid, $hostname, $mac, $description, $ipversion, $skipdns) = @_;
 
     my $vnet = PVE::Network::SDN::Vnets::get_vnet($vnetid);
     my $zoneid = $vnet->{zone};
@@ -121,7 +121,7 @@ sub get_next_free_cidr {
 	$subnetcount++;
 
 	eval {
-	    $ip = PVE::Network::SDN::Subnets::next_free_ip($zone, $subnetid, $subnet, $hostname, $mac, $description);
+	    $ip = PVE::Network::SDN::Subnets::next_free_ip($zone, $subnetid, $subnet, $hostname, $mac, $description, $skipdns);
 	};
 	warn $@ if $@;
 	last if $ip;
@@ -132,30 +132,30 @@ sub get_next_free_cidr {
 }
 
 sub add_cidr {
-    my ($vnetid, $cidr, $hostname, $mac, $description) = @_;
+    my ($vnetid, $cidr, $hostname, $mac, $description, $skipdns) = @_;
 
     return if !$vnetid;
     
     my ($zone, $subnetid, $subnet, $ip) = PVE::Network::SDN::Vnets::get_subnet_from_vnet_cidr($vnetid, $cidr);
-    PVE::Network::SDN::Subnets::add_ip($zone, $subnetid, $subnet, $ip, $hostname, $mac, $description);
+    PVE::Network::SDN::Subnets::add_ip($zone, $subnetid, $subnet, $ip, $hostname, $mac, $description, undef, $skipdns);
 }
 
 sub update_cidr {
-    my ($vnetid, $cidr, $hostname, $oldhostname, $mac, $description) = @_;
+    my ($vnetid, $cidr, $hostname, $oldhostname, $mac, $description, $skipdns) = @_;
 
     return if !$vnetid;
 
     my ($zone, $subnetid, $subnet, $ip) = PVE::Network::SDN::Vnets::get_subnet_from_vnet_cidr($vnetid, $cidr);
-    PVE::Network::SDN::Subnets::update_ip($zone, $subnetid, $subnet, $ip, $hostname, $oldhostname, $mac, $description);
+    PVE::Network::SDN::Subnets::update_ip($zone, $subnetid, $subnet, $ip, $hostname, $oldhostname, $mac, $description, $skipdns);
 }
 
 sub del_cidr {
-    my ($vnetid, $cidr, $hostname) = @_;
+    my ($vnetid, $cidr, $hostname, $skipdns) = @_;
 
     return if !$vnetid;
 
     my ($zone, $subnetid, $subnet, $ip) = PVE::Network::SDN::Vnets::get_subnet_from_vnet_cidr($vnetid, $cidr);
-    PVE::Network::SDN::Subnets::del_ip($zone, $subnetid, $subnet, $ip, $hostname);
+    PVE::Network::SDN::Subnets::del_ip($zone, $subnetid, $subnet, $ip, $hostname, $skipdns);
 }
 
 
