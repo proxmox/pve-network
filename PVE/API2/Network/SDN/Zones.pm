@@ -284,9 +284,7 @@ __PACKAGE__->register_method ({
 		}
 	    }
 
-	    for my $k (%$opts) {
-		$scfg->{$k} = $opts->{$k};
-	    }
+	    $zone_cfg->{ids}->{$id} = $opts;
 
 	    my $dnsserver = $opts->{dns};
 	    raise_param_exc({ dns => "$dnsserver don't exist"}) if $dnsserver && !$dns_cfg->{ids}->{$dnsserver};
