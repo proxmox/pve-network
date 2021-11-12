@@ -1,4 +1,23 @@
-libpve-network-perl (0.6.1) pve; urgency=medium
+libpve-network-perl (0.6.2) bullseye; urgency=medium
+
+  * evpn : add "ip route del vrf vrf_myzone unreachable default metric
+    4278198272" on exit node
+
+  * get_local_vnets: add permissions on /sdn/vnets/*
+
+  * evpn : add advertise-subnets and exitnodes-local-routing option
+
+  * vnet/subnet : add skipdns option
+
+  * api: zones: fix update
+
+  * zones: evpn: add disable-arp-nd-suppression option
+
+  * vnets: alias: check pattern and fix regex
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 12 Nov 2021 19:33:54 +0100
+
+libpve-network-perl (0.6.1) bullseye; urgency=medium
 
   * sdn: get local vnets : add IPAM and VLAN-aware values
 
@@ -8,7 +27,7 @@ libpve-network-perl (0.6.1) pve; urgency=medium
 
  -- Proxmox Support Team <support@proxmox.com>  Mon, 05 Jul 2021 19:07:52 +0200
 
-libpve-network-perl (0.6.0) pve; urgency=medium
+libpve-network-perl (0.6.0) buster; urgency=medium
 
   * zones: QinQ: classic bridge: fix bridge zone name with multiple zones/vnets
 
