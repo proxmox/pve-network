@@ -12,8 +12,9 @@ use PVE::JSONSchema qw(get_standard_option);
 use base qw(PVE::SectionConfig);
 
 PVE::Cluster::cfs_register_file('sdn/controllers.cfg',
-				 sub { __PACKAGE__->parse_config(@_); },
-				 sub { __PACKAGE__->write_config(@_); });
+    sub { __PACKAGE__->parse_config(@_); },
+    sub { __PACKAGE__->write_config(@_); }
+);
 
 PVE::JSONSchema::register_standard_option('pve-sdn-controller-id', {
     description => "The SDN controller object identifier.",
