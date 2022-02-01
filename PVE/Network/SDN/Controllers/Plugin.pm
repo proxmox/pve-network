@@ -25,7 +25,7 @@ PVE::JSONSchema::register_format('pve-sdn-controller-id', \&parse_sdn_controller
 sub parse_sdn_controller_id {
     my ($id, $noerr) = @_;
 
-    if ($id !~ m/^[a-z][a-z0-9]*[a-z0-9]$/i) {
+    if ($id !~ m/^[a-z][a-z0-9_-]*[a-z0-9]$/i) {
         return undef if $noerr;
         die "controller ID '$id' contains illegal characters\n";
     }
