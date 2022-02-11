@@ -27,6 +27,7 @@ router bgp 65000
  exit-address-family
 !
 router bgp 65000 vrf vrf_myzone
+ bgp router-id 192.168.0.1
  !
  address-family ipv4 unicast
   redistribute connected

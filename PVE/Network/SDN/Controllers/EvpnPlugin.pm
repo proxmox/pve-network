@@ -123,6 +123,7 @@ sub generate_controller_zone_config {
     my $exitnodes_local_routing = $plugin_config->{'exitnodes-local-routing'};
 
     my $asn = $controller->{asn};
+    my @peers = PVE::Tools::split_list($controller->{'peers'}) if $controller->{'peers'};
     my $ebgp = undef;
     my $loopback = undef;
     my $autortas = undef;
@@ -136,6 +137,8 @@ sub generate_controller_zone_config {
 
     return if !$vrf || !$vrfvxlan || !$asn;
 
+    my ($ifaceip, $interface) = PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers, $loopback);
+
     # vrf
     my @controller_config = ();
     push @controller_config, "vni $vrfvxlan";
@@ -143,6 +146,7 @@ sub generate_controller_zone_config {
 
     #main vrf router
     @controller_config = ();
+    push @controller_config, "bgp router-id $ifaceip";
     push @controller_config, "no bgp ebgp-requires-policy" if $ebgp;
 #    push @controller_config, "!";
     push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{""}}, @controller_config);
