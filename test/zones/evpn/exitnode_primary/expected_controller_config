@@ -1,9 +1,8 @@
-log syslog informational
-ip forwarding
-ipv6 forwarding
+frr version 8.0.1
 frr defaults datacenter
-service integrated-vtysh-config
 hostname localhost
+log syslog informational
+service integrated-vtysh-config
 !
 !
 vrf vrf_myzone
