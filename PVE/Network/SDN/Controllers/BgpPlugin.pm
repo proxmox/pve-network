@@ -81,8 +81,7 @@ sub generate_controller_config {
     my @controller_config = (
         "bgp router-id $ifaceip",
         "no bgp default ipv4-unicast",
-        "coalesce-time 1000",
-        "bgp network import-check"
+        "coalesce-time 1000"
     );
 
     push(@{$bgp->{""}}, @controller_config) if keys %{$bgp} == 0;
