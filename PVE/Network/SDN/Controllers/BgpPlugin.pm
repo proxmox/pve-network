@@ -19,6 +19,10 @@ sub type {
 
 sub properties {
     return {
+	'bgp-multipath-as-path-relax' => {
+	    type => 'boolean',
+	    optional => 1,
+	},
 	ebgp => {
 	    type => 'boolean',
 	    optional => 1,
@@ -41,6 +45,7 @@ sub options {
 	'node' => { optional => 0 },
 	'asn' => { optional => 0 },
 	'peers' => { optional => 0 },
+	'bgp-multipath-as-path-relax' => { optional => 1 },
 	'ebgp' => { optional => 1 },
 	'ebgp-multihop' => { optional => 1 },
 	'loopback' => { optional => 1 },
@@ -58,6 +63,8 @@ sub generate_controller_config {
     my $ebgp = $plugin_config->{ebgp};
     my $ebgp_multihop = $plugin_config->{'ebgp-multihop'};
     my $loopback = $plugin_config->{loopback};
+    my $multipath_relax = $plugin_config->{'bgp-multipath-as-path-relax'};
+
     my $local_node = PVE::INotify::nodename();
 
 
@@ -85,6 +92,8 @@ sub generate_controller_config {
 	push @controller_config, "no bgp ebgp-requires-policy";
 	push @controller_config, "bgp disable-ebgp-connected-route-check" if $loopback;
     }
+
+    push @controller_config, "bgp bestpath as-path multipath-relax" if $multipath_relax;
 
     #BGP neighbors
     if(@peers) {
