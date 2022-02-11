@@ -122,8 +122,11 @@ sub generate_controller_config {
     if ($loopback) {
 	push(@{$config->{frr}->{''}}, "ip prefix-list loopbacks_ips seq 10 permit 0.0.0.0/0 le 32");
 	push(@{$config->{frr}->{''}}, "ip protocol bgp route-map correct_src");
-	push(@{$config->{frr}->{'route-map'}->{'correct_src permit 1'}}, "match ip address prefix-list loopbacks_ips");
-	push(@{$config->{frr}->{'route-map'}->{'correct_src permit 1'}}, "set src $ifaceip");
+
+	my $routemap_config = [];
+	push @{$routemap_config}, "match ip address prefix-list loopbacks_ips";
+	push @{$routemap_config}, "set src $ifaceip";
+	push(@{$config->{frr_routemap}->{'correct_src'}}, $routemap_config);
     }
 
     return $config;

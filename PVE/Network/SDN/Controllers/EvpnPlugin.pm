@@ -99,10 +99,13 @@ sub generate_controller_config {
 
     # address-family l2vpn
     @controller_config = ();
+    push @controller_config, "neighbor VTEP route-map MAP_VTEP_OUT out";
     push @controller_config, "neighbor VTEP activate";
     push @controller_config, "advertise-all-vni";
     push @controller_config, "autort as $autortas" if $autortas;
     push(@{$bgp->{"address-family"}->{"l2vpn evpn"}}, @controller_config);
+
+    push(@{$config->{frr_routemap}->{'MAP_VTEP_OUT'}}, []);
 
     return $config;
 }
@@ -115,6 +118,7 @@ sub generate_controller_zone_config {
     my $vrf = "vrf_$id";
     my $vrfvxlan = $plugin_config->{'vrf-vxlan'};
     my $exitnodes = $plugin_config->{'exitnodes'};
+    my $exitnodes_primary = $plugin_config->{'exitnodes-primary'};
     my $advertisesubnets = $plugin_config->{'advertise-subnets'};
     my $exitnodes_local_routing = $plugin_config->{'exitnodes-local-routing'};
 
@@ -151,6 +155,14 @@ sub generate_controller_zone_config {
     my $is_gateway = $exitnodes->{$local_node};
 
     if ($is_gateway) {
+
+        if($exitnodes_primary && $exitnodes_primary ne $local_node) {
+	    my $routemap_config = ();
+	    push @{$routemap_config}, "match evpn vni $vrfvxlan";
+	    push @{$routemap_config}, "match evpn route-type prefix";
+	    push @{$routemap_config}, "set metric 200";
+	    unshift(@{$config->{frr_routemap}->{'MAP_VTEP_OUT'}}, $routemap_config);
+        }
 
 	if (!$exitnodes_local_routing) {
 	    @controller_config = ();
@@ -260,7 +272,6 @@ sub sort_frr_config {
     $order->{'ipv4 unicast'} = 1;
     $order->{'ipv6 unicast'} = 2;
     $order->{'l2vpn evpn'} = 3;
-    $order->{'route-map'} = 200;
 
     my $a_val = 100;
     my $b_val = 100;
@@ -286,7 +297,6 @@ sub generate_frr_recurse{
    $keylist->{vrf} = 1;
    $keylist->{'address-family'} = 1;
    $keylist->{router} = 1;
-   $keylist->{'route-map'} = 1;
 
    my $exitkeylist = {};
    $exitkeylist->{vrf} = 1;
@@ -324,6 +334,23 @@ sub generate_frr_recurse{
     }
 }
 
+sub generate_frr_routemap {
+   my ($final_config, $routemaps) = @_;
+
+   foreach my $id (sort keys %$routemaps) {
+
+	my $routemap = $routemaps->{$id};
+	my $order = 0;
+	foreach my $seq (@$routemap) {
+		$order++;
+		my @config = ();
+		push @config, "!";
+		push @config, "route-map $id permit $order";
+		push @config, map { " $_" } @$seq;
+		push @{$final_config}, @config;
+	}
+   }
+}
 sub generate_controller_rawconfig {
     my ($class, $plugin_config, $config) = @_;
 
@@ -340,6 +367,7 @@ sub generate_controller_rawconfig {
 
     if (-e "/etc/frr/frr.conf.local") {
 	generate_frr_recurse($final_config, $config->{frr}->{vrf}, "vrf", 1);
+	generate_frr_routemap($final_config, $config->{frr_routemap});
 	push @{$final_config}, "!";
 
 	my $local_conf = file_get_contents("/etc/frr/frr.conf.local");
@@ -347,6 +375,7 @@ sub generate_controller_rawconfig {
 	push @{$final_config}, $local_conf;
     } else {
 	generate_frr_recurse($final_config, $config->{frr}, undef, 0);
+	generate_frr_routemap($final_config, $config->{frr_routemap});
     }
 
     push @{$final_config}, "!";

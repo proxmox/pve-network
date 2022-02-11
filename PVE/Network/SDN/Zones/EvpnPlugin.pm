@@ -40,6 +40,8 @@ sub properties {
 	    description => "Allow exitnodes to connect to evpn guests",
 	    optional => 1
 	},
+	'exitnodes-primary' => get_standard_option('pve-node', {
+	    description => "Force traffic to this exitnode first."}),
 	'advertise-subnets' => {
 	    type => 'boolean',
 	    description => "Advertise evpn subnets if you have silent hosts",
@@ -60,6 +62,7 @@ sub options {
 	controller => { optional => 0 },
 	exitnodes => { optional => 1 },
 	'exitnodes-local-routing' => { optional => 1 },
+	'exitnodes-primary' => { optional => 1 },
 	'advertise-subnets' => { optional => 1 },
 	'disable-arp-nd-suppression' => { optional => 1 },
 	mtu => { optional => 1 },
