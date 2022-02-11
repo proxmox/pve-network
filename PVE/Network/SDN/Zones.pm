@@ -235,6 +235,7 @@ sub status {
     my $zone_status = {};
 
     for my $id (sort keys %{$zone_cfg->{ids}}) {
+	next if defined($zone_cfg->{ids}->{$id}->{nodes}) && !$zone_cfg->{ids}->{$id}->{nodes}->{$nodename};
 	$zone_status->{$id}->{status} = $err_config ? 'pending' : 'available';
     }
 
