@@ -5,6 +5,8 @@ frr defaults datacenter
 service integrated-vtysh-config
 hostname localhost
 !
+ip prefix-list loopbacks_ips seq 10 permit 0.0.0.0/0 le 32
+ip protocol bgp route-map correct_src
 !
 vrf vrf_myzone
  vni 1000
@@ -48,6 +50,10 @@ router bgp 65001 vrf vrf_myzone
   route-target import 65000:1000
   route-target export 65000:1000
  exit-address-family
+!
+route-map correct_src permit 1
+ match ip address prefix-list loopbacks_ips
+ set src 192.168.0.1
 !
 line vty
 !

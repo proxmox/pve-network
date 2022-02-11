@@ -258,6 +258,7 @@ sub sort_frr_config {
     $order->{'ipv4 unicast'} = 1;
     $order->{'ipv6 unicast'} = 2;
     $order->{'l2vpn evpn'} = 3;
+    $order->{'route-map'} = 200;
 
     my $a_val = 100;
     my $b_val = 100;
@@ -283,6 +284,7 @@ sub generate_frr_recurse{
    $keylist->{vrf} = 1;
    $keylist->{'address-family'} = 1;
    $keylist->{router} = 1;
+   $keylist->{'route-map'} = 1;
 
    my $exitkeylist = {};
    $exitkeylist->{vrf} = 1;

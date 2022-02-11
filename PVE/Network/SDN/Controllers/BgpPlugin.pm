@@ -110,6 +110,13 @@ sub generate_controller_config {
 	push(@{$bgp->{"address-family"}->{"$ipversion unicast"}}, "neighbor BGP soft-reconfiguration inbound");
     }
 
+    if ($loopback) {
+	push(@{$config->{frr}->{''}}, "ip prefix-list loopbacks_ips seq 10 permit 0.0.0.0/0 le 32");
+	push(@{$config->{frr}->{''}}, "ip protocol bgp route-map correct_src");
+	push(@{$config->{frr}->{'route-map'}->{'correct_src permit 1'}}, "match ip address prefix-list loopbacks_ips");
+	push(@{$config->{frr}->{'route-map'}->{'correct_src permit 1'}}, "set src $ifaceip");
+    }
+
     return $config;
 }
 
