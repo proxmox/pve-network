@@ -121,6 +121,7 @@ sub generate_controller_zone_config {
     my $exitnodes_primary = $plugin_config->{'exitnodes-primary'};
     my $advertisesubnets = $plugin_config->{'advertise-subnets'};
     my $exitnodes_local_routing = $plugin_config->{'exitnodes-local-routing'};
+    my $rt_import = [PVE::Tools::split_list($plugin_config->{'rt-import'})] if $plugin_config->{'rt-import'};
 
     my $asn = $controller->{asn};
     my @peers = PVE::Tools::split_list($controller->{'peers'}) if $controller->{'peers'};
@@ -199,6 +200,14 @@ sub generate_controller_zone_config {
 	#advertise connected networks type5 route in evpn
 	push @controller_config, "advertise ipv4 unicast";
 	push @controller_config, "advertise ipv6 unicast";
+	push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"l2vpn evpn"}}, @controller_config);
+    }
+
+    if($rt_import) {
+	@controller_config = ();
+	foreach my $rt (sort @{$rt_import}) {
+	    push @controller_config, "route-target import $rt";
+	}
 	push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"l2vpn evpn"}}, @controller_config);
     }
 

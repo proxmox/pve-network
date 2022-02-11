@@ -19,6 +19,26 @@ sub type {
     return 'evpn';
 }
 
+PVE::JSONSchema::register_format('pve-sdn-bgp-rt', \&pve_verify_sdn_bgp_rt);
+sub pve_verify_sdn_bgp_rt {
+    my ($rt) = @_;
+
+    if ($rt =~ m/^(\d+):(\d+)$/) {
+	my $asn = $1;
+	my $id = $2;
+
+	if ($asn < 0 || $asn > 4294967295) {
+	    die "value does not look like a valid bgp route-target\n";
+	}
+	if ($id < 0 || $id > 4294967295) {
+	    die "value does not look like a valid bgp route-target\n";
+	}
+    } else {
+	die "value does not look like a valid bgp route-target\n";
+    }
+    return $rt;
+}
+
 sub properties {
     return {
 	'vrf-vxlan' => {
@@ -51,7 +71,12 @@ sub properties {
 	    type => 'boolean',
 	    description => "Disable ipv4 arp && ipv6 neighbour discovery suppression",
 	    optional => 1
-	}
+	},
+	'rt-import' => {
+	    type => 'string',
+	    description => "Route-Target import",
+	    optional => 1, format => 'pve-sdn-bgp-rt-list'
+        }
     };
 }
 
@@ -65,6 +90,7 @@ sub options {
 	'exitnodes-primary' => { optional => 1 },
 	'advertise-subnets' => { optional => 1 },
 	'disable-arp-nd-suppression' => { optional => 1 },
+	'rt-import' => { optional => 1 },
 	mtu => { optional => 1 },
 	mac => { optional => 1 },
 	dns => { optional => 1 },
