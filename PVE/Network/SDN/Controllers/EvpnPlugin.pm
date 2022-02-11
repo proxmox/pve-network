@@ -22,6 +22,8 @@ sub properties {
 	asn => {
 	    type => 'integer',
 	    description => "autonomous system number",
+	    minimum => 0,
+	    maximum => 4294967296
 	},
 	peers => {
 	    description => "peers address list.",
