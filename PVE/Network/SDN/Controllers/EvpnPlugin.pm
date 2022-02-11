@@ -148,7 +148,6 @@ sub generate_controller_zone_config {
     #main vrf router
     @controller_config = ();
     push @controller_config, "bgp router-id $ifaceip";
-    push @controller_config, "no bgp ebgp-requires-policy" if $ebgp;
 #    push @controller_config, "!";
     push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{""}}, @controller_config);
 

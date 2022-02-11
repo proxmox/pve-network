@@ -89,7 +89,6 @@ sub generate_controller_config {
 
     @controller_config = ();
     if($ebgp) {
-	push @controller_config, "no bgp ebgp-requires-policy";
 	push @controller_config, "bgp disable-ebgp-connected-route-check" if $loopback;
     }
 

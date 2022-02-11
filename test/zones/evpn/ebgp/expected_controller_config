@@ -19,7 +19,6 @@ router bgp 65001
  neighbor VTEP bfd
  neighbor 192.168.0.2 peer-group VTEP
  neighbor 192.168.0.3 peer-group VTEP
- no bgp ebgp-requires-policy
  neighbor BGP peer-group
  neighbor BGP remote-as external
  neighbor BGP bfd
@@ -41,7 +40,6 @@ router bgp 65001
 !
 router bgp 65001 vrf vrf_myzone
  bgp router-id 192.168.0.1
- no bgp ebgp-requires-policy
  !
  address-family l2vpn evpn
   route-target import 65000:1000
