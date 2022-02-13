@@ -1,3 +1,21 @@
+libpve-network-perl (0.7.0) bullseye; urgency=medium
+
+  * controllers:
+    + allow minus and underscore in IDs again
+    + bgp: use loopback ip src for loopback network
+    + bgp: add bgp-multipath-as-path-relax option
+    + evpn: add min/max value to asn
+    + evpn/bgp : add exitnodes-primary && rework route-map
+    + evpn: add missing bgp router-id in vrf
+    + evpn: remove "no bgp ebgp-requires-policy"
+
+  * zones status: skip reporting on nodes not configured for a zone
+
+  * zones evpn: add rt-import allowing one to import external route target list
+    from external evpn network, e.g., for  DC inter-connect
+
+ -- Proxmox Support Team <support@proxmox.com>  Sun, 13 Feb 2022 15:04:49 +0100
+
 libpve-network-perl (0.6.2) bullseye; urgency=medium
 
   * evpn : add "ip route del vrf vrf_myzone unreachable default metric
