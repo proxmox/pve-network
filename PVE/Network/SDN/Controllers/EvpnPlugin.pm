@@ -428,7 +428,13 @@ sub reload_controller {
     };
 
     if (-e $conf_file && -e $bin_path) {
-	run_command([$bin_path, '--stdout', '--reload', $conf_file], outfunc => {}, errfunc => $err);
+	eval {
+	    run_command([$bin_path, '--stdout', '--reload', $conf_file], outfunc => {}, errfunc => $err);
+	};
+	if ($@) {
+	    warn "frr reload command fail. Restarting frr.";
+	    eval { run_command(['systemctl', 'restart', 'frr']); };
+	}
     }
 }
 
