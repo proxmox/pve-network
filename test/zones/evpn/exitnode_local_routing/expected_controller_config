@@ -21,6 +21,7 @@ router bgp 65000
  neighbor 192.168.0.3 peer-group VTEP
  !
  address-family l2vpn evpn
+  neighbor VTEP route-map MAP_VTEP_IN in
   neighbor VTEP route-map MAP_VTEP_OUT out
   neighbor VTEP activate
   advertise-all-vni
@@ -33,6 +34,11 @@ router bgp 65000 vrf vrf_myzone
   default-originate ipv4
   default-originate ipv6
  exit-address-family
+!
+route-map MAP_VTEP_IN deny 1
+ match evpn route-type prefix
+!
+route-map MAP_VTEP_IN permit 2
 !
 route-map MAP_VTEP_OUT permit 1
 !

@@ -31,6 +31,7 @@ router bgp 65001
  exit-address-family
  !
  address-family l2vpn evpn
+  neighbor VTEP route-map MAP_VTEP_IN in
   neighbor VTEP route-map MAP_VTEP_OUT out
   neighbor VTEP activate
   advertise-all-vni
@@ -44,6 +45,8 @@ router bgp 65001 vrf vrf_myzone
   route-target import 65000:1000
   route-target export 65000:1000
  exit-address-family
+!
+route-map MAP_VTEP_IN permit 1
 !
 route-map MAP_VTEP_OUT permit 1
 !

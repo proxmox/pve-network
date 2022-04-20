@@ -99,13 +99,16 @@ sub generate_controller_config {
 
     # address-family l2vpn
     @controller_config = ();
+    push @controller_config, "neighbor VTEP route-map MAP_VTEP_IN in";
     push @controller_config, "neighbor VTEP route-map MAP_VTEP_OUT out";
     push @controller_config, "neighbor VTEP activate";
     push @controller_config, "advertise-all-vni";
     push @controller_config, "autort as $autortas" if $autortas;
     push(@{$bgp->{"address-family"}->{"l2vpn evpn"}}, @controller_config);
 
-    push(@{$config->{frr_routemap}->{'MAP_VTEP_OUT'}}, []);
+    my $routemap = { rule => undef, action => "permit" };
+    push(@{$config->{frr_routemap}->{'MAP_VTEP_IN'}}, $routemap );
+    push(@{$config->{frr_routemap}->{'MAP_VTEP_OUT'}}, $routemap );
 
     return $config;
 }
@@ -160,13 +163,21 @@ sub generate_controller_zone_config {
 
     if ($is_gateway) {
 
-        if($exitnodes_primary && $exitnodes_primary ne $local_node) {
+	if(!$exitnodes_primary || $exitnodes_primary eq $local_node) {
+	    #filter default type5 route coming from other exit nodes on primary node or both nodes if no primary is defined.
+	    my $routemap_config = ();
+	    push @{$routemap_config}, "match evpn route-type prefix";
+	    my $routemap = { rule => $routemap_config, action => "deny" };
+	    unshift(@{$config->{frr_routemap}->{'MAP_VTEP_IN'}}, $routemap);
+	} elsif ($exitnodes_primary ne $local_node) {
 	    my $routemap_config = ();
 	    push @{$routemap_config}, "match evpn vni $vrfvxlan";
 	    push @{$routemap_config}, "match evpn route-type prefix";
 	    push @{$routemap_config}, "set metric 200";
-	    unshift(@{$config->{frr_routemap}->{'MAP_VTEP_OUT'}}, $routemap_config);
+	    my $routemap = { rule => $routemap_config, action => "permit" };
+	    unshift(@{$config->{frr_routemap}->{'MAP_VTEP_OUT'}}, $routemap);
         }
+
 
 	if (!$exitnodes_local_routing) {
 	    @controller_config = ();
@@ -355,10 +366,12 @@ sub generate_frr_routemap {
 	my $order = 0;
 	foreach my $seq (@$routemap) {
 		$order++;
+		next if !defined($seq->{action});
 		my @config = ();
 		push @config, "!";
-		push @config, "route-map $id permit $order";
-		push @config, map { " $_" } @$seq;
+		push @config, "route-map $id $seq->{action} $order";
+		my $rule = $seq->{rule};
+		push @config, map { " $_" } @$rule;
 		push @{$final_config}, @config;
 	}
    }
