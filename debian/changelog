@@ -1,3 +1,14 @@
+libpve-network-perl (0.7.1) bullseye; urgency=medium
+
+  * controllers: evpn: use frr restart if reload fails
+
+  * zonee: TAP plug: add support for disable bridge learning and helpers to
+    manage FDB entries manually
+
+  * controllers: evpn: fix multiple exit-nodes with route-map filtering
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 27 Apr 2022 10:33:13 +0200
+
 libpve-network-perl (0.7.0) bullseye; urgency=medium
 
   * controllers:
