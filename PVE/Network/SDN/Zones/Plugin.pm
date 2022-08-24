@@ -227,7 +227,9 @@ sub tap_plug {
     my $vlan_aware = PVE::Tools::file_read_firstline("/sys/class/net/$vnetid/bridge/vlan_filtering");
     die "vm vlans are not allowed on vnet $vnetid" if !$vlan_aware && ($tag || $trunks);
 
-    PVE::Network::tap_plug($iface, $vnetid, $tag, $firewall, $trunks, $rate, $plugin_config->{'bridge-disable-mac-learning'});
+    my $opts = {};
+    $opts->{learning} = 0 if $plugin_config->{'bridge-disable-mac-learning'};
+    PVE::Network::tap_plug($iface, $vnetid, $tag, $firewall, $trunks, $rate, $opts);
 }
 
 #helper
