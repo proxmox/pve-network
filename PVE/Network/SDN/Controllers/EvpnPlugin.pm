@@ -376,6 +376,28 @@ sub generate_frr_routemap {
 	}
    }
 }
+
+sub generate_frr_accesslist {
+    my ($final_config, $accesslists) = @_;
+
+    my @config = ();
+
+    for my $id (sort keys %$accesslists) {
+
+	my $accesslist = $accesslists->{$id};
+
+	for my $seq (sort keys %$accesslist) {
+	    my $rule = $accesslist->{$seq};
+	    push @config, "access-list $id seq $seq $rule";
+	}
+    }
+
+    if(@config > 0) {
+	push @{$final_config}, "!";
+	push @{$final_config}, @config;
+    }
+}
+
 sub generate_controller_rawconfig {
     my ($class, $plugin_config, $config) = @_;
 
@@ -390,17 +412,13 @@ sub generate_controller_rawconfig {
     push @{$final_config}, "!";
 
     if (-e "/etc/frr/frr.conf.local") {
-	generate_frr_recurse($final_config, $config->{frr}->{vrf}, "vrf", 1);
-	generate_frr_routemap($final_config, $config->{frr_routemap});
-	push @{$final_config}, "!";
-
 	my $local_conf = file_get_contents("/etc/frr/frr.conf.local");
-	chomp ($local_conf);
-	push @{$final_config}, $local_conf;
-    } else {
-	generate_frr_recurse($final_config, $config->{frr}, undef, 0);
-	generate_frr_routemap($final_config, $config->{frr_routemap});
+	parse_merge_frr_local_config($config, $local_conf);
     }
+
+    generate_frr_recurse($final_config, $config->{frr}, undef, 0);
+    generate_frr_accesslist($final_config, $config->{frr_access_list});
+    generate_frr_routemap($final_config, $config->{frr_routemap});
 
     push @{$final_config}, "!";
     push @{$final_config}, "line vty";
@@ -410,6 +428,65 @@ sub generate_controller_rawconfig {
 
     return if !$rawconfig;
     return $rawconfig;
+}
+
+sub parse_merge_frr_local_config {
+    my ($config, $local_conf) = @_;
+
+    my $section = \$config->{""};
+    my $router = undef;
+    my $routemap = undef;
+    my $routemap_config = ();
+    my $routemap_action = undef;
+
+    while ($local_conf =~ /^\s*(.+?)\s*$/gm) {
+        my $line = $1;
+	$line =~ s/^\s+|\s+$//g;
+
+	if ($line =~ m/^router (.+)$/) {
+	    $router = $1;
+	    $section = \$config->{'frr'}->{'router'}->{$router}->{""};
+	    next;
+	} elsif ($line =~ m/^vrf (.+)$/) {
+	    $section = \$config->{'frr'}->{'vrf'}->{$1};
+	    next;
+	} elsif ($line =~ m/address-family (.+)$/) {
+	    $section = \$config->{'frr'}->{'router'}->{$router}->{'address-family'}->{$1};
+	    next;
+	} elsif ($line =~ m/^route-map (.+) (permit|deny) (\d+)/) {
+	    $routemap = $1;
+	    $routemap_config = ();
+	    $routemap_action = $2;
+	    $section = \$config->{'frr_routemap'}->{$routemap};
+	    next;
+	} elsif ($line =~ m/^access-list (.+) seq (\d+) (.+)$/) {
+	    $config->{'frr_access_list'}->{$1}->{$2} = $3;
+	    next;
+	} elsif($line =~ m/^exit-address-family$/) {
+	    next;
+	} elsif($line =~ m/^exit$/) {
+	    if($router) {
+		$section = \$config->{''};
+		$router = undef;
+	    } elsif($routemap) {
+		push(@{$$section}, { rule => $routemap_config, action => $routemap_action });
+		$section = \$config->{''};
+		$routemap = undef;
+		$routemap_action = undef;
+		$routemap_config = ();
+	    }
+	    next;
+	} elsif($line =~ m/!/) {
+	    next;
+	}
+
+	next if !$section;
+	if($routemap) {
+	    push(@{$routemap_config}, $line);
+	} else {
+	    push(@{$$section}, $line);
+	}
+    }
 }
 
 sub write_controller_config {
