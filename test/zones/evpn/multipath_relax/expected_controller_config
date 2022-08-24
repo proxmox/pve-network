@@ -1,4 +1,4 @@
-frr version 8.0.1
+frr version 8.2.2
 frr defaults datacenter
 hostname localhost
 log syslog informational

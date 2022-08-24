@@ -382,7 +382,7 @@ sub generate_controller_rawconfig {
     my $nodename = PVE::INotify::nodename();
 
     my $final_config = [];
-    push @{$final_config}, "frr version 8.0.1";
+    push @{$final_config}, "frr version 8.2.2";
     push @{$final_config}, "frr defaults datacenter";
     push @{$final_config}, "hostname $nodename";
     push @{$final_config}, "log syslog informational";
