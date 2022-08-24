@@ -25,13 +25,17 @@ router bgp 65000
   neighbor VTEP activate
   advertise-all-vni
  exit-address-family
+exit
 !
 router bgp 65000 vrf vrf_myzone
  bgp router-id 192.168.0.1
+exit
 !
 route-map MAP_VTEP_IN permit 1
+exit
 !
 route-map MAP_VTEP_OUT permit 1
+exit
 !
 line vty
 !

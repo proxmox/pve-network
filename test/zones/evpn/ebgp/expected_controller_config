@@ -37,6 +37,7 @@ router bgp 65001
   advertise-all-vni
   autort as 65000
  exit-address-family
+exit
 !
 router bgp 65001 vrf vrf_myzone
  bgp router-id 192.168.0.1
@@ -45,10 +46,13 @@ router bgp 65001 vrf vrf_myzone
   route-target import 65000:1000
   route-target export 65000:1000
  exit-address-family
+exit
 !
 route-map MAP_VTEP_IN permit 1
+exit
 !
 route-map MAP_VTEP_OUT permit 1
+exit
 !
 line vty
 !

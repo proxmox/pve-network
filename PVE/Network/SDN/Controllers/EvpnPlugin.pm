@@ -325,6 +325,9 @@ sub generate_frr_recurse{
    $exitkeylist->{vrf} = 1;
    $exitkeylist->{'address-family'} = 1;
 
+   my $simple_exitkeylist = {};
+   $simple_exitkeylist->{router} = 1;
+
    # FIXME: make this generic
    my $paddinglevel = undef;
    if ($level == 1 || $level == 2) {
@@ -349,6 +352,7 @@ sub generate_frr_recurse{
 	    generate_frr_recurse($final_config, $option, $key, $level+1);
 
 	    push @{$final_config}, $padding."exit-$parentkey" if $parentkey && defined($exitkeylist->{$parentkey});
+	    push @{$final_config}, $padding."exit" if $parentkey && defined($simple_exitkeylist->{$parentkey});
 	}
     }
 
@@ -373,6 +377,7 @@ sub generate_frr_routemap {
 		my $rule = $seq->{rule};
 		push @config, map { " $_" } @$rule;
 		push @{$final_config}, @config;
+		push @{$final_config}, "exit";
 	}
    }
 }
