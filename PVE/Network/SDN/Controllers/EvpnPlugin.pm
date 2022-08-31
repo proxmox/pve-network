@@ -53,7 +53,7 @@ sub generate_controller_config {
     my $loopback = undef;
     my $autortas = undef;
     my $bgprouter = find_bgp_controller($local_node, $controller_cfg);
-    if($bgprouter) {
+    if ($bgprouter) {
 	$ebgp = 1 if $plugin_config->{'asn'} ne $bgprouter->{asn};
 	$loopback = $bgprouter->{loopback} if $bgprouter->{loopback};
 	$asn = $bgprouter->{asn} if $bgprouter->{asn};
@@ -78,7 +78,7 @@ sub generate_controller_config {
     push(@{$bgp->{""}}, @controller_config) if keys %{$bgp} == 0;
 
     @controller_config = ();
-    
+
     #VTEP neighbors
     push @controller_config, "neighbor VTEP peer-group";
     push @controller_config, "neighbor VTEP remote-as $remoteas";
@@ -163,7 +163,7 @@ sub generate_controller_zone_config {
 
     if ($is_gateway) {
 
-	if(!$exitnodes_primary || $exitnodes_primary eq $local_node) {
+	if (!$exitnodes_primary || $exitnodes_primary eq $local_node) {
 	    #filter default type5 route coming from other exit nodes on primary node or both nodes if no primary is defined.
 	    my $routemap_config = ();
 	    push @{$routemap_config}, "match evpn route-type prefix";
@@ -213,7 +213,7 @@ sub generate_controller_zone_config {
 	push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"l2vpn evpn"}}, @controller_config);
     }
 
-    if($rt_import) {
+    if ($rt_import) {
 	@controller_config = ();
 	foreach my $rt (sort @{$rt_import}) {
 	    push @controller_config, "route-target import $rt";
@@ -234,7 +234,7 @@ sub generate_controller_vnet_config {
 
     my $local_node = PVE::INotify::nodename();
     my $is_gateway = $exitnodes->{$local_node};
-    
+
     return if !$is_gateway;
 
     my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid, 1);
@@ -385,21 +385,19 @@ sub generate_frr_routemap {
 sub generate_frr_accesslist {
     my ($final_config, $accesslists) = @_;
 
-    my @config = ();
+    my $config = [];
 
     for my $id (sort keys %$accesslists) {
-
 	my $accesslist = $accesslists->{$id};
 
 	for my $seq (sort keys %$accesslist) {
 	    my $rule = $accesslist->{$seq};
-	    push @config, "access-list $id seq $seq $rule";
+	    push @$config, "access-list $id seq $seq $rule";
 	}
     }
 
-    if(@config > 0) {
-	push @{$final_config}, "!";
-	push @{$final_config}, @config;
+    if (@$config > 0) {
+	push @{$final_config}, "!", @$config;
     }
 }
 
