@@ -124,10 +124,12 @@ sub generate_controller_zone_config {
     my $exitnodes_primary = $plugin_config->{'exitnodes-primary'};
     my $advertisesubnets = $plugin_config->{'advertise-subnets'};
     my $exitnodes_local_routing = $plugin_config->{'exitnodes-local-routing'};
-    my $rt_import = [PVE::Tools::split_list($plugin_config->{'rt-import'})] if $plugin_config->{'rt-import'};
+    my $rt_import;
+    $rt_import = [PVE::Tools::split_list($plugin_config->{'rt-import'})] if $plugin_config->{'rt-import'};
 
     my $asn = $controller->{asn};
-    my @peers = PVE::Tools::split_list($controller->{'peers'}) if $controller->{'peers'};
+    my @peers;
+    @peers = PVE::Tools::split_list($controller->{'peers'}) if $controller->{'peers'};
     my $ebgp = undef;
     my $loopback = undef;
     my $autortas = undef;
