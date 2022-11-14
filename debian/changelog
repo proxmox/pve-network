@@ -1,3 +1,15 @@
+libpve-network-perl (0.7.2) bullseye; urgency=medium
+
+  * frr: update config frrversion to 8.2.2
+
+  * frr: add a local config parser and if configured merge with
+    generated config
+
+  * frr: config : add exit on router && routemaps to future proof
+    against upcoming FRR releases
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 14 Nov 2022 14:08:26 +0100
+
 libpve-network-perl (0.7.1) bullseye; urgency=medium
 
   * controllers: evpn: use frr restart if reload fails
