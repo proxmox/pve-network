@@ -384,17 +384,17 @@ sub generate_frr_routemap {
    }
 }
 
-sub generate_frr_accesslist {
-    my ($final_config, $accesslists) = @_;
+sub generate_frr_list {
+    my ($final_config, $lists, $type) = @_;
 
     my $config = [];
 
-    for my $id (sort keys %$accesslists) {
-	my $accesslist = $accesslists->{$id};
+    for my $id (sort keys %$lists) {
+	my $list = $lists->{$id};
 
-	for my $seq (sort keys %$accesslist) {
-	    my $rule = $accesslist->{$seq};
-	    push @$config, "access-list $id seq $seq $rule";
+	for my $seq (sort keys %$list) {
+	    my $rule = $list->{$seq};
+	    push @$config, "$type $id seq $seq $rule";
 	}
     }
 
@@ -422,7 +422,8 @@ sub generate_controller_rawconfig {
     }
 
     generate_frr_recurse($final_config, $config->{frr}, undef, 0);
-    generate_frr_accesslist($final_config, $config->{frr_access_list});
+    generate_frr_list($final_config, $config->{frr_access_list}, "access-list");
+    generate_frr_list($final_config, $config->{frr_prefix_list}, "ip prefix-list");
     generate_frr_routemap($final_config, $config->{frr_routemap});
 
     push @{$final_config}, "!";
@@ -466,6 +467,9 @@ sub parse_merge_frr_local_config {
 	    next;
 	} elsif ($line =~ m/^access-list (.+) seq (\d+) (.+)$/) {
 	    $config->{'frr_access_list'}->{$1}->{$2} = $3;
+	    next;
+	} elsif ($line =~ m/^ip prefix-list (.+) seq (\d+) (.*)$/) {
+	    $config->{'frr_prefix_list'}->{$1}->{$2} = $3;
 	    next;
 	} elsif($line =~ m/^exit-address-family$/) {
 	    next;
