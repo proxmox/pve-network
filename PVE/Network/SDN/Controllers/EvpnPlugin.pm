@@ -271,7 +271,7 @@ sub on_update_hook {
 	my $controller = $controller_cfg->{ids}->{$id};
 	next if $controller->{type} ne "evpn";
 	$controllernb++;
-	die "only 1 global evpn controller can be defined" if $controllernb > 1;
+	die "only 1 global evpn controller can be defined" if $controllernb >= 1;
     }
 }
 
