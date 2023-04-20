@@ -86,9 +86,10 @@ my $create_reload_network_worker = sub {
 
     # FIXME: how to proxy to final node ?
     my $upid;
+    print "$nodename: reloading network config\n";
     run_command(['pvesh', 'set', "/nodes/$nodename/network"], outfunc => sub {
 	my $line = shift;
-	if ($line =~ /^["']?(UPID:[^\s"']+)["']?$/) {
+	if ($line =~ /["']?(UPID:[^\s"']+)["']?$/) {
 	    $upid = $1;
 	}
     });
