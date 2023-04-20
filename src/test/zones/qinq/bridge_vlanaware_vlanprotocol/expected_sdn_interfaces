@@ -20,6 +20,10 @@ auto vmbr0
 iface vmbr0
 	bridge-vlan-protocol 802.1ad
 
+auto vmbr0.10
+iface vmbr0.10
+	vlan-protocol 802.1ad
+
 auto z_myzone
 iface z_myzone
 	bridge-stp off

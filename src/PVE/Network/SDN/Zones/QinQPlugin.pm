@@ -98,13 +98,17 @@ sub generate_sdn_config {
     } elsif ($vlan_aware) {
         # VLAN_aware_brige-(tag)----->vlanwarebridge-(tag)----->vnet
 
+	$zone_bridge_ports = "$bridge.$stag";
+
 	if ($vlanprotocol) {
 	    @iface_config = ();
 	    push @iface_config, "bridge-vlan-protocol $vlanprotocol";
 	    push(@{$config->{$bridge}}, @iface_config) if !$config->{$bridge};
-	}
 
-	$zone_bridge_ports = "$bridge.$stag";
+	    @iface_config = ();
+	    push @iface_config, "vlan-protocol $vlanprotocol";
+	    push(@{$config->{$zone_bridge_ports}}, @iface_config) if !$config->{$zone_bridge_ports};
+	}
 
     } else {
 	# eth--->eth.x(svlan)----->vlanwarebridge-(tag)----->vnet---->vnet
