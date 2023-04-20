@@ -168,6 +168,7 @@ sub generate_controller_zone_config {
 	if (!$exitnodes_primary || $exitnodes_primary eq $local_node) {
 	    #filter default type5 route coming from other exit nodes on primary node or both nodes if no primary is defined.
 	    my $routemap_config = ();
+	    push @{$routemap_config}, "match evpn vni $vrfvxlan";
 	    push @{$routemap_config}, "match evpn route-type prefix";
 	    my $routemap = { rule => $routemap_config, action => "deny" };
 	    unshift(@{$config->{frr_routemap}->{'MAP_VTEP_IN'}}, $routemap);

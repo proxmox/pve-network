@@ -38,6 +38,7 @@ router bgp 65000 vrf vrf_myzone
 exit
 !
 route-map MAP_VTEP_IN deny 1
+ match evpn vni 1000
  match evpn route-type prefix
 exit
 !
