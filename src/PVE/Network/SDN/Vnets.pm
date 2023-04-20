@@ -70,13 +70,11 @@ sub get_vnet {
 sub get_subnets {
     my ($vnetid) = @_;
 
-    return if !$vnetid;
-
     my $subnets = undef;
     my $subnets_cfg = PVE::Network::SDN::Subnets::config();
     foreach my $subnetid (sort keys %{$subnets_cfg->{ids}}) {
 	my $subnet = PVE::Network::SDN::Subnets::sdn_subnets_config($subnets_cfg, $subnetid);
-	next if !$subnet->{vnet} || $subnet->{vnet} ne $vnetid;
+	next if !$subnet->{vnet} || ($vnetid && $subnet->{vnet} ne $vnetid);
 	$subnets->{$subnetid} = $subnet;
     }
     return $subnets;

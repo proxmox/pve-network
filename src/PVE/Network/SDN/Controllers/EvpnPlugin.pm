@@ -144,10 +144,23 @@ sub generate_controller_zone_config {
     return if !$vrf || !$vrfvxlan || !$asn;
 
     my ($ifaceip, $interface) = PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers, $loopback);
+    my $is_gateway = $exitnodes->{$local_node};
 
     # vrf
     my @controller_config = ();
     push @controller_config, "vni $vrfvxlan";
+    #avoid to routes between nodes through the exit nodes
+    #null routes subnets of other zones
+    if ($is_gateway) {
+	my $subnets = PVE::Network::SDN::Vnets::get_subnets();
+	foreach my $subnetid (sort keys %{$subnets}) {
+	    my $subnet = $subnets->{$subnetid};
+	    my $cidr = $subnet->{cidr};
+	    my $zone = $subnet->{zone};
+	    push @controller_config, "ip route $cidr null0" if $zone ne $id;
+	}
+    }
+
     push(@{$config->{frr}->{vrf}->{"$vrf"}}, @controller_config);
 
     #main vrf router
@@ -160,8 +173,6 @@ sub generate_controller_zone_config {
 	push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"l2vpn evpn"}}, "route-target import $autortas:$vrfvxlan");
 	push(@{$config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}->{"l2vpn evpn"}}, "route-target export $autortas:$vrfvxlan");
     }
-
-    my $is_gateway = $exitnodes->{$local_node};
 
     if ($is_gateway) {
 
