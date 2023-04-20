@@ -1,0 +1,37 @@
+{
+  version => 1,
+  vnets   => {
+               ids => {
+                        myvnet => { tag => "100", type => "vnet", zone => "myzone" },
+                        myvnet2 => { tag => "101", type => "vnet", zone => "myzone2" },
+                      },
+             },
+
+  zones   => {
+		ids => { 
+			myzone => { ipam => "pve", type => "evpn", controller => "evpnctl", 'vrf-vxlan' => 1000 },
+			myzone2 => { ipam => "pve", type => "evpn", controller => "evpnctl", 'vrf-vxlan' => 1001 },
+		}
+             },
+  controllers  => {
+               ids => { evpnctl => { type => "evpn", 'peers' => '192.168.0.1,192.168.0.2,192.168.0.3', asn => "65000" } },
+             },
+
+  subnets => {
+		ids => { 
+			'myzone-10.0.0.0-24' => {
+			    'type' => 'subnet',
+			    'vnet' => 'myvnet',
+			    'gateway' => '10.0.0.1',
+			},
+			'myzone2-172.16.0.0-24' => {
+			    'type' => 'subnet',
+			    'vnet' => 'myvnet2',
+			    'gateway' => '172.16.0.1',
+			},
+		}
+  }
+
+}
+
+

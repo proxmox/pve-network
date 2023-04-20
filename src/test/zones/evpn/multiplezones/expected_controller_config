@@ -9,6 +9,10 @@ vrf vrf_myzone
  vni 1000
 exit-vrf
 !
+vrf vrf_myzone2
+ vni 1001
+exit-vrf
+!
 router bgp 65000
  bgp router-id 192.168.0.1
  no bgp default ipv4-unicast
@@ -29,25 +33,17 @@ exit
 !
 router bgp 65000 vrf vrf_myzone
  bgp router-id 192.168.0.1
- !
- address-family l2vpn evpn
-  default-originate ipv4
-  default-originate ipv6
- exit-address-family
 exit
 !
-route-map MAP_VTEP_IN deny 1
- match evpn vni 1000
- match evpn route-type prefix
+router bgp 65000 vrf vrf_myzone2
+ bgp router-id 192.168.0.1
 exit
 !
-route-map MAP_VTEP_IN permit 2
+route-map MAP_VTEP_IN permit 1
 exit
 !
 route-map MAP_VTEP_OUT permit 1
 exit
-!
-ip route 10.0.0.0/24 10.255.255.2 xvrf_myzone
 !
 line vty
 !

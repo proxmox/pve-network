@@ -4,7 +4,6 @@ hostname localhost
 log syslog informational
 service integrated-vtysh-config
 !
-ip protocol bgp route-map correct_src
 !
 vrf vrf_myzone
  vni 1000
@@ -64,6 +63,8 @@ route-map correct_src permit 1
  match ip address prefix-list loopbacks_ips
  set src 192.168.0.1
 exit
+!
+ip protocol bgp route-map correct_src
 !
 line vty
 !

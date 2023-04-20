@@ -247,7 +247,7 @@ sub generate_controller_vnet_config {
 	my $cidr = $subnet->{cidr};
 	push @controller_config, "ip route $cidr 10.255.255.2 xvrf_$zoneid";
     }
-    push(@{$config->{frr}->{''}}, @controller_config);
+    push(@{$config->{frr_ip_protocol}}, @controller_config);
 }
 
 sub on_delete_hook {
@@ -291,41 +291,14 @@ sub find_bgp_controller {
 }
 
 
-sub sort_frr_config {
-    my $order = {};
-    $order->{''} = 0;
-    $order->{'vrf'} = 1;
-    $order->{'ipv4 unicast'} = 1;
-    $order->{'ipv6 unicast'} = 2;
-    $order->{'l2vpn evpn'} = 3;
-
-    my $a_val = 100;
-    my $b_val = 100;
-
-    $a_val = $order->{$a} if defined($order->{$a});
-    $b_val = $order->{$b} if defined($order->{$b});
-
-    if ($a =~ /bgp (\d+)$/) {
-	$a_val = 2;
-    }
-
-    if ($b =~ /bgp (\d+)$/) {
-	$b_val = 2;
-    }
-
-    return $a_val <=> $b_val;
-}
-
 sub generate_frr_recurse{
    my ($final_config, $content, $parentkey, $level) = @_;
 
    my $keylist = {};
-   $keylist->{vrf} = 1;
    $keylist->{'address-family'} = 1;
    $keylist->{router} = 1;
 
    my $exitkeylist = {};
-   $exitkeylist->{vrf} = 1;
    $exitkeylist->{'address-family'} = 1;
 
    my $simple_exitkeylist = {};
@@ -343,7 +316,8 @@ sub generate_frr_recurse{
    $padding = ' ' x ($paddinglevel) if $paddinglevel;
 
    if (ref $content eq  'HASH') {
-	foreach my $key (sort sort_frr_config keys %$content) {
+	foreach my $key (sort keys %$content) {
+	    next if $key eq 'vrf';
 	    if ($parentkey && defined($keylist->{$parentkey})) {
 		push @{$final_config}, $padding."!";
 		push @{$final_config}, $padding."$parentkey $key";
@@ -362,6 +336,39 @@ sub generate_frr_recurse{
     if (ref $content eq 'ARRAY') {
 	push @{$final_config}, map { $padding . "$_" } @$content;
     }
+}
+
+sub generate_frr_vrf {
+   my ($final_config, $vrfs) = @_;
+
+   return if !$vrfs;
+
+   my @config = ();
+
+   foreach my $id (sort keys %$vrfs) {
+	my $vrf = $vrfs->{$id};
+	push @config, "!";
+	push @config, "vrf $id";
+	foreach my $rule (@$vrf) {
+	    push @config, " $rule";
+
+	}
+	push @config, "exit-vrf";
+    }
+
+    push @{$final_config}, @config;
+}
+
+sub generate_frr_ip_protocol {
+   my ($final_config, $ips) = @_;
+
+   return if !$ips;
+
+   my @config = ();
+   push @{$final_config}, "!";
+   foreach my $rule (sort @$ips) {
+	push @{$final_config}, $rule;
+   }
 }
 
 sub generate_frr_routemap {
@@ -422,10 +429,12 @@ sub generate_controller_rawconfig {
 	parse_merge_frr_local_config($config, $local_conf);
     }
 
+    generate_frr_vrf($final_config, $config->{frr}->{vrf});
     generate_frr_recurse($final_config, $config->{frr}, undef, 0);
     generate_frr_list($final_config, $config->{frr_access_list}, "access-list");
     generate_frr_list($final_config, $config->{frr_prefix_list}, "ip prefix-list");
     generate_frr_routemap($final_config, $config->{frr_routemap});
+    generate_frr_ip_protocol($final_config, $config->{frr_ip_protocol});
 
     push @{$final_config}, "!";
     push @{$final_config}, "line vty";
