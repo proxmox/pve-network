@@ -29,6 +29,12 @@ sub properties {
             description => "peers address list.",
             type => 'string', format => 'ip-list'
         },
+        'vxlan-port' => {
+            description => "Vxlan tunnel udp port (default 4789).",
+            minimum => 1,
+            maximum => 65536,
+            type => 'integer'
+        },
     };
 }
 
@@ -36,6 +42,7 @@ sub options {
     return {
 	nodes => { optional => 1},
 	peers => { optional => 0 },
+	'vxlan-port' => { optional => 1 },
 	mtu => { optional => 1 },
 	dns => { optional => 1 },
 	reversedns => { optional => 1 },
@@ -51,6 +58,7 @@ sub generate_sdn_config {
     my $tag = $vnet->{tag};
     my $alias = $vnet->{alias};
     my $multicastaddress = $plugin_config->{'multicast-address'};
+    my $vxlanport = $plugin_config->{'vxlan-port'};
     my @peers;
     @peers = PVE::Tools::split_list($plugin_config->{'peers'}) if $plugin_config->{'peers'};
     my $vxlan_iface = "vxlan_$vnetid";
@@ -71,6 +79,7 @@ sub generate_sdn_config {
 	next if $address eq $ifaceip;
 	push @iface_config, "vxlan_remoteip $address";
     }
+    push @iface_config, "vxlan-port $vxlanport" if $vxlanport;
 
 
     push @iface_config, "mtu $mtu" if $mtu;

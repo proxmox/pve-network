@@ -91,6 +91,7 @@ sub options {
 	'advertise-subnets' => { optional => 1 },
 	'disable-arp-nd-suppression' => { optional => 1 },
 	'rt-import' => { optional => 1 },
+	'vxlan-port' => { optional => 1 },
 	mtu => { optional => 1 },
 	mac => { optional => 1 },
 	dns => { optional => 1 },
@@ -107,6 +108,7 @@ sub generate_sdn_config {
     my $tag = $vnet->{tag};
     my $alias = $vnet->{alias};
     my $mac = $plugin_config->{'mac'};
+    my $vxlanport = $plugin_config->{'vxlan-port'};
 
     my $vrf_iface = "vrf_$zoneid";
     my $vrfvxlan = $plugin_config->{'vrf-vxlan'};
@@ -133,6 +135,7 @@ sub generate_sdn_config {
     my @iface_config = ();
     push @iface_config, "vxlan-id $tag";
     push @iface_config, "vxlan-local-tunnelip $ifaceip" if $ifaceip;
+    push @iface_config, "vxlan-port $vxlanport" if $vxlanport;
     push @iface_config, "bridge-learning off";
     push @iface_config, "bridge-arp-nd-suppress on" if !$plugin_config->{'disable-arp-nd-suppression'};
 
@@ -220,6 +223,7 @@ sub generate_sdn_config {
 	    @iface_config = ();
 	    push @iface_config, "vxlan-id $vrfvxlan";
 	    push @iface_config, "vxlan-local-tunnelip $ifaceip" if $ifaceip;
+	    push @iface_config, "vxlan-port $vxlanport" if $vxlanport;
 	    push @iface_config, "bridge-learning off";
 	    push @iface_config, "bridge-arp-nd-suppress on" if !$plugin_config->{'disable-arp-nd-suppression'};
 	    push @iface_config, "mtu $mtu" if $mtu;
