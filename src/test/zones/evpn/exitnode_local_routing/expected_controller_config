@@ -1,4 +1,4 @@
-frr version 8.2.2
+frr version 8.5.1
 frr defaults datacenter
 hostname localhost
 log syslog informational
@@ -11,6 +11,8 @@ exit-vrf
 !
 router bgp 65000
  bgp router-id 192.168.0.1
+ no bgp hard-administrative-reset
+ no bgp graceful-restart notification
  no bgp default ipv4-unicast
  coalesce-time 1000
  neighbor VTEP peer-group
@@ -29,6 +31,8 @@ exit
 !
 router bgp 65000 vrf vrf_myzone
  bgp router-id 192.168.0.1
+ no bgp hard-administrative-reset
+ no bgp graceful-restart notification
  !
  address-family l2vpn evpn
   default-originate ipv4
