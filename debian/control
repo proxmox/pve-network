@@ -2,7 +2,7 @@ Source: libpve-network-perl
 Section: perl
 Priority: optional
 Maintainer: Proxmox Support Team <support@proxmox.com>
-Build-Depends: debhelper (>= 11~),
+Build-Depends: debhelper-compat (= 13),
                lintian,
                libfile-slurp-perl,
                libnet-subnet-perl,
