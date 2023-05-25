@@ -15,7 +15,6 @@ Homepage: https://www.proxmox.com
 
 Package: libpve-network-perl
 Architecture: all
-Breaks: pve-manager (<< 5.2-12)
 Depends: libpve-common-perl (>= 5.0-45),
          perl (>= 5.6.0-16),
          pve-cluster (>= 6.4-1),
