@@ -26,15 +26,20 @@ $(DEB): $(BUILDDIR)
 	lintian $(DEB)
 
 .PHONY: dsc
-dsc: $(DSC)
+dsc: clean
+	$(MAKE) $(DSC)
+	lintian $(DSC)
+
 $(DSC): $(BUILDDIR)
 	cd $(BUILDDIR); dpkg-buildpackage -S -us -uc -d
-	lintian $(DSC)
+
+sbuild: $(DSC)
+	sbuild $(DSC)
 
 .PHONY: clean distclean
 distclean: clean
 clean:
-	rm -rf *~ *.deb *.changes $(PACKAGE)-* *.buildinfo *.dsc *.tar.gz
+	rm -rf *~ *.deb *.changes $(PACKAGE)-[0-9]*/ $(PACKAGE)*.tar* *.build *.buildinfo *.dsc
 
 .PHONY: test
 test:
