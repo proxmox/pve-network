@@ -24,5 +24,6 @@ Depends: libpve-common-perl (>= 5.0-45),
          ${misc:Depends},
          ${perl:Depends},
 Recommends: frr-pythontools, ifupdown2
-Description: Proxmox VE's experimental SDN (Software Defined Network)
- This package contains the experimental SDN library used by Proxmox VE.
+Description: Proxmox VE's SDN (Software Defined Network) stack
+ This package contains the Software Defined Network (tech preview) for
+ Proxmox VE.
