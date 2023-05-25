@@ -13,3 +13,5 @@ test_dns: run_test_dns.pl
 
 test_subnets: run_test_subnets.pl
 	./run_test_subnets.pl
+
+clean:

@@ -7,17 +7,16 @@ BUILDDIR ?= $(PACKAGE)-$(DEB_VERSION_UPSTREAM)
 DEB=$(PACKAGE)_$(DEB_VERSION_UPSTREAM_REVISION)_all.deb
 DSC=$(PACKAGE)_$(DEB_VERSION_UPSTREAM_REVISION).dsc
 
-all:
-	$(MAKE) -C PVE
-
 .PHONY: dinstall
 dinstall: deb
 	dpkg -i $(DEB)
 
-$(BUILDDIR): PVE debian
-	rm -rf $(BUILDDIR)
-	rsync -a * $(BUILDDIR)
-	echo "git clone git://git.proxmox.com/git/pve-network.git\\ngit checkout $(shell git rev-parse HEAD)" > $(BUILDDIR)/debian/SOURCE
+$(BUILDDIR): src debian
+	rm -rf $@ $@.tmp
+	cp -a src $@.tmp
+	cp -a debian $@.tmp/
+	echo "git clone git://git.proxmox.com/git/pve-network.git\\ngit checkout $(shell git rev-parse HEAD)" > $@.tmp/debian/SOURCE
+	mv $@.tmp $@
 
 .PHONY: deb
 deb: $(DEB)
@@ -40,14 +39,6 @@ sbuild: $(DSC)
 distclean: clean
 clean:
 	rm -rf *~ *.deb *.changes $(PACKAGE)-[0-9]*/ $(PACKAGE)*.tar* *.build *.buildinfo *.dsc
-
-.PHONY: test
-test:
-	$(MAKE) -C test
-
-.PHONY: install
-install:
-	$(MAKE) -C PVE install
 
 .PHONY: upload
 upload: $(DEB)
