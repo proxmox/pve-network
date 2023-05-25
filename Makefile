@@ -6,7 +6,6 @@ BUILDDIR ?= $(PACKAGE)-$(DEB_VERSION_UPSTREAM)
 
 DEB=$(PACKAGE)_$(DEB_VERSION_UPSTREAM_REVISION)_all.deb
 DSC=$(PACKAGE)_$(DEB_VERSION_UPSTREAM_REVISION).dsc
-TARGZ=$(PACKAGE)_$(PKGVER)-$(PKGREL).tar.gz
 
 all:
 	$(MAKE) -C PVE
@@ -27,7 +26,7 @@ $(DEB): $(BUILDDIR)
 	lintian $(DEB)
 
 .PHONY: dsc
-dsc $(TARGZ): $(DSC)
+dsc: $(DSC)
 $(DSC): $(BUILDDIR)
 	cd $(BUILDDIR); dpkg-buildpackage -S -us -uc -d -nc
 	lintian $(DSC)
