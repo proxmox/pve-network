@@ -8,7 +8,7 @@ Build-Depends: debhelper-compat (= 13),
                libnet-subnet-perl,
                libtest-mockmodule-perl,
                perl,
-               pve-cluster (>= 6.0~),
+               pve-cluster (>= 7.0~),
                pve-doc-generator (>= 5.3-3),
 Standards-Version: 4.6.1
 Homepage: https://www.proxmox.com
@@ -16,14 +16,14 @@ Homepage: https://www.proxmox.com
 Package: libpve-network-perl
 Architecture: all
 Depends: libpve-common-perl (>= 5.0-45),
-         perl (>= 5.6.0-16),
-         pve-cluster (>= 6.4-1),
+         perl,
+         pve-cluster (>= 7.3~),
          libnet-subnet-perl,
          libnet-ip-perl,
          libnetaddr-ip-perl,
          ${misc:Depends},
          ${perl:Depends},
-Recommends: frr-pythontools, ifupdown2
+Recommends: frr-pythontools (>= 8.5.1~), ifupdown2
 Description: Proxmox VE's SDN (Software Defined Network) stack
  This package contains the Software Defined Network (tech preview) for
  Proxmox VE.
