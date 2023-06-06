@@ -190,10 +190,10 @@ sub get_local_vnets {
 	my $zoneid = $vnet->{zone};
 	my $comments = $vnet->{alias};
 
-	my $privs = [ 'SDN.Audit', 'SDN.Allocate' ];
+	my $privs = [ 'SDN.Audit', 'SDN.Use' ];
 
 	next if !$zoneid;
-	next if !$rpcenv->check_any($authuser, "/sdn/zones/$zoneid", $privs, 1) && !$rpcenv->check_any($authuser, "/sdn/vnets/$vnetid", $privs, 1);
+	next if !$rpcenv->check_sdn_bridge($authuser, $zoneid, $vnetid, $privs, 1);
 
 	my $zone_config = PVE::Network::SDN::Zones::sdn_zones_config($zones_cfg, $zoneid);
 
