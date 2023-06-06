@@ -1,3 +1,20 @@
+libpve-network-perl (0.8.1) bookworm; urgency=medium
+
+  * fix #4657: evpn: fix exit-node with multiple vrf
+
+  * fix #4425: vxlan, evpn: add vxlan-port option to override default
+
+  * fix #4662: frr: fix config generation ordering
+
+  * fix #4389: evpn: exit nodes: null routes subnets from other zones
+
+  * fix #4683: zones: QinQ: fix vlan-protocol when bridge is VLAN aware
+
+  * network reload: fix UPID parsing for the case where a task produced
+    warnings or errors
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 06 Jun 2023 08:07:19 +0200
+
 libpve-network-perl (0.8.0) bookworm; urgency=medium
 
   * re-build for Proxmox VE 8 / Debian 12 Bookworm
