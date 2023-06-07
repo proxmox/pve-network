@@ -7,6 +7,7 @@ bless( {
                                          'content-type' => 'application/json; charset=UTF-8',
                                          'token' => 'JPHkPSLB4O_XL-GQz4qtEFmNpx-99Htw'
                                        }, 'HTTP::Headers' ),
+                  '_max_body_size' => undef,
                   '_method' => 'POST',
                   '_uri' => bless( do{\(my $o = 'https://localhost/api/apiadmin/addresses/first_free/1/')}, 'URI::https' )
                 }, 'HTTP::Request' );

@@ -7,6 +7,7 @@ bless( {
                                         'content-type' => 'application/json; charset=UTF-8',
                                         'x-api-key' => '1234'
                                       }, 'HTTP::Headers' ),
+                  '_max_body_size' => undef,
                  '_method' => 'PATCH',
                  '_uri' => bless( do{\(my $o = 'http://localhost:8881/api/v1/servers/localhost/zones/domain.com')}, 'URI::http' )
                }, 'HTTP::Request' );
