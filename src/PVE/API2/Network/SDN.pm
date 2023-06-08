@@ -51,7 +51,7 @@ __PACKAGE__->register_method({
     method => 'GET',
     description => "Directory index.",
     permissions => {
-	check => ['perm', '/', [ 'SDN.Audit' ]],
+	check => ['perm', '/sdn', [ 'SDN.Audit' ]],
     },
     parameters => {
     	additionalProperties => 0,

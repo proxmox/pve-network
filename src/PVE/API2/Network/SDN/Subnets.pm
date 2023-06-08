@@ -33,13 +33,34 @@ my $api_sdn_subnets_config = sub {
     return $scfg;
 };
 
+my $api_sdn_vnets_config = sub {
+    my ($cfg, $id) = @_;
+
+    my $scfg = dclone(PVE::Network::SDN::Vnets::sdn_vnets_config($cfg, $id));
+    $scfg->{vnet} = $id;
+    $scfg->{digest} = $cfg->{digest};
+
+    return $scfg;
+};
+
+my $check_vnet_access = sub {
+    my ($vnet, $privs) = @_;
+
+    my $cfg = PVE::Network::SDN::Vnets::config();
+    my $rpcenv = PVE::RPCEnvironment::get();
+    my $authuser = $rpcenv->get_user();
+    my $scfg = &$api_sdn_vnets_config($cfg, $vnet);
+    my $zoneid = $scfg->{zone};
+    $rpcenv->check_any($authuser, "/sdn/zones/$zoneid/$vnet", $privs);
+};
+
 __PACKAGE__->register_method ({
     name => 'index',
     path => '',
     method => 'GET',
     description => "SDN subnets index.",
     permissions => {
-	description => "Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/subnets/<subnet>'",
+	description => "Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/zones/<zone>/<vnet>'",
 	user => 'all',
     },
     parameters => {
@@ -69,10 +90,9 @@ __PACKAGE__->register_method ({
     code => sub {
 	my ($param) = @_;
 
-	my $rpcenv = PVE::RPCEnvironment::get();
-	my $authuser = $rpcenv->get_user();
-
-        my $vnetid = $param->{vnet};
+	my $vnetid = $param->{vnet};
+	my $privs = [ 'SDN.Audit', 'SDN.Allocate' ];
+	&$check_vnet_access($vnetid, $privs);
 
         my $cfg = {};
         if($param->{pending}) {
@@ -89,9 +109,6 @@ __PACKAGE__->register_method ({
 	my @sids = PVE::Network::SDN::Subnets::sdn_subnets_ids($cfg);
 	my $res = [];
 	foreach my $id (@sids) {
-	    my $privs = [ 'SDN.Audit', 'SDN.Allocate' ];
-	    next if !$rpcenv->check_any($authuser, "/sdn/vnets/$vnetid/subnets/$id", $privs, 1);
-
 	    my $scfg = &$api_sdn_subnets_config($cfg, $id);
 	    next if !$scfg->{vnet} || $scfg->{vnet} ne $vnetid;
 	    push @$res, $scfg;
@@ -106,9 +123,9 @@ __PACKAGE__->register_method ({
     method => 'GET',
     description => "Read sdn subnet configuration.",
     permissions => {
-	check => ['perm', '/sdn/vnets/{vnet}/subnets/{subnet}', ['SDN.Allocate']],
-   },
-
+	description => "Require 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/zones/<zone>/<vnet>'",
+	user => 'all',
+    },
     parameters => {
 	additionalProperties => 0,
 	properties => {
@@ -132,6 +149,10 @@ __PACKAGE__->register_method ({
     code => sub {
 	my ($param) = @_;
 
+	my $vnet = extract_param($param, 'vnet');
+	my $privs = [ 'SDN.Audit', 'SDN.Allocate' ];
+	&$check_vnet_access($vnet, $privs);
+
         my $cfg = {};
         if($param->{pending}) {
 	    my $running_cfg = PVE::Network::SDN::running_config();
@@ -146,7 +167,7 @@ __PACKAGE__->register_method ({
 
         my $scfg = &$api_sdn_subnets_config($cfg, $param->{subnet});
 
-	raise_param_exc({ vnet => "wrong vnet"}) if $param->{vnet} ne $scfg->{vnet};
+	raise_param_exc({ vnet => "wrong vnet"}) if $vnet ne $scfg->{vnet};
 
 	return $scfg;
     }});
@@ -158,7 +179,8 @@ __PACKAGE__->register_method ({
     method => 'POST',
     description => "Create a new sdn subnet object.",
     permissions => {
-	check => ['perm', '/sdn/vnets/{vnet}/subnets', ['SDN.Allocate']],
+	description => "Require 'SDN.Allocate' permission on '/sdn/zones/<zone>/<vnet>'",
+	user => 'all',
     },
     parameters => PVE::Network::SDN::SubnetPlugin->createSchema(),
     returns => { type => 'null' },
@@ -167,6 +189,10 @@ __PACKAGE__->register_method ({
 
 	my $type = extract_param($param, 'type');
 	my $cidr = extract_param($param, 'subnet');
+
+	my $vnet = $param->{vnet};
+	my $privs = [ 'SDN.Allocate' ];
+	&$check_vnet_access($vnet, $privs);
 
 	# create /etc/pve/sdn directory
 	PVE::Cluster::check_cfs_quorum();
@@ -210,7 +236,8 @@ __PACKAGE__->register_method ({
     method => 'PUT',
     description => "Update sdn subnet object configuration.",
     permissions => {
-	check => ['perm', '/sdn/vnets/{vnet}/subnets', ['SDN.Allocate']],
+	description => "Require 'SDN.Allocate' permission on '/sdn/zones/<zone>/<vnet>'",
+	user => 'all',
     },
     parameters => PVE::Network::SDN::SubnetPlugin->updateSchema(),
     returns => { type => 'null' },
@@ -219,6 +246,10 @@ __PACKAGE__->register_method ({
 
 	my $id = extract_param($param, 'subnet');
 	my $digest = extract_param($param, 'digest');
+	my $vnet = $param->{vnet};
+
+	my $privs = [ 'SDN.Allocate' ];
+	&$check_vnet_access($vnet, $privs);
 
         PVE::Network::SDN::lock_sdn_config(
 	 sub {
@@ -226,7 +257,6 @@ __PACKAGE__->register_method ({
 	    my $cfg = PVE::Network::SDN::Subnets::config();
 	    my $zone_cfg = PVE::Network::SDN::Zones::config();
 	    my $vnet_cfg = PVE::Network::SDN::Vnets::config();
-	    my $vnet = $param->{vnet};
 	    my $zoneid = $vnet_cfg->{ids}->{$vnet}->{zone};
 	    my $zone = $zone_cfg->{ids}->{$zoneid};
 
@@ -256,7 +286,8 @@ __PACKAGE__->register_method ({
     method => 'DELETE',
     description => "Delete sdn subnet object configuration.",
     permissions => {
-	check => ['perm', '/sdn/vnets/{vnet}/subnets', ['SDN.Allocate']],
+	description => "Require 'SDN.Allocate' permission on '/sdn/zones/<zone>/<vnet>'",
+	user => 'all',
     },
     parameters => {
 	additionalProperties => 0,
@@ -272,6 +303,9 @@ __PACKAGE__->register_method ({
 	my ($param) = @_;
 
 	my $id = extract_param($param, 'subnet');
+	my $vnet = extract_param($param, 'vnet');
+	my $privs = [ 'SDN.Allocate' ];
+	&$check_vnet_access($vnet, $privs);
 
         PVE::Network::SDN::lock_sdn_config(
 	    sub {
@@ -284,7 +318,6 @@ __PACKAGE__->register_method ({
 		PVE::Network::SDN::SubnetPlugin->on_delete_hook($id, $cfg, $vnets_cfg);
 
 		my $zone_cfg = PVE::Network::SDN::Zones::config();
-		my $vnet = $param->{vnet};
 		my $zoneid = $vnets_cfg->{ids}->{$vnet}->{zone};
 		my $zone = $zone_cfg->{ids}->{$zoneid};
 

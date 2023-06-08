@@ -251,7 +251,7 @@ __PACKAGE__->register_method ({
     method => 'PUT',
     description => "Update sdn zone object configuration.",
     permissions => {
-	check => ['perm', '/sdn/zones', ['SDN.Allocate']],
+	check => ['perm', '/sdn/zones/{zone}', ['SDN.Allocate']],
     },
     parameters => PVE::Network::SDN::Zones::Plugin->updateSchema(),
     returns => { type => 'null' },
@@ -315,7 +315,7 @@ __PACKAGE__->register_method ({
     method => 'DELETE',
     description => "Delete sdn zone object configuration.",
     permissions => {
-	check => ['perm', '/sdn/zones', ['SDN.Allocate']],
+	check => ['perm', '/sdn/zones/{zone}', ['SDN.Allocate']],
     },
     parameters => {
 	additionalProperties => 0,
