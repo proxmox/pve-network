@@ -268,7 +268,7 @@ sub status {
 	if (@{$err_msg} > 0) {
 	    $vnet_status->{$id}->{status} = 'error';
 	    $vnet_status->{$id}->{statusmsg} = join(',', @{$err_msg});
-	    $zone_status->{$id}->{status} = 'error';
+	    $zone_status->{$zone}->{status} = 'error';
 	}
     }
 
