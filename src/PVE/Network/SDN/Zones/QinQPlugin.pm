@@ -198,13 +198,7 @@ sub status {
 	push @$ifaces, $svlan_iface;
     }
 
-    foreach my $iface (@{$ifaces}) {
-	if (!$status->{$iface}->{status}) {
-	    push @$err_msg, "missing $iface";
-        } elsif ($status->{$iface}->{status} ne 'pass') {
-	    push @$err_msg, "error $iface";
-	}
-    }
+    $err_msg = $class->generate_status_message($vnetid, $status, $ifaces);
     return $err_msg;
 }
 

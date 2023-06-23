@@ -165,13 +165,7 @@ sub status {
 	push @$ifaces, $vnet_uplinkpeer;
     }
 
-    foreach my $iface (@{$ifaces}) {
-	if (!$status->{$iface}->{status}) {
-	    push @$err_msg, "missing $iface";
-        } elsif ($status->{$iface}->{status} ne 'pass') {
-	    push @$err_msg, "error iface $iface";
-	}
-    }
+    $err_msg = $class->generate_status_message($vnetid, $status, $ifaces);
     return $err_msg;
 }
 

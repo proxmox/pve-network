@@ -123,23 +123,6 @@ sub generate_sdn_config {
     return $config;
 }
 
-sub status {
-    my ($class, $plugin_config, $zone, $vnetid, $vnet, $status) = @_;
-
-    # ifaces to check
-    my $ifaces = [ $vnetid ];
-    my $err_msg = [];
-    foreach my $iface (@{$ifaces}) {
-	if (!$status->{$iface}->{status}) {
-	    push @$err_msg, "missing $iface";
-	} elsif ($status->{$iface}->{status} ne 'pass') {
-	    push @$err_msg, "error iface $iface";
-	}
-    }
-    return $err_msg;
-}
-
-
 sub vnet_update_hook {
     my ($class, $vnet_cfg, $vnetid, $zone_cfg) = @_;
 

@@ -190,13 +190,12 @@ sub parse_tag_number_or_range {
     return (scalar(@elements) > 1);
 }
 
-sub status {
-    my ($class, $plugin_config, $zone, $vnetid, $vnet, $status) = @_;
+sub generate_status_message {
+    my ($class, $vnetid, $status, $ifaces) = @_;
 
     my $err_msg = [];
 
-    # ifaces to check
-    my $ifaces = [ $vnetid ];
+    return ["vnet is not generated. Please check you reload network task log."] if !$status->{$vnetid}->{status};
 
     foreach my $iface (@{$ifaces}) {
         if (!$status->{$iface}->{status}) {
@@ -205,7 +204,16 @@ sub status {
 	    push @$err_msg, "error $iface";
         }
     }
+
     return $err_msg;
+}
+
+sub status {
+    my ($class, $plugin_config, $zone, $vnetid, $vnet, $status) = @_;
+
+    my $err_msg = $class->generate_status_message($vnetid, $status);
+    return $err_msg;
+
 }
 
 
