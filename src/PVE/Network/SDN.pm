@@ -6,6 +6,8 @@ use warnings;
 use Data::Dumper;
 use JSON;
 
+use PVE::INotify;
+
 use PVE::Network::SDN::Vnets;
 use PVE::Network::SDN::Zones;
 use PVE::Network::SDN::Controllers;
@@ -13,7 +15,7 @@ use PVE::Network::SDN::Subnets;
 
 use PVE::Tools qw(extract_param dir_glob_regex run_command);
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
-
+use PVE::RESTEnvironment qw(log_warn);
 
 my $running_cfg = "sdn/.running-config";
 
@@ -208,6 +210,15 @@ sub get_local_vnets {
 
 sub generate_zone_config {
     my $raw_config = PVE::Network::SDN::Zones::generate_etc_network_config();
+    if ($raw_config) {
+	eval {
+	    my $net_cfg = PVE::INotify::read_file('interfaces', 1);
+	    my $opts = $net_cfg->{data}->{options};
+	    log_warn("missing 'source /etc/network/interfaces.d/sdn' directive for SDN support!\n")
+		if ! grep { $_->[1] =~ m!^source /etc/network/interfaces.d/(:?sdn|\*)! } @$opts;
+	};
+	log_warn("Failed to read network interfaces definition - $@") if $@;
+    }
     PVE::Network::SDN::Zones::write_etc_network_config($raw_config);
 }
 
