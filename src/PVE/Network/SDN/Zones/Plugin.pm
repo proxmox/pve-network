@@ -212,9 +212,7 @@ sub generate_status_message {
 sub status {
     my ($class, $plugin_config, $zone, $vnetid, $vnet, $status) = @_;
 
-    my $err_msg = $class->generate_status_message($vnetid, $status);
-    return $err_msg;
-
+    return $class->generate_status_message($vnetid, $status);
 }
 
 

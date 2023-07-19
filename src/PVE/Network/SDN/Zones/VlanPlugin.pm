@@ -141,10 +141,8 @@ sub status {
 
     my $bridge = $plugin_config->{bridge};
 
-    my $err_msg = [];
     if (!-d "/sys/class/net/$bridge") {
-        push @$err_msg, "missing $bridge";
-	return $err_msg;
+	return ["missing $bridge"];
     }
 
     my $vlan_aware = PVE::Network::SDN::Zones::Plugin::is_vlanaware($bridge);
@@ -165,8 +163,7 @@ sub status {
 	push @$ifaces, $vnet_uplinkpeer;
     }
 
-    $err_msg = $class->generate_status_message($vnetid, $status, $ifaces);
-    return $err_msg;
+    return $class->generate_status_message($vnetid, $status, $ifaces);
 }
 
 sub vnet_update_hook {
