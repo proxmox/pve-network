@@ -195,7 +195,8 @@ sub generate_status_message {
 
     my $err_msg = [];
 
-    return ["vnet is not generated. Please check you reload network task log."] if !$status->{$vnetid}->{status};
+    return ["vnet is not generated. Please check the 'reload network' task log."]
+	if !$status->{$vnetid}->{status};
 
     foreach my $iface (@{$ifaces}) {
         if (!$status->{$iface}->{status}) {
