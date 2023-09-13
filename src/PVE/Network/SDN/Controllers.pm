@@ -14,10 +14,12 @@ use PVE::Network::SDN::Zones;
 
 use PVE::Network::SDN::Controllers::EvpnPlugin;
 use PVE::Network::SDN::Controllers::BgpPlugin;
+use PVE::Network::SDN::Controllers::IsisPlugin;
 use PVE::Network::SDN::Controllers::FaucetPlugin;
 use PVE::Network::SDN::Controllers::Plugin;
 PVE::Network::SDN::Controllers::EvpnPlugin->register();
 PVE::Network::SDN::Controllers::BgpPlugin->register();
+PVE::Network::SDN::Controllers::IsisPlugin->register();
 PVE::Network::SDN::Controllers::FaucetPlugin->register();
 PVE::Network::SDN::Controllers::Plugin->init();
 

@@ -1,0 +1,50 @@
+{
+    version => 1,
+    vnets => {
+        ids => {
+            myvnet => {
+                tag => "100",
+                type => "vnet",
+                zone => "myzone",
+            },
+        },
+    },
+
+    zones   => {
+        ids => {
+            myzone => {
+                ipam => "pve",
+                type => "evpn",
+                controller => "evpnctl",
+                'vrf-vxlan' => 1000,
+            },
+        },
+    },
+    controllers  => {
+        ids => {
+            evpnctl => {
+                type => "evpn",
+                'peers' => '10.0.0.1,10.0.0.2,10.0.0.3',
+                asn => "65000",
+            },
+            localhost => {
+                type => "isis",
+                'isis-domain' => 'isis1',
+                'isis-ifaces' => 'eth1,eth0',
+                'isis-net' => "47.0023.0000.0000.0000.0000.0000.0000.1900.0004.00",
+		loopback => 'dummy1',
+                node => "localhost",
+            },
+        },
+    },
+
+    subnets => {
+        ids => {
+            'myzone-10.0.0.0-24' => {
+                'type' => 'subnet',
+                'vnet' => 'myvnet',
+                'gateway' => '10.0.0.1',
+            },
+        },
+    },
+}

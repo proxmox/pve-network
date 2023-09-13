@@ -120,8 +120,16 @@ sub generate_sdn_config {
     warn "vlan-aware vnet can't be enabled with evpn plugin" if $vnet->{vlanaware};
 
     my @peers = PVE::Tools::split_list($controller->{'peers'});
+
+    my $loopback = undef;
     my $bgprouter = PVE::Network::SDN::Controllers::EvpnPlugin::find_bgp_controller($local_node, $controller_cfg);
-    my $loopback = $bgprouter->{loopback} if $bgprouter->{loopback};
+    my $isisrouter = PVE::Network::SDN::Controllers::EvpnPlugin::find_isis_controller($local_node, $controller_cfg);
+    if ($bgprouter->{loopback}) {
+	$loopback = $bgprouter->{loopback};
+    } elsif ($isisrouter->{loopback}) {
+	$loopback = $isisrouter->{loopback};
+    }
+
     my ($ifaceip, $iface) = PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers, $loopback);
     my $is_evpn_gateway = $plugin_config->{'exitnodes'}->{$local_node};
     my $exitnodes_local_routing = $plugin_config->{'exitnodes-local-routing'};

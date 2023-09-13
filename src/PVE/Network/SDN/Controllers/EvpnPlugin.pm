@@ -53,11 +53,15 @@ sub generate_controller_config {
     my $loopback = undef;
     my $autortas = undef;
     my $bgprouter = find_bgp_controller($local_node, $controller_cfg);
+    my $isisrouter = find_isis_controller($local_node, $controller_cfg);
+
     if ($bgprouter) {
 	$ebgp = 1 if $plugin_config->{'asn'} ne $bgprouter->{asn};
 	$loopback = $bgprouter->{loopback} if $bgprouter->{loopback};
 	$asn = $bgprouter->{asn} if $bgprouter->{asn};
 	$autortas = $plugin_config->{'asn'} if $ebgp;
+    } elsif ($isisrouter) {
+	$loopback = $isisrouter->{loopback} if $isisrouter->{loopback};
     }
 
     return if !$asn;
@@ -86,10 +90,8 @@ sub generate_controller_config {
     push @controller_config, "neighbor VTEP remote-as $remoteas";
     push @controller_config, "neighbor VTEP bfd";
 
-    if($ebgp && $loopback) {
-	push @controller_config, "neighbor VTEP ebgp-multihop 10";
-	push @controller_config, "neighbor VTEP update-source $loopback";
-    }
+    push @controller_config, "neighbor VTEP ebgp-multihop 10" if $ebgp && $loopback;
+    push @controller_config, "neighbor VTEP update-source $loopback" if $loopback;
 
     # VTEP peers
     foreach my $address (@peers) {
@@ -136,11 +138,15 @@ sub generate_controller_zone_config {
     my $loopback = undef;
     my $autortas = undef;
     my $bgprouter = find_bgp_controller($local_node, $controller_cfg);
+    my $isisrouter = find_isis_controller($local_node, $controller_cfg);
+
     if($bgprouter) {
         $ebgp = 1 if $controller->{'asn'} ne $bgprouter->{asn};
 	$loopback = $bgprouter->{loopback} if $bgprouter->{loopback};
 	$asn = $bgprouter->{asn} if $bgprouter->{asn};
 	$autortas = $controller->{'asn'} if $ebgp;
+    } elsif ($isisrouter) {
+        $loopback = $isisrouter->{loopback} if $isisrouter->{loopback};
     }
 
     return if !$vrf || !$vrfvxlan || !$asn;
@@ -299,6 +305,20 @@ sub find_bgp_controller {
     foreach my $id  (keys %{$controller_cfg->{ids}}) {
 	my $controller = $controller_cfg->{ids}->{$id};
 	next if $controller->{type} ne 'bgp';
+	next if $controller->{node} ne $nodename;
+	$res = $controller;
+	last;
+    }
+    return $res;
+}
+
+sub find_isis_controller {
+    my ($nodename, $controller_cfg) = @_;
+
+    my $res = undef;
+    foreach my $id  (keys %{$controller_cfg->{ids}}) {
+	my $controller = $controller_cfg->{ids}->{$id};
+	next if $controller->{type} ne 'isis';
 	next if $controller->{node} ne $nodename;
 	$res = $controller;
 	last;
