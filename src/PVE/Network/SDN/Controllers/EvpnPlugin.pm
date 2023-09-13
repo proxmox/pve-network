@@ -295,17 +295,16 @@ sub on_update_hook {
 sub find_bgp_controller {
     my ($nodename, $controller_cfg) = @_;
 
-    my $controller = undef;
+    my $res = undef;
     foreach my $id  (keys %{$controller_cfg->{ids}}) {
-        $controller = $controller_cfg->{ids}->{$id};
-        next if $controller->{type} ne 'bgp';
-        next if $controller->{node} ne $nodename;
+	my $controller = $controller_cfg->{ids}->{$id};
+	next if $controller->{type} ne 'bgp';
+	next if $controller->{node} ne $nodename;
+	$res = $controller;
 	last;
     }
-
-    return $controller;
+    return $res;
 }
-
 
 sub generate_frr_recurse{
    my ($final_config, $content, $parentkey, $level) = @_;
