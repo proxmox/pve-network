@@ -384,6 +384,20 @@ sub generate_frr_ip_protocol {
    foreach my $rule (sort @$ips) {
 	push @{$final_config}, $rule;
    }
+
+}
+
+sub generate_frr_interfaces {
+   my ($final_config, $interfaces) = @_;
+
+   foreach my $k (sort keys %$interfaces) {
+	my $iface = $interfaces->{$k};
+	push @{$final_config}, "!";
+	push @{$final_config}, "interface $k";
+	foreach my $rule (sort @$iface) {
+	    push @{$final_config}, " $rule";
+	}
+   }
 }
 
 sub generate_frr_routemap {
@@ -445,6 +459,7 @@ sub generate_controller_rawconfig {
     }
 
     generate_frr_vrf($final_config, $config->{frr}->{vrf});
+    generate_frr_interfaces($final_config, $config->{frr_interfaces});
     generate_frr_recurse($final_config, $config->{frr}, undef, 0);
     generate_frr_list($final_config, $config->{frr_access_list}, "access-list");
     generate_frr_list($final_config, $config->{frr_prefix_list}, "ip prefix-list");
@@ -480,6 +495,9 @@ sub parse_merge_frr_local_config {
 	    next;
 	} elsif ($line =~ m/^vrf (.+)$/) {
 	    $section = \$config->{'frr'}->{'vrf'}->{$1};
+	    next;
+	} elsif ($line =~ m/^interface (.+)$/) {
+	    $section = \$config->{'frr_interfaces'}->{$1};
 	    next;
 	} elsif ($line =~ m/address-family (.+)$/) {
 	    $section = \$config->{'frr'}->{'router'}->{$router}->{'address-family'}->{$1};
