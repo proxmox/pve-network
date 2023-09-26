@@ -90,6 +90,7 @@ sub options {
 	'exitnodes-primary' => { optional => 1 },
 	'advertise-subnets' => { optional => 1 },
 	'disable-arp-nd-suppression' => { optional => 1 },
+        'bridge-disable-mac-learning' => { optional => 1 },
 	'rt-import' => { optional => 1 },
 	'vxlan-port' => { optional => 1 },
 	mtu => { optional => 1 },
@@ -312,7 +313,6 @@ sub vnet_update_hook {
 	raise_param_exc({ tag => "vxlan tag $tag already exist in vnet $id in zone $other_zoneid "}) if $other_tag && $tag eq $other_tag;
     }
 }
-
 
 1;
 
