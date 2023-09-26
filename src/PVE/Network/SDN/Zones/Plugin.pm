@@ -239,6 +239,18 @@ sub tap_plug {
     PVE::Network::tap_plug($iface, $vnetid, $tag, $firewall, $trunks, $rate, $opts);
 }
 
+sub add_bridge_fdb {
+    my ($class, $plugin_config, $iface, $macaddr) = @_;
+
+    PVE::Network::add_bridge_fdb($iface, $macaddr) if $plugin_config->{'bridge-disable-mac-learning'};
+}
+
+sub del_bridge_fdb {
+    my ($class, $plugin_config, $iface, $macaddr) = @_;
+
+    PVE::Network::del_bridge_fdb($iface, $macaddr) if $plugin_config->{'bridge-disable-mac-learning'};
+}
+
 #helper
 
 sub get_uplink_iface {
