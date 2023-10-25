@@ -1,3 +1,25 @@
+libpve-network-perl (0.8.2) bookworm; urgency=medium
+
+  * fix permissions && use new /sdn/zones/<zone>/<vnet> path
+
+  * zones: fix status
+
+  * sdn: config generation: check if interfaces.d/sdn is sourced
+
+  * zones: improve error message
+
+  * zones: add add|del_bridge_fdb to plugins
+
+  * zones: evpn: add disable-bridge-learning
+
+  * controller: evpn: fix find_bgp_controller
+
+  * controller: frr: add parsing of "interfaces" section
+
+  * controller: add isis router plugin
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 25 Oct 2023 13:05:49 +0200
+
 libpve-network-perl (0.8.1) bookworm; urgency=medium
 
   * fix #4657: evpn: fix exit-node with multiple vrf
