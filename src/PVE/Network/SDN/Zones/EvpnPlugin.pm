@@ -117,7 +117,6 @@ sub generate_sdn_config {
 
     die "missing vxlan tag" if !$tag;
     die "missing controller" if !$controller;
-    warn "vlan-aware vnet can't be enabled with evpn plugin" if $vnet->{vlanaware};
 
     my @peers = PVE::Tools::split_list($controller->{'peers'});
 
@@ -309,6 +308,7 @@ sub vnet_update_hook {
 
     raise_param_exc({ tag => "missing vxlan tag"}) if !defined($tag);
     raise_param_exc({ tag => "vxlan tag max value is 16777216"}) if $tag > 16777216;
+    raise_param_exc({ 'vlan-aware' => "vlan-aware option can't be enabled with evpn"}) if $vnet->{vlanaware};
 
     # verify that tag is not already defined globally (vxlan-id are unique)
     foreach my $id (keys %{$vnet_cfg->{ids}}) {
