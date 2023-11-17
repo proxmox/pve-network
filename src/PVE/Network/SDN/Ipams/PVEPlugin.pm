@@ -56,6 +56,16 @@ sub add_subnet {
     die "$@" if $@;
 }
 
+sub only_gateway_remains {
+    my ($ips) = @_;
+
+    if (keys %{$ips} == 1 &&
+	(values %{$ips})[0]->{gateway} == 1) {
+	return 1;
+    }
+    return 0;
+};
+
 sub del_subnet {
     my ($class, $plugin_config, $subnetid, $subnet) = @_;
 
@@ -71,7 +81,11 @@ sub del_subnet {
 	my $dbsubnet = $dbzone->{subnets}->{$cidr};
 	die "subnet '$cidr' doesn't exist in IPAM DB\n" if !$dbsubnet;
 
-	die "cannot delete subnet '$cidr', not empty\n" if keys %{$dbsubnet->{ips}} > 0;
+	my $ips = $dbsubnet->{ips};
+
+	if (keys %{$ips} > 0 && !only_gateway_remains($ips)) {
+	    die "cannot delete subnet '$cidr', not empty\n";
+	}
 
 	delete $dbzone->{subnets}->{$cidr};
 
