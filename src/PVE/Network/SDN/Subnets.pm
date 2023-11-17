@@ -8,6 +8,7 @@ use Net::IP;
 use NetAddr::IP qw(:lower);
 
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
+use PVE::JSONSchema qw(parse_property_string);
 use PVE::Network::SDN::Dns;
 use PVE::Network::SDN::Ipams;
 
@@ -34,6 +35,28 @@ sub sdn_subnets_config {
     }
 
     return $scfg;
+}
+
+sub get_dhcp_ranges {
+    my ($subnet_config) = @_;
+
+    my @dhcp_ranges = ();
+
+    if ($subnet_config->{'dhcp-range'}) {
+	foreach my $element (@{$subnet_config->{'dhcp-range'}}) {
+	    my $dhcp_range = eval { parse_property_string('pve-sdn-dhcp-range', $element) };
+
+	    if ($@ || !$dhcp_range) {
+		warn "Unable to parse dhcp-range string: $element\n";
+		warn "$@\n" if $@;
+		next;
+	    }
+
+	    push @dhcp_ranges, $dhcp_range;
+	}
+    }
+
+    return \@dhcp_ranges;
 }
 
 sub config {

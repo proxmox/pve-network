@@ -61,6 +61,19 @@ sub private {
     return $defaultData;
 }
 
+my $dhcp_range_fmt = {
+    'start-address' => {
+	type => 'ip',
+	description => 'Start address for the DHCP IP range',
+    },
+    'end-address' => {
+	type => 'ip',
+	description => 'End address for the DHCP IP range',
+    },
+};
+
+PVE::JSONSchema::register_format('pve-sdn-dhcp-range', $dhcp_range_fmt);
+
 sub properties {
     return {
         vnet => {
@@ -84,6 +97,20 @@ sub properties {
             type => 'string', format => 'dns-name',
             description => "dns domain zone prefix  ex: 'adm' -> <hostname>.adm.mydomain.com",
         },
+	'dhcp-range' => {
+	    type => 'array',
+	    description => 'A list of DHCP ranges for this subnet',
+	    optional => 1,
+	    items => {
+		type => 'string',
+		format => 'pve-sdn-dhcp-range',
+	    }
+	},
+	'dhcp-dns-server' => {
+	    type => 'ip',
+	    description => 'IP address for the DNS server',
+	    optional => 1,
+	},
     };
 }
 
@@ -94,6 +121,8 @@ sub options {
 #	routes => { optional => 1 },
 	snat => { optional => 1 },
 	dnszoneprefix => { optional => 1 },
+	'dhcp-range' => { optional => 1 },
+	'dhcp-dns-server' => { optional => 1 },
     };
 }
 
