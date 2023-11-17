@@ -98,14 +98,12 @@ sub get_subnet {
 }
 
 sub find_ip_subnet {
-    my ($ip, $mask, $subnets) = @_;
+    my ($ip, $subnets) = @_;
 
     my $subnet = undef;
     my $subnetid = undef;
 
     foreach my $id (sort keys %{$subnets}) {
-
-	next if $mask ne $subnets->{$id}->{mask};
 	my $cidr = $subnets->{$id}->{cidr};
 	my $subnet_matcher = subnet_matcher($cidr);
 	next if !$subnet_matcher->($ip);
@@ -207,12 +205,11 @@ sub del_subnet {
     $plugin->del_subnet($plugin_config, $subnetid, $subnet);
 }
 
-sub next_free_ip {
-    my ($zone, $subnetid, $subnet, $hostname, $mac, $description, $skipdns) = @_;
+sub add_next_free_ip {
+    my ($zone, $subnetid, $subnet, $hostname, $mac, $vmid, $skipdns, $dhcprange) = @_;
 
     my $cidr = undef;
     my $ip = undef;
-    $description = '' if !$description;
 
     my $ipamid = $zone->{ipam};
     my $dns = $zone->{dns};
@@ -230,10 +227,28 @@ sub next_free_ip {
 	my $plugin_config = $ipam_cfg->{ids}->{$ipamid};
 	my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
 	eval {
-	    $cidr = $plugin->add_next_freeip($plugin_config, $subnetid, $subnet, $hostname, $mac, $description);
-	    ($ip, undef) = split(/\//, $cidr);
+	    if ($dhcprange) {
+		my $data = {
+		    mac => $mac,
+		    hostname => $hostname,
+		    vmid => $vmid,
+		};
+
+		my $dhcp_ranges = PVE::Network::SDN::Subnets::get_dhcp_ranges($subnet);
+
+		foreach my $range (@$dhcp_ranges) {
+		    $ip = $plugin->add_range_next_freeip($plugin_config, $subnet, $range, $data);
+	            next if !$ip;
+		}
+	    } else {
+		$ip = $plugin->add_next_freeip($plugin_config, $subnetid, $subnet, $hostname, $mac, $vmid);
+	    }
 	};
+
 	die $@ if $@;
+
+	eval { PVE::Network::SDN::Ipams::add_cache_mac_ip($mac, $ip); };
+	warn $@ if $@;
     }
 
     eval {
@@ -250,15 +265,15 @@ sub next_free_ip {
 	#rollback
 	my $err = $@;
 	eval {
-	    PVE::Network::SDN::Subnets::del_ip($zone, $subnetid, $subnet, $ip, $hostname)
+	    PVE::Network::SDN::Subnets::del_ip($zone, $subnetid, $subnet, $ip, $hostname, $mac)
 	};
 	die $err;
     }
-    return $cidr;
+    return $ip;
 }
 
 sub add_ip {
-    my ($zone, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway, $skipdns) = @_;
+    my ($zone, $subnetid, $subnet, $ip, $hostname, $mac, $vmid, $is_gateway, $skipdns) = @_;
 
     return if !$subnet || !$ip; 
 
@@ -287,7 +302,7 @@ sub add_ip {
 	my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
 
 	eval {
-	    $plugin->add_ip($plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway);
+	    $plugin->add_ip($plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $vmid, $is_gateway);
 	};
 	die $@ if $@;
     }
@@ -304,14 +319,14 @@ sub add_ip {
 	#rollback
 	my $err = $@;
 	eval {
-	    PVE::Network::SDN::Subnets::del_ip($zone, $subnetid, $subnet, $ip, $hostname)
+	    PVE::Network::SDN::Subnets::del_ip($zone, $subnetid, $subnet, $ip, $hostname, $mac)
 	};
 	die $err;
     }
 }
 
 sub update_ip {
-    my ($zone, $subnetid, $subnet, $ip, $hostname, $oldhostname, $mac, $description, $skipdns) = @_;
+    my ($zone, $subnetid, $subnet, $ip, $hostname, $oldhostname, $mac, $vmid, $skipdns) = @_;
 
     return if !$subnet || !$ip; 
 
@@ -338,7 +353,7 @@ sub update_ip {
 	my $plugin_config = $ipam_cfg->{ids}->{$ipamid};
 	my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
 	eval {
-	    $plugin->update_ip($plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description);
+	    $plugin->update_ip($plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $vmid);
 	};
 	die $@ if $@;
     }
@@ -358,7 +373,7 @@ sub update_ip {
 }
 
 sub del_ip {
-    my ($zone, $subnetid, $subnet, $ip, $hostname, $skipdns) = @_;
+    my ($zone, $subnetid, $subnet, $ip, $hostname, $mac, $skipdns) = @_;
 
     return if !$subnet || !$ip;
 
@@ -383,6 +398,9 @@ sub del_ip {
 	my $plugin_config = $ipam_cfg->{ids}->{$ipamid};
 	my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
 	$plugin->del_ip($plugin_config, $subnetid, $subnet, $ip);
+
+	eval { PVE::Network::SDN::Ipams::del_cache_mac_ip($mac, $ip); };
+	warn $@ if $@;
     }
 
     eval {
