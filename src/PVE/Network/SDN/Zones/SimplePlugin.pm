@@ -26,7 +26,11 @@ sub properties {
 	dnszone => {
 	    type => 'string', format => 'dns-name',
 	    description => "dns domain zone  ex: mydomain.com",
-	}
+	},
+	dhcp => {
+	    type => 'pve-configid',
+	    description => 'ID of the DHCP server responsible for managing this range',
+	},
     };
 }
 
@@ -38,6 +42,7 @@ sub options {
 	reversedns => { optional => 1 },
 	dnszone => { optional => 1 },
 	ipam => { optional => 1 },
+	dhcp => { optional => 1 },
     };
 }
 
