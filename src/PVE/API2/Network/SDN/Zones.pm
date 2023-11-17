@@ -99,6 +99,7 @@ __PACKAGE__->register_method ({
 			    reversedns => { type => 'string', optional => 1},
 			    dnszone => { type => 'string', optional => 1},
 			    ipam => { type => 'string', optional => 1},
+			    dhcp => { type => 'string', optional => 1},
 			    pending => { optional => 1},
 			    state => { type => 'string', optional => 1},
 			    nodes => { type => 'string', optional => 1},
