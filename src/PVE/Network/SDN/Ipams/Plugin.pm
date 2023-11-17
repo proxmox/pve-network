@@ -79,13 +79,13 @@ sub del_subnet {
 }
 
 sub add_ip {
-    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway, $noerr) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $vmid, $is_gateway, $noerr) = @_;
 
     die "please implement inside plugin";
 }
 
 sub update_ip {
-    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway, $noerr) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $vmid, $is_gateway, $noerr) = @_;
     # only update ip attributes (mac,hostname,..). Don't change the ip addresses itself, as some ipam
     # don't allow ip address change without del/add
 
@@ -93,13 +93,26 @@ sub update_ip {
 }
 
 sub add_next_freeip {
-    my ($class, $plugin_config, $subnetid, $subnet, $hostname, $mac, $description, $noerr) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $hostname, $mac, $vmid, $noerr) = @_;
+
+    die "please implement inside plugin";
+}
+
+
+sub add_range_next_freeip {
+    my ($class, $plugin_config, $subnet, $range, $data, $noerr) = @_;
 
     die "please implement inside plugin";
 }
 
 sub del_ip {
     my ($class, $plugin_config, $subnetid, $subnet, $ip, $noerr) = @_;
+
+    die "please implement inside plugin";
+}
+
+sub get_ips_from_mac {
+    my ($class, $plugin_config, $mac, $zone) = @_;
 
     die "please implement inside plugin";
 }

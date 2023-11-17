@@ -77,14 +77,20 @@ sub del_subnet {
 }
 
 sub add_ip {
-    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway, $noerr) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $vmid, $is_gateway, $noerr) = @_;
 
     my $mask = $subnet->{mask};
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
     my $section = $plugin_config->{section};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Authorization' => "token $token"];
-    $description .= " mac:$mac" if $mac && $description;
+
+    my $description = undef;
+    if ($is_gateway) {
+	$description = 'gateway'
+    } elsif ($mac) {
+	$description = "mac:$mac";
+    }
 
     my $params = { address => "$ip/$mask", dns_name => $hostname, description => $description };
 
@@ -102,14 +108,20 @@ sub add_ip {
 }
 
 sub update_ip {
-    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway, $noerr) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $vmid, $is_gateway, $noerr) = @_;
 
     my $mask = $subnet->{mask};
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
     my $section = $plugin_config->{section};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Authorization' => "token $token"];
-    $description .= " mac:$mac" if $mac && $description;
+
+    my $description = undef;
+    if ($is_gateway) {
+	$description = 'gateway'
+    } elsif ($mac) {
+	$description = "mac:$mac";
+    }
 
     my $params = { address => "$ip/$mask", dns_name => $hostname, description => $description };
 
@@ -125,7 +137,7 @@ sub update_ip {
 }
 
 sub add_next_freeip {
-    my ($class, $plugin_config, $subnetid, $subnet, $hostname, $mac, $description, $noerr) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $hostname, $mac, $vmid, $noerr) = @_;
 
     my $cidr = $subnet->{cidr};
 
@@ -134,7 +146,8 @@ sub add_next_freeip {
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Authorization' => "token $token"];
 
     my $internalid = get_prefix_id($url, $cidr, $headers);
-    $description .= " mac:$mac" if $mac && $description;
+
+    my $description = "mac:$mac" if $mac;
 
     my $params = { dns_name => $hostname, description => $description };
 
@@ -149,6 +162,33 @@ sub add_next_freeip {
     }
 
     return $ip;
+}
+
+sub add_range_next_freeip {
+    my ($class, $plugin_config, $subnet, $range, $data, $noerr) = @_;
+
+    my $url = $plugin_config->{url};
+    my $token = $plugin_config->{token};
+    my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Authorization' => "token $token"];
+
+    my $internalid = get_iprange_id($url, $range, $headers);
+    my $description = "mac:$data->{mac}" if $data->{mac};
+
+    my $params = { dns_name => $data->{hostname}, description => $description };
+
+    my $ip = undef;
+    eval {
+	my $result = PVE::Network::SDN::api_request("POST", "$url/ipam/ip-ranges/$internalid/available-ips/", $headers, $params);
+	$ip = $result->{address};
+	print "found ip free $ip in range $range->{'start-address'}-$range->{'end-address'}\n" if $ip;
+    };
+
+    if ($@) {
+	die "can't find free ip in range $range->{'start-address'}-$range->{'end-address'}: $@" if !$noerr;
+    }
+
+    return $ip;
+
 }
 
 sub del_ip {
@@ -170,6 +210,31 @@ sub del_ip {
 	die "error delete ip $ip : $@" if !$noerr;
     }
 }
+
+sub get_ips_from_mac {
+    my ($class, $plugin_config, $mac, $zoneid) = @_;
+
+    my $url = $plugin_config->{url};
+    my $token = $plugin_config->{token};
+    my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Authorization' => "token $token"];
+
+    my $ip4 = undef;
+    my $ip6 = undef;
+
+    my $data = PVE::Network::SDN::api_request("GET", "$url/ipam/ip-addresses/?description__ic=$mac", $headers);
+    for my $ip (@{$data->{results}}) {
+	if ($ip->{family}->{value} == 4 && !$ip4) {
+	    ($ip4, undef) = split(/\//, $ip->{address});
+	}
+
+	if ($ip->{family}->{value} == 6 && !$ip6) {
+	    ($ip6, undef) = split(/\//, $ip->{address});
+	}
+    }
+
+    return ($ip4, $ip6);
+}
+
 
 sub verify_api {
     my ($class, $plugin_config) = @_;
@@ -199,6 +264,15 @@ sub get_prefix_id {
     my ($url, $cidr, $headers) = @_;
 
     my $result = PVE::Network::SDN::api_request("GET", "$url/ipam/prefixes/?q=$cidr", $headers);
+    my $data = @{$result->{results}}[0];
+    my $internalid = $data->{id};
+    return $internalid;
+}
+
+sub get_iprange_id {
+    my ($url, $range, $headers) = @_;
+
+    my $result = PVE::Network::SDN::api_request("GET", "$url/ipam/ip-ranges/?start_address=$range->{'start-address'}&end_address=$range->{'end-address'}", $headers);
     my $data = @{$result->{results}}[0];
     my $internalid = $data->{id};
     return $internalid;

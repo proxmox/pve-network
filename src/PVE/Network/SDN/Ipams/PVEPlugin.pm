@@ -82,7 +82,7 @@ sub del_subnet {
 }
 
 sub add_ip {
-    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $vmid, $is_gateway) = @_;
 
     my $cidr = $subnet->{cidr};
     my $zone = $subnet->{zone};
@@ -96,8 +96,17 @@ sub add_ip {
 	die "subnet '$cidr' doesn't exist in IPAM DB\n" if !$dbsubnet;
 
 	die "IP '$ip' already exist\n" if (!$is_gateway && defined($dbsubnet->{ips}->{$ip})) || ($is_gateway && defined($dbsubnet->{ips}->{$ip}) && !defined($dbsubnet->{ips}->{$ip}->{gateway}));
-	$dbsubnet->{ips}->{$ip} = {};
-	$dbsubnet->{ips}->{$ip} = {gateway => 1} if $is_gateway;
+
+        my $data = {};
+	if ($is_gateway) {
+	    $data->{gateway} = 1;
+	} else {
+	    $data->{vmid} = $vmid if $vmid;
+	    $data->{hostname} = $hostname if $hostname;
+	    $data->{mac} = $mac if $mac;
+	}
+
+	$dbsubnet->{ips}->{$ip} = $data;
 
 	write_db($db);
     });
@@ -105,12 +114,12 @@ sub add_ip {
 }
 
 sub update_ip {
-    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $vmid, $is_gateway) = @_;
     return;
 }
 
 sub add_next_freeip {
-    my ($class, $plugin_config, $subnetid, $subnet, $hostname, $mac, $description) = @_;
+    my ($class, $plugin_config, $subnetid, $subnet, $hostname, $mac, $vmid, $noerr) = @_;
 
     my $cidr = $subnet->{cidr};
     my $network = $subnet->{network};
@@ -156,6 +165,39 @@ sub add_next_freeip {
     return "$freeip/$mask";
 }
 
+sub add_range_next_freeip {
+    my ($class, $plugin_config, $subnet, $range, $data, $noerr) = @_;
+
+    my $cidr = $subnet->{cidr};
+    my $zone = $subnet->{zone};
+
+    cfs_lock_file($ipamdb_file, undef, sub {
+	my $db = read_db();
+
+	my $dbzone = $db->{zones}->{$zone};
+	die "zone '$zone' doesn't exist in IPAM DB\n" if !$dbzone;
+
+	my $dbsubnet = $dbzone->{subnets}->{$cidr};
+	die "subnet '$cidr' doesn't exist in IPAM DB\n" if !$dbsubnet;
+
+	my $ip = new Net::IP ("$range->{'start-address'} - $range->{'end-address'}")
+	    or die "Invalid IP address(es) in Range!\n";
+	my $mac = $data->{mac};
+
+	do {
+	    my $ip_address = $ip->version() == 6 ? $ip->short() : $ip->ip();
+	    if (!$dbsubnet->{ips}->{$ip_address}) {
+		$dbsubnet->{ips}->{$ip_address} = $data;
+		write_db($db);
+
+		return $ip_address;
+	    }
+	} while (++$ip);
+
+	die "No free IP left in Range $range->{'start-address'}:$range->{'end-address'}}\n";
+    });
+}
+
 sub del_ip {
     my ($class, $plugin_config, $subnetid, $subnet, $ip) = @_;
 
@@ -172,10 +214,41 @@ sub del_ip {
 
 	die "IP '$ip' does not exist in IPAM DB\n" if !defined($dbsubnet->{ips}->{$ip});
 	delete $dbsubnet->{ips}->{$ip};
-
 	write_db($db);
     });
     die "$@" if $@;
+}
+
+sub get_ips_from_mac {
+    my ($class, $plugin_config, $mac, $zoneid) = @_;
+
+    #just in case, as this should already be cached in local macs.db
+
+    my $ip4 = undef;
+    my $ip6 = undef;
+
+    my $db = read_db();
+    die "zone $zoneid don't exist in ipam db" if !$db->{zones}->{$zoneid};
+    my $dbzone = $db->{zones}->{$zoneid};
+    my $subnets = $dbzone->{subnets};
+
+    for my $subnet ( keys %$subnets) {
+	next if Net::IP::ip_is_ipv4($subnet) && $ip4;
+	next if $ip6;
+	my $ips = $subnets->{$subnet}->{ips};
+	for my $ip (keys %$ips) {
+	    my $ipobject = $ips->{$ip};
+	    if ($ipobject->{mac} && $ipobject->{mac} eq $mac) {
+		if (Net::IP::ip_is_ipv4($ip)) {
+		    $ip4 = $ip;
+		} else {
+		    $ip6 = $ip;
+		}
+	    }
+	}
+	last if $ip4 && $ip6;
+    }
+    return ($ip4, $ip6);
 }
 
 #helpers

@@ -204,6 +204,35 @@ sub del_ip {
     }
 }
 
+sub get_ips_from_mac {
+    my ($class, $plugin_config, $mac, $zoneid) = @_;
+
+
+    my $url = $plugin_config->{url};
+    my $token = $plugin_config->{token};
+    my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Token' => $token];
+
+    my $ip4 = undef;
+    my $ip6 = undef;
+
+    my $ips = PVE::Network::SDN::api_request("GET", "$url/addresses/search_mac/$mac", $headers);
+
+    #fixme
+    die "parsing of result not yet implemented";
+
+    for my $ip (@$ips) {
+#        if ($ip->{family}->{value} == 4 && !$ip4) {
+#            ($ip4, undef) = split(/\//, $ip->{address});
+#        }
+#
+#        if ($ip->{family}->{value} == 6 && !$ip6) {
+#            ($ip6, undef) = split(/\//, $ip->{address});
+#        }
+    }
+
+    return ($ip4, $ip6);
+}
+
 sub verify_api {
     my ($class, $plugin_config) = @_;
 
