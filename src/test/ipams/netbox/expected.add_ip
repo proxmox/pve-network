@@ -1,5 +1,5 @@
 bless( {
-                  '_content' => '{"address":"10.0.0.1/24","description":"mydescription mac:da:65:8f:18:9b:6f","dns_name":"myhostname"}',
+                  '_content' => '{"address":"10.0.0.1/24","description":"gateway","dns_name":"myhostname"}',
                   '_headers' => bless( {
                                          'authorization' => 'token 0123456789abcdef0123456789abcdef01234567',
                                          'content-type' => 'application/json; charset=UTF-8'
