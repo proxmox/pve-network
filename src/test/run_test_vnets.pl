@@ -231,7 +231,7 @@ foreach my $path (@plugins) {
     $expected = $ipam ? $cidr3 : undef;
 
     eval {
-	$result = PVE::Network::SDN::Vnets::get_next_free_cidr($vnetid, $hostname, $mac, $description, $ipversion);
+	$result = PVE::Network::SDN::Vnets::add_next_free_cidr($vnetid, $hostname, $mac, $description);
     };
 
     if ($@) {
@@ -309,7 +309,7 @@ foreach my $path (@plugins) {
     $expected = $ipam ? $cidr1 : undef;
 
     eval {
-	$result = PVE::Network::SDN::Vnets::get_next_free_cidr($vnetid, $hostname, $mac, $description, $ipversion);
+	$result = PVE::Network::SDN::Vnets::add_next_free_cidr($vnetid, $hostname, $mac, $description);
     };
 
     if ($@) {

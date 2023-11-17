@@ -109,6 +109,12 @@ foreach my $path (@plugins) {
 	    my $ipam_config = read_sdn_config ("$path/ipam_config");
 	    return $ipam_config;
 	},
+	add_cache_mac_ip => sub {
+	    return;
+	},
+	del_cache_mac_ip => sub {
+	    return;
+	}
     );
 
     ## add_subnet
@@ -192,7 +198,7 @@ foreach my $path (@plugins) {
     $expected = '{"zones":{"myzone":{"subnets":{"'.$subnet_cidr.'":{"ips":{"'.$ip.'":{"gateway":1},"'.$ipnextfree.'":{},"'.$ip2.'":{}}}}}}}';
 
     eval {
-	$ip3 = PVE::Network::SDN::Subnets::next_free_ip($zone, $subnetid, $subnet, $hostname, $mac, $description);
+	$ip3 = PVE::Network::SDN::Subnets::add_next_free_ip($zone, $subnetid, $subnet, $hostname, $mac, $description);
     };
 
     if ($@) {
