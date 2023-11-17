@@ -29,6 +29,7 @@ my $api_sdn_subnets_config = sub {
     my $scfg = dclone(PVE::Network::SDN::Subnets::sdn_subnets_config($cfg, $id));
     $scfg->{subnet} = $id;
     $scfg->{digest} = $cfg->{digest};
+    $scfg->{'dhcp-range'} = PVE::Network::SDN::Subnets::get_dhcp_ranges($scfg);
 
     return $scfg;
 };
