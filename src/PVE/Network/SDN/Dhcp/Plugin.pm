@@ -23,7 +23,7 @@ sub private {
 }
 
 sub add_ip_mapping {
-    my ($class, $dhcp_config, $mac, $ip) = @_;
+    my ($class, $dhcpid, $macdb, $mac, $ip4, $ip6) = @_;
     die 'implement in sub class';
 }
 

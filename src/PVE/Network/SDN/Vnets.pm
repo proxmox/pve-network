@@ -7,6 +7,7 @@ use Net::IP;
 
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 use PVE::Network::SDN;
+use PVE::Network::SDN::Dhcp;
 use PVE::Network::SDN::Subnets;
 use PVE::Network::SDN::Zones;
 
@@ -182,6 +183,20 @@ sub del_ips_from_mac {
     PVE::Network::SDN::Vnets::del_ip($vnetid, $ip6, $hostname, $mac) if $ip6;
 
     return ($ip4, $ip6);
+}
+
+sub add_dhcp_mapping {
+    my ($vnetid, $mac) = @_;
+
+    my $vnet = PVE::Network::SDN::Vnets::get_vnet($vnetid);
+    return if !$vnet;
+    my $zoneid = $vnet->{zone};
+    my $zone = PVE::Network::SDN::Zones::get_zone($zoneid);
+
+    return if !$zone->{ipam} || !$zone->{dhcp};
+
+    my ($ip4,$ip6) = PVE::Network::SDN::Vnets::get_ips_from_mac($vnetid, $mac);
+    PVE::Network::SDN::Dhcp::add_mapping($vnetid, $mac, $ip4, $ip6) if $ip4 || $ip6;
 }
 
 1;

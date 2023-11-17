@@ -8,6 +8,7 @@ use PVE::Cluster qw(cfs_read_file);
 use PVE::Network::SDN;
 use PVE::Network::SDN::SubnetPlugin;
 use PVE::Network::SDN::Dhcp qw(config);
+use PVE::Network::SDN::Ipams;
 use PVE::Network::SDN::Subnets qw(sdn_subnets_config config get_dhcp_ranges);
 use PVE::Network::SDN::Dhcp::Plugin;
 use PVE::Network::SDN::Dhcp::Dnsmasq;
@@ -30,9 +31,11 @@ sub add_mapping {
 
     return if !$zone->{ipam} || !$zone->{dhcp};
 
-    my $dhcp_plugin = PVE::Network::SDN::Dhcp::Plugin->lookup($zone->{dhcp});
-    $dhcp_plugin->add_ip_mapping($zoneid, $mac, $ip4) if $ip4;
-    $dhcp_plugin->add_ip_mapping($zoneid, $mac, $ip6) if $ip6;
+    my $dhcptype = $zone->{dhcp};
+
+    my $macdb = PVE::Network::SDN::Ipams::read_macdb();
+    my $dhcp_plugin = PVE::Network::SDN::Dhcp::Plugin->lookup($dhcptype);
+    $dhcp_plugin->add_ip_mapping($zoneid, $macdb, $mac, $ip4, $ip6)
 }
 
 sub remove_mapping {

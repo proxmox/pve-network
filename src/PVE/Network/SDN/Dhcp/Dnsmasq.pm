@@ -53,21 +53,49 @@ sub del_ip_mapping {
 }
 
 sub add_ip_mapping {
-    my ($class, $dhcpid, $mac, $ip) = @_;
+    my ($class, $dhcpid, $macdb, $mac, $ip4, $ip6) = @_;
 
     my $ethers_file = "$DNSMASQ_CONFIG_ROOT/$dhcpid/ethers";
     my $ethers_tmp_file = "$ethers_file.tmp";
+
+    my $change = undef;
+    my $match4 = undef;
+    my $match6 = undef;
 
     my $appendFn = sub {
 	open(my $in, '<', $ethers_file) or die "Could not open file '$ethers_file' $!\n";
 	open(my $out, '>', $ethers_tmp_file) or die "Could not open file '$ethers_tmp_file' $!\n";
 
         while (my $line = <$in>) {
-	    next if $line =~ m/^$mac/;
-	    print $out $line;
+	    chomp($line);
+	    my ($parsed_mac, $parsed_ip) = split(/,/, $line);
+	    #delete removed mac
+	    if (!defined($macdb->{macs}->{$parsed_mac})) {
+		$change = 1;
+		next;
+	    }
+
+	    #delete changed ip
+	    my $ipversion = Net::IP::ip_is_ipv4($parsed_ip) ? "ip4" : "ip6";
+	    if ($macdb->{macs}->{$parsed_mac}->{$ipversion} && $macdb->{macs}->{$parsed_mac}->{$ipversion} ne $parsed_ip) {
+		$change = 1;
+		next;
+	    }
+	    print $out "$parsed_mac,$parsed_ip\n";
+	    #check if mac/ip already exist
+	    $match4 = 1 if $parsed_mac eq $mac && $macdb->{macs}->{$mac}->{'ip4'} && $macdb->{macs}->{$mac}->{'ip4'} eq $ip4;
+	    $match6 = 1 if $parsed_mac eq $mac && $macdb->{macs}->{$mac}->{'ip6'} && $macdb->{macs}->{$mac}->{'ip6'} eq $ip6;
 	}
 
-	print $out "$mac,$ip\n";
+	if(!$match4 && $ip4) {
+	    print $out "$mac,$ip4\n";
+	    $change = 1;
+	}
+
+	if(!$match6 && $ip6) {
+	    print $out "$mac,$ip6\n";
+	    $change = 1;
+	}
 	close $in;
 	close $out;
 	move $ethers_tmp_file, $ethers_file;
@@ -77,12 +105,12 @@ sub add_ip_mapping {
     PVE::Tools::lock_file($ethers_file, 10, $appendFn);
 
     if ($@) {
-	warn "Unable to add $mac/$ip to the dnsmasq configuration: $@\n";
+	warn "Unable to add $mac to the dnsmasq configuration: $@\n";
 	return;
     }
 
     my $service_name = "dnsmasq\@$dhcpid";
-    PVE::Tools::run_command(['systemctl', 'reload', $service_name]);
+    PVE::Tools::run_command(['systemctl', 'reload', $service_name]) if $change;
 }
 
 sub configure_subnet {
