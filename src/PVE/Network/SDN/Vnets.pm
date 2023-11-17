@@ -26,6 +26,13 @@ sub sdn_vnets_config {
 }
 
 sub config {
+    my ($running) = @_;
+
+    if ($running) {
+	my $cfg = PVE::Network::SDN::running_config();
+	return $cfg->{vnets};
+    }
+
     return cfs_read_file("sdn/vnets.cfg");
 }
 
@@ -54,31 +61,23 @@ sub get_vnet {
 
     return if !$vnetid;
 
-    my $scfg = {};
-    if($running) {
-	my $cfg = PVE::Network::SDN::running_config();
-	$scfg = $cfg->{vnets};
-    } else {
-	$scfg = PVE::Network::SDN::Vnets::config();
-    }
-
-    my $vnet = PVE::Network::SDN::Vnets::sdn_vnets_config($scfg, $vnetid, 1);
-
-    return $vnet;
+    my $cfg = PVE::Network::SDN::Vnets::config($running);
+    return PVE::Network::SDN::Vnets::sdn_vnets_config($cfg, $vnetid, 1);
 }
 
 sub get_subnets {
-    my ($vnetid) = @_;
+    my ($vnetid, $running) = @_;
 
     my $subnets = undef;
-    my $subnets_cfg = PVE::Network::SDN::Subnets::config();
+    my $subnets_cfg = PVE::Network::SDN::Subnets::config($running);
+
     foreach my $subnetid (sort keys %{$subnets_cfg->{ids}}) {
 	my $subnet = PVE::Network::SDN::Subnets::sdn_subnets_config($subnets_cfg, $subnetid);
 	next if !$subnet->{vnet} || ($vnetid && $subnet->{vnet} ne $vnetid);
 	$subnets->{$subnetid} = $subnet;
     }
-    return $subnets;
 
+    return $subnets;
 }
 
 sub get_subnet_from_vnet_cidr {

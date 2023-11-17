@@ -40,8 +40,14 @@ sub sdn_zones_config {
 }
 
 sub config {
-    my $config = cfs_read_file("sdn/zones.cfg");
-    return $config;
+    my ($running) = @_;
+
+    if ($running) {
+	my $cfg = PVE::Network::SDN::running_config();
+	return $cfg->{zones};
+    }
+
+    return cfs_read_file("sdn/zones.cfg");
 }
 
 sub get_plugin_config {
@@ -74,19 +80,29 @@ sub complete_sdn_zone {
 sub get_zone {
     my ($zoneid, $running) = @_;
 
-    my $cfg = {};
-    if($running) {
-        my $cfg = PVE::Network::SDN::running_config();
-        $cfg = $cfg->{vnets};
-    } else {
-        $cfg = PVE::Network::SDN::Zones::config();
-    }
+    my $cfg = PVE::Network::SDN::Zones::config($running);
 
     my $zone = PVE::Network::SDN::Zones::sdn_zones_config($cfg, $zoneid, 1);
 
     return $zone;
 }
 
+sub get_vnets {
+    my ($zoneid, $running) = @_;
+
+    return if !$zoneid;
+
+    my $vnets_config = PVE::Network::SDN::Vnets::config($running);
+    my $vnets = undef;
+
+    for my $vnetid (keys %{$vnets_config->{ids}}) {
+        my $vnet = PVE::Network::SDN::Vnets::sdn_vnets_config($vnets_config, $vnetid);
+        next if !$vnet->{zone} || $vnet->{zone} ne $zoneid;
+        $vnets->{$vnetid} = $vnet;
+    }
+
+    return $vnets;
+}
 
 sub generate_etc_network_config {
 

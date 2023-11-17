@@ -23,7 +23,9 @@ sub sdn_subnets_config {
     my $scfg = $cfg->{ids}->{$id};
     die "sdn subnet '$id' does not exist\n" if (!$noerr && !$scfg);
 
-    if($scfg) {
+    if ($scfg) {
+	$scfg->{id} = $id;
+
 	my ($zone, $network, $mask) = split(/-/, $id);
 	$scfg->{cidr} = "$network/$mask";
 	$scfg->{zone} = $zone;
@@ -35,7 +37,14 @@ sub sdn_subnets_config {
 }
 
 sub config {
-    my $config = cfs_read_file("sdn/subnets.cfg");
+    my ($running) = @_;
+
+    if ($running) {
+	my $cfg = PVE::Network::SDN::running_config();
+	return $cfg->{subnets};
+    }
+
+    return cfs_read_file("sdn/subnets.cfg");
 }
 
 sub write_config {
@@ -61,16 +70,8 @@ sub complete_sdn_subnet {
 sub get_subnet {
     my ($subnetid, $running) = @_;
 
-    my $cfg = {};
-    if($running) {
-	my $cfg = PVE::Network::SDN::running_config();
-	$cfg = $cfg->{subnets};
-    } else {
-	$cfg = PVE::Network::SDN::Subnets::config();
-    }
-
-    my $subnet = PVE::Network::SDN::Subnets::sdn_subnets_config($cfg, $subnetid, 1);
-    return $subnet;
+    my $cfg = PVE::Network::SDN::Subnets::config($running);
+    return PVE::Network::SDN::Subnets::sdn_subnets_config($cfg, $subnetid, 1);
 }
 
 sub find_ip_subnet {
