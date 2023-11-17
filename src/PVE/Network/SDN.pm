@@ -12,6 +12,7 @@ use PVE::Network::SDN::Vnets;
 use PVE::Network::SDN::Zones;
 use PVE::Network::SDN::Controllers;
 use PVE::Network::SDN::Subnets;
+use PVE::Network::SDN::Dhcp;
 
 use PVE::Tools qw(extract_param dir_glob_regex run_command);
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
@@ -155,7 +156,7 @@ sub commit_config {
     my $controllers = { ids => $controllers_cfg->{ids} };
     my $subnets = { ids => $subnets_cfg->{ids} };
 
-     $cfg = { version => $version, vnets => $vnets, zones => $zones, controllers => $controllers, subnets => $subnets };
+    $cfg = { version => $version, vnets => $vnets, zones => $zones, controllers => $controllers, subnets => $subnets };
 
     cfs_write_file($running_cfg, $cfg);
 }
@@ -229,6 +230,12 @@ sub generate_controller_config {
     PVE::Network::SDN::Controllers::write_controller_config($raw_config);
 
     PVE::Network::SDN::Controllers::reload_controller() if $reload;
+}
+
+sub generate_dhcp_config {
+    my ($reload) = @_;
+
+    PVE::Network::SDN::Dhcp::regenerate_config($reload);
 }
 
 sub encode_value {
