@@ -1,0 +1,5 @@
+/libpve-network-perl-[0-9]*/
+*.deb
+/*.buildinfo
+/*.changes
+/.vscode/
