@@ -10,4 +10,5 @@ install:
 	make -C Zones install
 	make -C Ipams install
 	make -C Dns install
+	make -C Dhcp install
 
