@@ -79,7 +79,7 @@ foreach my $path (@plugins) {
     my $ip3 = undef;
     my $hostname = "myhostname";
     my $mac = "da:65:8f:18:9b:6f";
-    my $description = "mydescription";
+    my $vmid = "100";
     my $is_gateway = 1;
     my $ipamdb = {};
 
@@ -144,7 +144,7 @@ foreach my $path (@plugins) {
     $expected = '{"zones":{"myzone":{"subnets":{"'.$subnet_cidr.'":{"ips":{"'.$ip.'":{"gateway":1}}}}}}}';
 
     eval {
-	PVE::Network::SDN::Subnets::add_ip($zone, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway);
+	PVE::Network::SDN::Subnets::add_ip($zone, $subnetid, $subnet, $ip, $hostname, $mac, $vmid, $is_gateway);
     };
 
     if ($@) {
@@ -162,7 +162,7 @@ foreach my $path (@plugins) {
 	$name = "$testid $test";
 
 	eval {
-	    PVE::Network::SDN::Subnets::add_ip($zone, $subnetid, $subnet, $ip, $hostname, $mac, $description);
+	    PVE::Network::SDN::Subnets::add_ip($zone, $subnetid, $subnet, $ip, $hostname, $mac, $vmid);
 	};
 
 	if ($@) {
@@ -176,10 +176,10 @@ foreach my $path (@plugins) {
     $test = "add_second_ip $ip2";
     $name = "$testid $test";
     $result = undef;
-    $expected = '{"zones":{"myzone":{"subnets":{"'.$subnet_cidr.'":{"ips":{"'.$ip.'":{"gateway":1},"'.$ip2.'":{"hostname":"'.$hostname.'","ip":"'.$ip2.'","mac":"'.$mac.'"}}}}}}}';
+    $expected = '{"zones":{"myzone":{"subnets":{"'.$subnet_cidr.'":{"ips":{"'.$ip.'":{"gateway":1},"'.$ip2.'":{"hostname":"'.$hostname.'","mac":"'.$mac.'","vmid":"'.$vmid.'"}}}}}}}';
 
     eval {
-	PVE::Network::SDN::Subnets::add_ip($zone, $subnetid, $subnet, $ip2, $hostname, $mac, $description);
+	PVE::Network::SDN::Subnets::add_ip($zone, $subnetid, $subnet, $ip2, $hostname, $mac, $vmid);
     };
 
     if ($@) {
@@ -195,10 +195,10 @@ foreach my $path (@plugins) {
     $test = "find_next_freeip ($ipnextfree)";
     $name = "$testid $test";
     $result = undef;
-    $expected = '{"zones":{"myzone":{"subnets":{"'.$subnet_cidr.'":{"ips":{"'.$ip.'":{"gateway":1},"'.$ipnextfree.'":{},"'.$ip2.'":{"hostname":"'.$hostname.'","ip":"'.$ip2.'","mac":"'.$mac.'"}}}}}}}';
+    $expected = '{"zones":{"myzone":{"subnets":{"'.$subnet_cidr.'":{"ips":{"'.$ip.'":{"gateway":1},"'.$ipnextfree.'":{},"'.$ip2.'":{"hostname":"'.$hostname.'","mac":"'.$mac.'","vmid":"'.$vmid.'"}}}}}}}';
 
     eval {
-	$ip3 = PVE::Network::SDN::Subnets::add_next_free_ip($zone, $subnetid, $subnet, $hostname, $mac, $description);
+	$ip3 = PVE::Network::SDN::Subnets::add_next_free_ip($zone, $subnetid, $subnet, $hostname, $mac, $vmid);
     };
 
     if ($@) {
@@ -212,7 +212,7 @@ foreach my $path (@plugins) {
     $test = "del_ip $ip";
     $name = "$testid $test";
     $result = undef;
-    $expected = '{"zones":{"myzone":{"subnets":{"'.$subnet_cidr.'":{"ips":{"'.$ipnextfree.'":{},"'.$ip2.'":{"hostname":"'.$hostname.'","ip":"'.$ip2.'","mac":"'.$mac.'"}}}}}}}';
+    $expected = '{"zones":{"myzone":{"subnets":{"'.$subnet_cidr.'":{"ips":{"'.$ipnextfree.'":{},"'.$ip2.'":{"hostname":"'.$hostname.'","mac":"'.$mac.'","vmid":"'.$vmid.'"}}}}}}}';
 
     eval {
 	PVE::Network::SDN::Subnets::del_ip($zone, $subnetid, $subnet, $ip, $hostname);
@@ -264,10 +264,10 @@ foreach my $path (@plugins) {
 
     $name = "$testid $test";
     $result = undef;
-    $expected = '{"zones":{"myzone":{"subnets":{"'.$subnet_cidr.'":{"ips":{"'.$ipnextfree.'":{},"'.$ip2.'":{"hostname":"'.$hostname.'","ip":"'.$ip2.'","mac":"'.$mac.'"}}}}}}}';
+    $expected = '{"zones":{"myzone":{"subnets":{"'.$subnet_cidr.'":{"ips":{"'.$ipnextfree.'":{},"'.$ip2.'":{"hostname":"'.$hostname.'","mac":"'.$mac.'","vmid":"'.$vmid.'"}}}}}}}';
 
     eval {
-	PVE::Network::SDN::Subnets::add_ip($zone, $subnetid, $subnet, $ip, $hostname, $mac, $description);
+	PVE::Network::SDN::Subnets::add_ip($zone, $subnetid, $subnet, $ip, $hostname, $mac, $vmid);
     };
 
     if ($@) {
