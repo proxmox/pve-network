@@ -25,44 +25,54 @@ sub add_ip_mapping {
     my $ethers_file = "$DNSMASQ_CONFIG_ROOT/$dhcpid/ethers";
     my $ethers_tmp_file = "$ethers_file.tmp";
 
-    my $change = undef;
-    my $match4 = undef;
-    my $match6 = undef;
+    my $reload = undef;
 
     my $appendFn = sub {
 	open(my $in, '<', $ethers_file) or die "Could not open file '$ethers_file' $!\n";
 	open(my $out, '>', $ethers_tmp_file) or die "Could not open file '$ethers_tmp_file' $!\n";
 
-        while (my $line = <$in>) {
+	my $match = undef;
+
+ 	while (my $line = <$in>) {
 	    chomp($line);
-	    my ($parsed_mac, $parsed_ip) = split(/,/, $line);
-	    #delete removed mac
-	    if (!defined($macdb->{macs}->{$parsed_mac})) {
-		$change = 1;
-		next;
+	    my $parsed_ip4 = undef;
+	    my $parsed_ip6 = undef;
+	    my ($parsed_mac, $parsed_ip1, $parsed_ip2) = split(/,/, $line);
+
+	    if ($parsed_ip2) {
+		$parsed_ip4 = $parsed_ip1;
+		$parsed_ip6 = $parsed_ip2;
+	    } elsif (Net::IP::ip_is_ipv4($parsed_ip1)) {
+		$parsed_ip4 = $parsed_ip1;
+	    } else {
+		$parsed_ip6 = $parsed_ip1;
+	    }
+	    $parsed_ip6 = $1 if $parsed_ip6 && $parsed_ip6 =~ m/\[(\S+)\]/;
+
+	    #delete changed
+	    if (!defined($macdb->{macs}->{$parsed_mac}) ||
+		($parsed_ip4 && $macdb->{macs}->{$parsed_mac}->{'ip4'} && $macdb->{macs}->{$parsed_mac}->{'ip4'} ne $parsed_ip4) ||
+		($parsed_ip6 && $macdb->{macs}->{$parsed_mac}->{'ip6'} && $macdb->{macs}->{$parsed_mac}->{'ip6'} ne $parsed_ip6)) {
+                    $reload = 1;
+		    next;
 	    }
 
-	    #delete changed ip
-	    my $ipversion = Net::IP::ip_is_ipv4($parsed_ip) ? "ip4" : "ip6";
-	    if ($macdb->{macs}->{$parsed_mac}->{$ipversion} && $macdb->{macs}->{$parsed_mac}->{$ipversion} ne $parsed_ip) {
-		$change = 1;
-		next;
+	    if ($parsed_mac eq $mac) {
+		$match = 1 if $ip4 && $parsed_ip4 && $ip4;
+		$match = 1 if $ip6 && $parsed_ip6 && $ip6;
 	    }
-	    print $out "$parsed_mac,$parsed_ip\n";
-	    #check if mac/ip already exist
-	    $match4 = 1 if $parsed_mac eq $mac && $macdb->{macs}->{$mac}->{'ip4'} && $macdb->{macs}->{$mac}->{'ip4'} eq $ip4;
-	    $match6 = 1 if $parsed_mac eq $mac && $macdb->{macs}->{$mac}->{'ip6'} && $macdb->{macs}->{$mac}->{'ip6'} eq $ip6;
+
+	    print $out "$line\n";
 	}
 
-	if(!$match4 && $ip4) {
-	    print $out "$mac,$ip4\n";
-	    $change = 1;
+	if(!$match) {
+	    my $reservation = $mac;
+	    $reservation .= ",$ip4" if $ip4;
+	    $reservation .= ",[$ip6]" if $ip6;
+	    print $out "$reservation\n";
+	    $reload = 1;
 	}
 
-	if(!$match6 && $ip6) {
-	    print $out "$mac,$ip6\n";
-	    $change = 1;
-	}
 	close $in;
 	close $out;
 	move $ethers_tmp_file, $ethers_file;
@@ -77,7 +87,7 @@ sub add_ip_mapping {
     }
 
     my $service_name = "dnsmasq\@$dhcpid";
-    PVE::Tools::run_command(['systemctl', 'reload', $service_name]) if $change;
+    PVE::Tools::run_command(['systemctl', 'reload', $service_name]) if $reload;
 
     #update lease as ip could still be associated to an old removed mac
     my $bus = Net::DBus->system();
@@ -86,7 +96,7 @@ sub add_ip_mapping {
 
     my @hostname = unpack("C*", "*");
     $manager->AddDhcpLease($ip4, $mac, \@hostname, undef, 0, 0, 0) if $ip4;
-    $manager->AddDhcpLease($ip6, $mac, \@hostname, undef, 0, 0, 0) if $ip6;
+#    $manager->AddDhcpLease($ip6, $mac, \@hostname, undef, 0, 0, 0) if $ip6;
 
 }
 
