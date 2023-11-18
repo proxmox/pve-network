@@ -18,40 +18,6 @@ sub type {
     return 'dnsmasq';
 }
 
-sub del_ip_mapping {
-    my ($class, $dhcpid, $mac) = @_;
-
-    my $ethers_file = "$DNSMASQ_CONFIG_ROOT/$dhcpid/ethers";
-    my $ethers_tmp_file = "$ethers_file.tmp";
-
-    my $removeFn = sub {
-	open(my $in, '<', $ethers_file) or die "Could not open file '$ethers_file' $!\n";
-	open(my $out, '>', $ethers_tmp_file) or die "Could not open file '$ethers_tmp_file' $!\n";
-
-        while (my $line = <$in>) {
-	    next if $line =~ m/^$mac/;
-	    print $out $line;
-	}
-
-	close $in;
-	close $out;
-
-	move $ethers_tmp_file, $ethers_file;
-
-	chmod 0644, $ethers_file;
-    };
-
-    PVE::Tools::lock_file($ethers_file, 10, $removeFn);
-
-    if ($@) {
-	warn "Unable to remove $mac from the dnsmasq configuration: $@\n";
-	return;
-    }
-
-    my $service_name = "dnsmasq\@$dhcpid";
-    PVE::Tools::run_command(['systemctl', 'reload', $service_name]);
-}
-
 sub add_ip_mapping {
     my ($class, $dhcpid, $macdb, $mac, $ip4, $ip6) = @_;
 

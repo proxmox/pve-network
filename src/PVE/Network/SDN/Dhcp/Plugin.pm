@@ -27,11 +27,6 @@ sub add_ip_mapping {
     die 'implement in sub class';
 }
 
-sub del_ip_mapping {
-    my ($class, $dhcp_config, $mac) = @_;
-    die 'implement in sub class';
-}
-
 sub configure_range {
     my ($class, $dhcp_config, $subnet_config, $range_config) = @_;
     die 'implement in sub class';
