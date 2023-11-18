@@ -112,11 +112,18 @@ sub configure_subnet {
 sub configure_range {
     my ($class, $dhcpid, $subnet_config, $range_config) = @_;
 
-    my $range_file = "$DNSMASQ_CONFIG_ROOT/$dhcpid/10-$subnet_config->{id}.ranges.conf",
+    my $subnet_file = "$DNSMASQ_CONFIG_ROOT/$dhcpid/10-$subnet_config->{id}.conf";
     my $tag = $subnet_config->{id};
 
-    open(my $fh, '>>', $range_file) or die "Could not open file '$range_file' $!\n";
-    print $fh "dhcp-range=set:$tag,$range_config->{'start-address'},$range_config->{'end-address'}\n";
+    my ($zone, $network, $mask) = split(/-/, $tag);
+
+    if (Net::IP::ip_is_ipv4($network)) {
+	$mask = (2 ** $mask - 1) << (32 - $mask);
+	$mask = join( '.', unpack( "C4", pack( "N", $mask ) ) );
+    }
+
+    open(my $fh, '>>', $subnet_file) or die "Could not open file '$subnet_file' $!\n";
+    print $fh "dhcp-range=set:$tag,$network,static,$mask,infinite\n";
     close $fh;
 }
 
