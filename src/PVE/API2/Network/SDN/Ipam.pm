@@ -114,14 +114,11 @@ __PACKAGE__->register_method ({
 	my $vnet = extract_param($param, 'vnet');
 	my $mac = extract_param($param, 'mac');
 
-	PVE::Network::SDN::Dhcp::remove_mapping($vnet, $mac);
-
 	eval {
 	    PVE::Network::SDN::Vnets::del_ips_from_mac($vnet, $mac);
 	};
 	my $error = $@;
 
-	PVE::Network::SDN::Vnets::add_dhcp_mapping($vnet, $mac) if $error;
 	die "$error\n" if $error;
 
 	return undef;
@@ -159,7 +156,6 @@ __PACKAGE__->register_method ({
 	my $ip = extract_param($param, 'ip');
 
 	PVE::Network::SDN::Vnets::add_ip($vnet, $ip, '', $mac, undef);
-	PVE::Network::SDN::Vnets::add_dhcp_mapping($vnet, $mac);
 
 	return undef;
     },
@@ -198,7 +194,6 @@ __PACKAGE__->register_method ({
 	my $vmid = extract_param($param, 'vmid');
 	my $ip = extract_param($param, 'ip');
 
-	PVE::Network::SDN::Dhcp::remove_mapping($vnet, $mac);
 	my ($old_ip4, $old_ip6) = PVE::Network::SDN::Vnets::del_ips_from_mac($vnet, $mac, '');
 
 	eval {
@@ -210,8 +205,6 @@ __PACKAGE__->register_method ({
 	    PVE::Network::SDN::Vnets::add_ip($vnet, $old_ip4, '', $mac, $vmid) if $old_ip4;
 	    PVE::Network::SDN::Vnets::add_ip($vnet, $old_ip6, '', $mac, $vmid) if $old_ip6;
 	}
-
-	PVE::Network::SDN::Vnets::add_dhcp_mapping($vnet, $mac);
 
 	die "$error\n" if $error;
 	return undef;
