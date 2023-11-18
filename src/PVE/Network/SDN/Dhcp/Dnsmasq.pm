@@ -9,6 +9,7 @@ use Net::IP qw(:PROC);
 use PVE::Tools qw(file_set_contents run_command lock_file);
 
 use File::Copy;
+use Net::DBus;
 
 my $DNSMASQ_CONFIG_ROOT = '/etc/dnsmasq.d';
 my $DNSMASQ_DEFAULT_ROOT = '/etc/default';
@@ -77,6 +78,16 @@ sub add_ip_mapping {
 
     my $service_name = "dnsmasq\@$dhcpid";
     PVE::Tools::run_command(['systemctl', 'reload', $service_name]) if $change;
+
+    #update lease as ip could still be associated to an old removed mac
+    my $bus = Net::DBus->system();
+    my $dnsmasq = $bus->get_service("uk.org.thekelleys.dnsmasq.$dhcpid");
+    my $manager = $dnsmasq->get_object("/uk/org/thekelleys/dnsmasq","uk.org.thekelleys.dnsmasq.$dhcpid");
+
+    my @hostname = unpack("C*", "*");
+    $manager->AddDhcpLease($ip4, $mac, \@hostname, undef, 0, 0, 0) if $ip4;
+    $manager->AddDhcpLease($ip6, $mac, \@hostname, undef, 0, 0, 0) if $ip6;
+
 }
 
 sub configure_subnet {
@@ -136,7 +147,7 @@ sub before_configure {
 
     my $default_config = <<CFG;
 CONFIG_DIR='$config_directory,\*.conf'
-DNSMASQ_OPTS="--conf-file=/dev/null"
+DNSMASQ_OPTS="--conf-file=/dev/null --enable-dbus=uk.org.thekelleys.dnsmasq.$dhcpid"
 CFG
 
     PVE::Tools::file_set_contents(
