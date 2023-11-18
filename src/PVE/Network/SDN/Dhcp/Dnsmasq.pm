@@ -151,6 +151,31 @@ sub configure_range {
 sub before_configure {
     my ($class, $dhcpid) = @_;
 
+    my $dbus_config = <<DBUSCFG;
+<!DOCTYPE busconfig PUBLIC
+ "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+<busconfig>
+        <policy user="root">
+                <allow own="uk.org.thekelleys.dnsmasq.$dhcpid"/>
+                <allow send_destination="uk.org.thekelleys.dnsmasq.$dhcpid"/>
+        </policy>
+        <policy user="dnsmasq">
+                <allow own="uk.org.thekelleys.dnsmasq.$dhcpid"/>
+                <allow send_destination="uk.org.thekelleys.dnsmasq.$dhcpid"/>
+        </policy>
+        <policy context="default">
+                <deny own="uk.org.thekelleys.dnsmasq.$dhcpid"/>
+                <deny send_destination="uk.org.thekelleys.dnsmasq.$dhcpid"/>
+        </policy>
+</busconfig>
+DBUSCFG
+
+    PVE::Tools::file_set_contents(
+	"/etc/dbus-1/system.d/dnsmasq.$dhcpid.conf",
+	$dbus_config
+    );
+
     my $config_directory = "$DNSMASQ_CONFIG_ROOT/$dhcpid";
 
     mkdir($config_directory, 755) if !-d $config_directory;
@@ -201,6 +226,7 @@ sub after_configure {
 
     my $service_name = "dnsmasq\@$dhcpid";
 
+    PVE::Tools::run_command(['systemctl', 'reload', 'dbus']);
     PVE::Tools::run_command(['systemctl', 'enable', $service_name]);
     PVE::Tools::run_command(['systemctl', 'restart', $service_name]);
 }
