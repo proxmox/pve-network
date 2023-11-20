@@ -1,100 +1,23 @@
-package PVE::API2::Network::SDN::Ipam;
+package PVE::API2::Network::SDN::Ips;
 
 use strict;
 use warnings;
 
 use PVE::Tools qw(extract_param);
-use PVE::Cluster qw(cfs_read_file cfs_write_file);
 
-use PVE::Network::SDN;
-use PVE::Network::SDN::Dhcp;
 use PVE::Network::SDN::Vnets;
-use PVE::Network::SDN::Ipams::Plugin;
+use PVE::Network::SDN::Dhcp;
 
 use PVE::JSONSchema qw(get_standard_option);
-use PVE::RPCEnvironment;
-
 use PVE::RESTHandler;
 
 use base qw(PVE::RESTHandler);
 
 __PACKAGE__->register_method ({
-    name => 'ipamindex',
+    name => 'ipdelete',
     path => '',
-    method => 'GET',
-    description => 'List PVE IPAM Entries',
-    protected => 1,
-    permissions => {
-	description => "Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/zones/<zone>/<vnet>'",
-	user => 'all',
-    },
-    parameters => {
-	additionalProperties => 0,
-    },
-    returns => {
-	type => 'array',
-    },
-    code => sub {
-	my ($param) = @_;
-
-	my $rpcenv = PVE::RPCEnvironment::get();
-	my $authuser = $rpcenv->get_user();
-	my $privs = [ 'SDN.Audit', 'SDN.Allocate' ];
-
-	my $ipam_plugin = PVE::Network::SDN::Ipams::Plugin->lookup('pve');
-	my $ipam_db = $ipam_plugin->read_db();
-
-	my $result = [];
-
-	for my $zone_id (keys %{$ipam_db->{zones}}) {
-	    my $zone_config = PVE::Network::SDN::Zones::get_zone($zone_id, 1);
-            next if !$zone_config || $zone_config->{ipam} ne 'pve' || !$zone_config->{dhcp};
-
-	    my $zone = $ipam_db->{zones}->{$zone_id};
-
-	    my $vnets = PVE::Network::SDN::Zones::get_vnets($zone_id, 1);
-
-	    for my $subnet_cidr (keys %{$zone->{subnets}}) {
-		my $subnet = $zone->{subnets}->{$subnet_cidr};
-		my $ip = new NetAddr::IP($subnet_cidr) or die 'Found invalid CIDR in IPAM';
-
-		my $vnet = undef;
-		for my $vnet_id (keys %$vnets) {
-		    eval {
-			my ($zone, $subnetid, $subnet_cfg, $ip) = PVE::Network::SDN::Vnets::get_subnet_from_vnet_ip(
-			    $vnet_id,
-			    $ip->addr,
-			);
-
-			$vnet = $subnet_cfg->{vnet};
-		    };
-
-		    last if $vnet;
-		}
-
-		next if !$vnet || !$rpcenv->check_any($authuser, "/sdn/zones/$zone_id/$vnet", $privs, 1);
-
-		for my $ip (keys %{$subnet->{ips}}) {
-		    my $entry = $subnet->{ips}->{$ip};
-		    $entry->{zone} = $zone_id;
-		    $entry->{subnet} = $subnet_cidr;
-		    $entry->{ip} = $ip;
-		    $entry->{vnet} = $vnet;
-
-		    push @$result, $entry;
-		}
-	    }
-	}
-
-	return $result;
-    },
-});
-
-__PACKAGE__->register_method ({
-    name => 'dhcpdelete',
-    path => '{zone}/{vnet}/{mac}',
     method => 'DELETE',
-    description => 'Delete DHCP Mappings in a VNet for a MAC address',
+    description => 'Delete IP Mappings in a VNet',
     protected => 1,
     permissions => {
 	check => ['perm', '/sdn/zones/{zone}/{vnet}', [ 'SDN.Allocate' ]],
@@ -126,10 +49,10 @@ __PACKAGE__->register_method ({
 });
 
 __PACKAGE__->register_method ({
-    name => 'dhcpcreate',
-    path => '{zone}/{vnet}/{mac}',
+    name => 'ipcreate',
+    path => '',
     method => 'POST',
-    description => 'Create DHCP Mapping',
+    description => 'Create IP Mapping in a VNet',
     protected => 1,
     permissions => {
 	check => ['perm', '/sdn/zones/{zone}/{vnet}', [ 'SDN.Allocate' ]],
@@ -161,10 +84,10 @@ __PACKAGE__->register_method ({
     },
 });
 __PACKAGE__->register_method ({
-    name => 'dhcpupdate',
-    path => '{zone}/{vnet}/{mac}',
+    name => 'ipupdate',
+    path => '',
     method => 'PUT',
-    description => 'Update DHCP Mapping',
+    description => 'Update IP Mapping in a VNet',
     protected => 1,
     permissions => {
 	check => ['perm', '/sdn/zones/{zone}/{vnet}', [ 'SDN.Allocate' ]],

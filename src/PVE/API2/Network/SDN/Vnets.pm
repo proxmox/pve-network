@@ -13,6 +13,7 @@ use PVE::Network::SDN::Vnets;
 use PVE::Network::SDN::VnetPlugin;
 use PVE::Network::SDN::Subnets;
 use PVE::API2::Network::SDN::Subnets;
+use PVE::API2::Network::SDN::Ips;
 
 use Storable qw(dclone);
 use PVE::JSONSchema qw(get_standard_option);
@@ -26,6 +27,11 @@ use base qw(PVE::RESTHandler);
 __PACKAGE__->register_method ({
     subclass => "PVE::API2::Network::SDN::Subnets",
     path => '{vnet}/subnets',
+});
+
+__PACKAGE__->register_method ({
+    subclass => "PVE::API2::Network::SDN::Ips",
+    path => '{vnet}/ips',
 });
 
 my $api_sdn_vnets_config = sub {

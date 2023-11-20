@@ -12,6 +12,9 @@ use PVE::Network::SDN::Ipams::Plugin;
 use PVE::Network::SDN::Ipams::PVEPlugin;
 use PVE::Network::SDN::Ipams::PhpIpamPlugin;
 use PVE::Network::SDN::Ipams::NetboxPlugin;
+use PVE::Network::SDN::Dhcp;
+use PVE::Network::SDN::Vnets;
+use PVE::Network::SDN::Zones;
 
 use Storable qw(dclone);
 use PVE::JSONSchema qw(get_standard_option);
@@ -244,5 +247,85 @@ __PACKAGE__->register_method ({
 
 	return undef;
     }});
+
+__PACKAGE__->register_method ({
+    name => 'ipamindex',
+    path => '{ipam}/status',
+    method => 'GET',
+    description => 'List PVE IPAM Entries',
+    protected => 1,
+    permissions => {
+	description => "Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/zones/<zone>/<vnet>'",
+	user => 'all',
+    },
+    parameters => {
+	additionalProperties => 0,
+	properties => {
+	    ipam => get_standard_option('pve-sdn-ipam-id', {
+                completion => \&PVE::Network::SDN::Ipams::complete_sdn_ipams,
+            }),
+	},
+    },
+    returns => {
+	type => 'array',
+    },
+    code => sub {
+	my ($param) = @_;
+
+	my $id = extract_param($param, 'ipam');
+	die "Currently only PVE IPAM is supported!" if $id ne 'pve';
+
+	my $rpcenv = PVE::RPCEnvironment::get();
+	my $authuser = $rpcenv->get_user();
+	my $privs = [ 'SDN.Audit', 'SDN.Allocate' ];
+
+	my $ipam_plugin = PVE::Network::SDN::Ipams::Plugin->lookup('pve');
+	my $ipam_db = $ipam_plugin->read_db();
+
+	my $result = [];
+
+	for my $zone_id (keys %{$ipam_db->{zones}}) {
+	    my $zone_config = PVE::Network::SDN::Zones::get_zone($zone_id, 1);
+            next if !$zone_config || $zone_config->{ipam} ne 'pve' || !$zone_config->{dhcp};
+
+	    my $zone = $ipam_db->{zones}->{$zone_id};
+
+	    my $vnets = PVE::Network::SDN::Zones::get_vnets($zone_id, 1);
+
+	    for my $subnet_cidr (keys %{$zone->{subnets}}) {
+		my $subnet = $zone->{subnets}->{$subnet_cidr};
+		my $ip = new NetAddr::IP($subnet_cidr) or die 'Found invalid CIDR in IPAM';
+
+		my $vnet = undef;
+		for my $vnet_id (keys %$vnets) {
+		    eval {
+			my ($zone, $subnetid, $subnet_cfg, $ip) = PVE::Network::SDN::Vnets::get_subnet_from_vnet_ip(
+			    $vnet_id,
+			    $ip->addr,
+			);
+
+			$vnet = $subnet_cfg->{vnet};
+		    };
+
+		    last if $vnet;
+		}
+
+		next if !$vnet || !$rpcenv->check_any($authuser, "/sdn/zones/$zone_id/$vnet", $privs, 1);
+
+		for my $ip (keys %{$subnet->{ips}}) {
+		    my $entry = $subnet->{ips}->{$ip};
+		    $entry->{zone} = $zone_id;
+		    $entry->{subnet} = $subnet_cidr;
+		    $entry->{ip} = $ip;
+		    $entry->{vnet} = $vnet;
+
+		    push @$result, $entry;
+		}
+	    }
+	}
+
+	return $result;
+    },
+});
 
 1;
