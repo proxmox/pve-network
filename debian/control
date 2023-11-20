@@ -8,7 +8,7 @@ Build-Depends: debhelper-compat (= 13),
                libnet-subnet-perl,
                libtest-mockmodule-perl,
                perl,
-               pve-cluster (>= 7.0~),
+               pve-cluster (>= 8.0.5),
                pve-doc-generator (>= 5.3-3),
 Standards-Version: 4.6.1
 Homepage: https://www.proxmox.com
@@ -17,7 +17,7 @@ Package: libpve-network-perl
 Architecture: all
 Depends: libpve-common-perl (>= 5.0-45),
          perl,
-         pve-cluster (>= 7.3~),
+         pve-cluster (>= 8.0.5),
          libnet-subnet-perl,
          libnet-ip-perl,
          libnetaddr-ip-perl,
