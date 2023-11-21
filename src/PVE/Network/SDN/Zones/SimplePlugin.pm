@@ -30,6 +30,7 @@ sub properties {
 	dhcp => {
 	    type => 'pve-configid',
 	    description => 'ID of the DHCP server responsible for managing this range',
+	    requires => 'ipam',
 	},
     };
 }
