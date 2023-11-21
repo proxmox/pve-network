@@ -107,7 +107,7 @@ sub properties {
 	    }
 	},
 	'dhcp-dns-server' => {
-	    type => 'ip',
+	    type => 'string', format => 'ip',
 	    description => 'IP address for the DNS server',
 	    optional => 1,
 	},
