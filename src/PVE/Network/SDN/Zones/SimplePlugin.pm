@@ -3,6 +3,7 @@ package PVE::Network::SDN::Zones::SimplePlugin;
 use strict;
 use warnings;
 use PVE::Network::SDN::Zones::Plugin;
+use PVE::Network::SDN::Dhcp::Plugin;
 use PVE::Exception qw(raise raise_param_exc);
 use PVE::Cluster;
 use PVE::Tools;
@@ -28,8 +29,9 @@ sub properties {
 	    description => "dns domain zone  ex: mydomain.com",
 	},
 	dhcp => {
-	    type => 'pve-configid',
-	    description => 'ID of the DHCP server responsible for managing this range',
+	    description => 'Type of the DHCP backend for this zone',
+	    type => 'string',
+	    enum => PVE::Network::SDN::Dhcp::Plugin->lookup_types(),
 	    requires => 'ipam',
 	},
     };
