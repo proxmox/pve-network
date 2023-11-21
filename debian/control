@@ -22,8 +22,8 @@ Depends: libpve-common-perl (>= 5.0-45),
          libnetaddr-ip-perl,
          ${misc:Depends},
          ${perl:Depends},
-Recommends: frr-pythontools (>= 8.5.1~), ifupdown2
-Suggests: dnsmasq
+Recommends: ifupdown2
+Suggests: frr-pythontools (>= 8.5.1~), dnsmasq,
 Description: Proxmox VE's SDN (Software Defined Network) stack
  This package contains the Software Defined Network (tech preview) for
  Proxmox VE.
