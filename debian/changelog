@@ -1,3 +1,21 @@
+libpve-network-perl (0.8.3) bookworm; urgency=medium
+
+  * add DHCP plugin base with initial 'dnsmasq' plugin
+
+  * ipam: manage ip/mac associations
+
+  * zones: add option to choose a dhcp server
+
+  * subnets: add dhcp options
+
+  * api: refactor URL structure for ipam
+    * move listing to /ipams/pve/status
+    * move create/update/delete to /vnets/{vnetid}/ips
+
+  * downgrade frr from recommended to suggested
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 21 Nov 2023 14:41:43 +0100
+
 libpve-network-perl (0.8.2) bookworm; urgency=medium
 
   * fix permissions && use new /sdn/zones/<zone>/<vnet> path
