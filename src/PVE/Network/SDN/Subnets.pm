@@ -238,7 +238,7 @@ sub add_next_free_ip {
 
 		foreach my $range (@$dhcp_ranges) {
 		    $ip = $plugin->add_range_next_freeip($plugin_config, $subnet, $range, $data);
-	            next if !$ip;
+		    last if $ip;
 		}
 	    } else {
 		$ip = $plugin->add_next_freeip($plugin_config, $subnetid, $subnet, $hostname, $mac, $vmid);
