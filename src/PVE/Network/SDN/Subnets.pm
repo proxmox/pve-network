@@ -305,6 +305,9 @@ sub add_ip {
 	    $plugin->add_ip($plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $vmid, $is_gateway);
 	};
 	die $@ if $@;
+
+	eval { PVE::Network::SDN::Ipams::add_cache_mac_ip($mac, $ip) if $mac; };
+	warn $@ if $@;
     }
 
     eval {

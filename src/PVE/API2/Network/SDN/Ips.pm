@@ -28,6 +28,11 @@ __PACKAGE__->register_method ({
 	    zone => get_standard_option('pve-sdn-zone-id'),
 	    vnet => get_standard_option('pve-sdn-vnet-id'),
 	    mac => get_standard_option('mac-addr'),
+	    ip => {
+		type => 'string',
+		format => 'ip',
+		description => 'The IP address to delete',
+	    },
 	},
     },
     returns => { type => 'null' },
@@ -36,13 +41,12 @@ __PACKAGE__->register_method ({
 
 	my $vnet = extract_param($param, 'vnet');
 	my $mac = extract_param($param, 'mac');
+	my $ip = extract_param($param, 'ip');
 
 	eval {
-	    PVE::Network::SDN::Vnets::del_ips_from_mac($vnet, $mac);
+	    PVE::Network::SDN::Vnets::del_ip($vnet, $ip, '', $mac);
 	};
-	my $error = $@;
-
-	die "$error\n" if $error;
+	die "$@\n" if $@;
 
 	return undef;
     },
@@ -117,7 +121,10 @@ __PACKAGE__->register_method ({
 	my $vmid = extract_param($param, 'vmid');
 	my $ip = extract_param($param, 'ip');
 
-	my ($old_ip4, $old_ip6) = PVE::Network::SDN::Vnets::del_ips_from_mac($vnet, $mac, '');
+	my ($old_ip4, $old_ip6) = PVE::Network::SDN::Vnets::get_ips_from_mac($vnet, $mac);
+	my $old_ip = (Net::IP::ip_get_version($ip) == 4) ? $old_ip4 : $old_ip6;
+
+	PVE::Network::SDN::Vnets::del_ip($vnet, $old_ip, '', $mac);
 
 	eval {
 	    PVE::Network::SDN::Vnets::add_ip($vnet, $ip, '', $mac, $vmid);
@@ -125,8 +132,7 @@ __PACKAGE__->register_method ({
 	my $error = $@;
 
 	if ($error) {
-	    PVE::Network::SDN::Vnets::add_ip($vnet, $old_ip4, '', $mac, $vmid) if $old_ip4;
-	    PVE::Network::SDN::Vnets::add_ip($vnet, $old_ip6, '', $mac, $vmid) if $old_ip6;
+	    PVE::Network::SDN::Vnets::add_ip($vnet, $old_ip, '', $mac, $vmid);
 	}
 
 	die "$error\n" if $error;
