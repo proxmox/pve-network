@@ -215,6 +215,7 @@ __PACKAGE__->register_method ({
 
 	my $id = extract_param($param, 'controller');
 	my $digest = extract_param($param, 'digest');
+	my $delete = extract_param($param, 'delete');
 
         PVE::Network::SDN::lock_sdn_config(
 	 sub {
@@ -227,6 +228,12 @@ __PACKAGE__->register_method ({
 
 	    my $plugin = PVE::Network::SDN::Controllers::Plugin->lookup($scfg->{type});
 	    my $opts = $plugin->check_config($id, $param, 0, 1);
+
+	    if ($delete) {
+		$delete = [ PVE::Tools::split_list($delete) ];
+		my $options = $plugin->private()->{options}->{$scfg->{type}};
+		PVE::SectionConfig::delete_from_config($scfg, $options, $opts, $delete);
+	    }
 
 	    foreach my $k (%$opts) {
 		$scfg->{$k} = $opts->{$k};
