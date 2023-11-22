@@ -241,12 +241,14 @@ sub generate_dhcp_config {
 sub encode_value {
     my ($type, $key, $value) = @_;
 
-    if ($key eq 'nodes' || $key eq 'exitnodes') {
-        if(ref($value) eq 'HASH') {
-            return join(',', sort keys(%$value));
-        } else {
-            return $value;
-        }
+    if ($key eq 'nodes' || $key eq 'exitnodes' || $key eq 'dhcp-range') {
+	if (ref($value) eq 'HASH') {
+	    return join(',', sort keys(%$value));
+	} elsif (ref($value) eq 'ARRAY') {
+	    return join(',', sort @$value);
+	} else {
+	    return $value;
+	}
     }
 
     return $value;
