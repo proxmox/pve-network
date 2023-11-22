@@ -247,6 +247,8 @@ __PACKAGE__->register_method ({
 
 	my $id = extract_param($param, 'subnet');
 	my $digest = extract_param($param, 'digest');
+	my $delete = extract_param($param, 'delete');
+
 	my $vnet = $param->{vnet};
 
 	my $privs = [ 'SDN.Allocate' ];
@@ -266,9 +268,15 @@ __PACKAGE__->register_method ({
 	    PVE::SectionConfig::assert_if_modified($cfg, $digest);
 
 	    my $opts = PVE::Network::SDN::SubnetPlugin->check_config($id, $param, 0, 1);
-	    $cfg->{ids}->{$id} = $opts;
 
-	    raise_param_exc({ ipam => "you can't change ipam"}) if $opts->{ipam} && $scfg->{ipam} && $opts->{ipam} ne $scfg->{ipam};
+	    my $data = $cfg->{ids}->{$id};
+	    if ($delete) {
+		$delete = [ PVE::Tools::split_list($delete) ];
+		my $options =
+		    PVE::Network::SDN::SubnetPlugin->private()->{options}->{$data->{type}};
+		PVE::SectionConfig::delete_from_config($data, $options, $opts, $delete);
+	    }
+	    $data->{$_} = $opts->{$_} for keys $opts->%*;
 
 	    my $subnet = PVE::Network::SDN::Subnets::sdn_subnets_config($cfg, $id);
 	    PVE::Network::SDN::SubnetPlugin->on_update_hook($zone, $id, $subnet, $scfg);
