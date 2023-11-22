@@ -244,9 +244,14 @@ __PACKAGE__->register_method ({
 
 	my $id = extract_param($param, 'vnet');
 	my $digest = extract_param($param, 'digest');
+	my $delete = extract_param($param, 'delete');
 
 	my $privs = [ 'SDN.Allocate' ];
 	&$check_vnet_access($id, $privs);
+
+	if ($delete) {
+	    $delete = [ PVE::Tools::split_list($delete) ];
+	}
 
 	PVE::Network::SDN::lock_sdn_config(sub {
 	    my $cfg = PVE::Network::SDN::Vnets::config();
@@ -254,11 +259,22 @@ __PACKAGE__->register_method ({
 	    PVE::SectionConfig::assert_if_modified($cfg, $digest);
 
 	    my $opts = PVE::Network::SDN::VnetPlugin->check_config($id, $param, 0, 1);
-	    raise_param_exc({ zone => "missing zone"}) if !$opts->{zone};
-	    my $subnets = PVE::Network::SDN::Vnets::get_subnets($id);
-	    raise_param_exc({ zone => "can't change zone if subnets exists"}) if($subnets && $opts->{zone} ne $cfg->{ids}->{$id}->{zone});
 
-	    $cfg->{ids}->{$id} = $opts;
+	    my $data = $cfg->{ids}->{$id};
+	    my $old_zone = $data->{zone};
+
+	    if ($delete) {
+		my $options = PVE::Network::SDN::VnetPlugin->private()->{options}->{$data->{type}};
+		PVE::SectionConfig::delete_from_config($data, $options, $opts, $delete);
+	    }
+
+	    $data->{$_} = $opts->{$_} for keys $opts->%*;
+
+	    my $new_zone = $data->{zone};
+	    raise_param_exc({ zone => "cannot delete zone"}) if !$new_zone;
+	    my $subnets = PVE::Network::SDN::Vnets::get_subnets($id);
+	    raise_param_exc({ zone => "can't change zone if subnets exist"})
+		if $subnets && $old_zone ne $new_zone;
 
 	    my $zone_cfg = PVE::Network::SDN::Zones::config();
 	    my $zoneid = $cfg->{ids}->{$id}->{zone};
