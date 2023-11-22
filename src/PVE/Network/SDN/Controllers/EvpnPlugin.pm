@@ -6,6 +6,7 @@ use warnings;
 use PVE::INotify;
 use PVE::JSONSchema qw(get_standard_option);
 use PVE::Tools qw(run_command file_set_contents file_get_contents);
+use PVE::RESTEnvironment qw(log_warn);
 
 use PVE::Network::SDN::Controllers::Plugin;
 use PVE::Network::SDN::Zones::Plugin;
@@ -578,7 +579,7 @@ sub reload_controller {
     my $bin_path = "/usr/lib/frr/frr-reload.py";
 
     if (!-e $bin_path) {
-	warn "missing $bin_path. Please install frr-pythontools package";
+	log_warn("missing $bin_path. Please install frr-pythontools package");
 	return;
     }
 
