@@ -1,10 +1,12 @@
+SUBDIRS := PVE services
+
 all:
-	$(MAKE) -C PVE
+	set -e && for i in $(SUBDIRS); do $(MAKE) -C $$i; done
 
 .PHONY: clean
 clean:
 	$(MAKE) -C test $@
-	$(MAKE) -C PVE $@
+	set -e && for i in $(SUBDIRS); do $(MAKE) -C $$i $@; done
 
 .PHONY: test
 test:
@@ -12,4 +14,4 @@ test:
 
 .PHONY: install
 install:
-	$(MAKE) -C PVE $@
+	set -e && for i in $(SUBDIRS); do $(MAKE) -C $$i $@; done
