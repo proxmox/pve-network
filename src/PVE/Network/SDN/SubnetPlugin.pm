@@ -74,6 +74,33 @@ my $dhcp_range_fmt = {
 
 PVE::JSONSchema::register_format('pve-sdn-dhcp-range', $dhcp_range_fmt);
 
+sub validate_dhcp_ranges {
+    my ($subnet) = @_;
+
+    my $cidr = $subnet->{cidr};
+    my $subnet_matcher = subnet_matcher($cidr);
+
+    my $dhcp_ranges = PVE::Network::SDN::Subnets::get_dhcp_ranges($subnet);
+
+    foreach my $dhcp_range (@$dhcp_ranges) {
+	my $dhcp_start = $dhcp_range->{'start-address'};
+	my $dhcp_end = $dhcp_range->{'end-address'};
+
+	my $start_ip = new Net::IP($dhcp_start);
+	raise_param_exc({ 'dhcp-range' => "start-adress is not a valid IP $dhcp_start" }) if !$start_ip;
+
+	my $end_ip = new Net::IP($dhcp_end);
+	raise_param_exc({ 'dhcp-range' => "end-adress is not a valid IP $dhcp_end" }) if !$end_ip;
+
+	if (Net::IP::ip_bincomp($end_ip->binip(), 'lt', $start_ip->binip()) == 1) {
+	    raise_param_exc({ 'dhcp-range' => "start-address $dhcp_start must be smaller than end-address $dhcp_end" })
+	}
+
+	raise_param_exc({ 'dhcp-range' => "start-address $dhcp_start is not in subnet $cidr" }) if !$subnet_matcher->($dhcp_start);
+	raise_param_exc({ 'dhcp-range' => "end-address $dhcp_end is not in subnet $cidr" }) if !$subnet_matcher->($dhcp_end);
+    }
+}
+
 sub properties {
     return {
         vnet => {
@@ -156,6 +183,7 @@ sub on_update_hook {
     #for /32 pointopoint, we allow gateway outside the subnet
     raise_param_exc({ gateway => "$gateway is not in subnet $cidr"}) if $gateway && !$subnet_matcher->($gateway) && !$pointopoint;
 
+    validate_dhcp_ranges($subnet);
 
     if ($ipam) {
 	PVE::Network::SDN::Subnets::add_subnet($zone, $subnetid, $subnet);
