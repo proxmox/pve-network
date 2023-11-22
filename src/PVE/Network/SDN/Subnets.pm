@@ -399,8 +399,10 @@ sub del_ip {
 	my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
 	$plugin->del_ip($plugin_config, $subnetid, $subnet, $ip);
 
-	eval { PVE::Network::SDN::Ipams::del_cache_mac_ip($mac, $ip) if $mac; };
-	warn $@ if $@;
+	if ($mac) {
+	    eval { PVE::Network::SDN::Ipams::del_cache_mac_ip($mac, $ip) };
+	    warn $@ if $@;
+	}
     }
 
     eval {
