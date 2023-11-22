@@ -261,6 +261,11 @@ __PACKAGE__->register_method ({
 
 	my $id = extract_param($param, 'zone');
 	my $digest = extract_param($param, 'digest');
+	my $delete = extract_param($param, 'delete');
+
+	if ($delete) {
+	    $delete = [ PVE::Tools::split_list($delete) ];
+	}
 
 	PVE::Network::SDN::lock_sdn_config(sub {
 	    my $zone_cfg = PVE::Network::SDN::Zones::config();
@@ -274,8 +279,17 @@ __PACKAGE__->register_method ({
 	    my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($scfg->{type});
 	    my $opts = $plugin->check_config($id, $param, 0, 1);
 
-	    if ($opts->{ipam} && !$scfg->{ipam} || $opts->{ipam} ne $scfg->{ipam}) {
+	    my $old_ipam = $scfg->{ipam};
 
+	    if ($delete) {
+		my $options = $plugin->private()->{options}->{$scfg->{type}};
+		PVE::SectionConfig::delete_from_config($scfg, $options, $opts, $delete);
+	    }
+
+	    $scfg->{$_} = $opts->{$_} for keys $opts->%*;
+
+	    my $new_ipam = $scfg->{ipam};
+	    if (!$new_ipam != !$old_ipam || (($new_ipam//'') ne ($old_ipam//''))) {
 		# don't allow ipam change if subnet are defined for now, need to implement resync ipam content
 		my $subnets_cfg = PVE::Network::SDN::Subnets::config();
 		for my $subnetid (sort keys %{$subnets_cfg->{ids}}) {
@@ -284,8 +298,6 @@ __PACKAGE__->register_method ({
 			if $subnet->{zone} eq $id;
 		}
 	    }
-
-	    $zone_cfg->{ids}->{$id} = $opts;
 
 	    my $dnsserver = $opts->{dns};
 	    raise_param_exc({ dns => "$dnsserver don't exist"}) if $dnsserver && !$dns_cfg->{ids}->{$dnsserver};
