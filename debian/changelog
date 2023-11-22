@@ -1,3 +1,15 @@
+libpve-network-perl (0.9.1) bookworm; urgency=medium
+
+  * sdn: allow deletion of empty subnet with gateway
+
+  * fix #4917: evpn: forbid vlan-aware bridge
+
+  * dnsmasq: check for existence of dnsmasq binary
+
+  * controller: evpn reload: cause a task-warning if frr is not installed
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 22 Nov 2023 19:50:46 +0100
+
 libpve-network-perl (0.9.0) bookworm; urgency=medium
 
   * dnsmasq: fix config directory permission
