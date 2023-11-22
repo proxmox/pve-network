@@ -194,6 +194,7 @@ CFG
     my $default_dnsmasq_config = <<CFG;
 except-interface=lo
 enable-ra
+quiet-ra
 bind-dynamic
 no-resolv
 no-hosts
