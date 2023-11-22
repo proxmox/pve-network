@@ -28,12 +28,17 @@ sub add_ip_mapping {
 }
 
 sub configure_range {
-    my ($class, $dhcp_config, $subnet_config, $range_config) = @_;
+    my ($class, $dhcpid, $vnetid, $subnet_config, $range_config) = @_;
     die 'implement in sub class';
 }
 
 sub configure_subnet {
-    my ($class, $dhcp_config, $subnet_config) = @_;
+    my ($class, $dhcpid, $vnetid, $subnet_config) = @_;
+    die 'implement in sub class';
+}
+
+sub configure_vnet {
+    my ($class, $config, $dhcpid, $vnetid, $vnet_config) = @_;
     die 'implement in sub class';
 }
 

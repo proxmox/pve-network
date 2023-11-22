@@ -59,6 +59,7 @@ sub regenerate_config {
     my $cfg = PVE::Network::SDN::running_config();
 
     my $zone_cfg = $cfg->{zones};
+    my $vnet_cfg = $cfg->{vnets};
     my $subnet_cfg = $cfg->{subnets};
     return if !$zone_cfg && !$subnet_cfg;
 
@@ -84,22 +85,32 @@ sub regenerate_config {
 	eval { $dhcp_plugin->before_configure($zoneid) };
 	die "Could not run before_configure for DHCP server $zoneid $@\n" if $@;
 
+	for my $vnetid (sort keys %{$vnet_cfg->{ids}}) {
+	    my $vnet = $vnet_cfg->{ids}->{$vnetid};
+	    next if $vnet->{zone} ne $zoneid;
 
-	foreach my $subnet_id (keys %{$subnet_cfg->{ids}}) {
-	    my $subnet_config = PVE::Network::SDN::Subnets::sdn_subnets_config($subnet_cfg, $subnet_id);
-	    my $dhcp_ranges = PVE::Network::SDN::Subnets::get_dhcp_ranges($subnet_config);
+	    my $config = [];
+	    my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid);
 
-	    my ($zone, $subnet_network, $subnet_mask) = split(/-/, $subnet_id);
-	    next if $zone ne $zoneid;
-	    next if !$dhcp_ranges;
+	    foreach my $subnet_id (sort keys %{$subnets}) {
+		my $subnet_config = $subnets->{$subnet_id};
+		my $dhcp_ranges = PVE::Network::SDN::Subnets::get_dhcp_ranges($subnet_config);
 
-	    eval { $dhcp_plugin->configure_subnet($zoneid, $subnet_config) };
-	    warn "Could not configure subnet $subnet_id: $@\n" if $@;
+		my ($zone, $subnet_network, $subnet_mask) = split(/-/, $subnet_id);
+		next if $zone ne $zoneid;
+		next if !$dhcp_ranges;
 
-	    foreach my $dhcp_range (@$dhcp_ranges) {
-		eval { $dhcp_plugin->configure_range($zoneid, $subnet_config, $dhcp_range) };
-		warn "Could not configure DHCP range for $subnet_id: $@\n" if $@;
+		eval { $dhcp_plugin->configure_subnet($config, $zoneid, $vnetid, $subnet_config) };
+		warn "Could not configure subnet $subnet_id: $@\n" if $@;
+
+		foreach my $dhcp_range (@$dhcp_ranges) {
+		    eval { $dhcp_plugin->configure_range($config, $zoneid, $vnetid, $subnet_config, $dhcp_range) };
+		    warn "Could not configure DHCP range for $subnet_id: $@\n" if $@;
+		}
 	    }
+
+	    eval { $dhcp_plugin->configure_vnet($config, $zoneid, $vnetid, $vnet) };
+	    warn "Could not configure vnet $vnetid: $@\n" if $@;
 	}
 
 	eval { $dhcp_plugin->after_configure($zoneid) };

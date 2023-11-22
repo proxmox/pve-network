@@ -101,39 +101,29 @@ sub add_ip_mapping {
 }
 
 sub configure_subnet {
-    my ($class, $dhcpid, $subnet_config) = @_;
+    my ($class, $config, $dhcpid, $vnetid, $subnet_config) = @_;
 
     die "No gateway defined for subnet $subnet_config->{id}"
 	if !$subnet_config->{gateway};
 
     my $tag = $subnet_config->{id};
 
-    my @dnsmasq_config = (
-	"listen-address=$subnet_config->{gateway}",
-    );
-
     my $option_string;
     if (ip_is_ipv6($subnet_config->{network})) {
 	$option_string = 'option6';
-	push @dnsmasq_config, "enable-ra";
     } else {
 	$option_string = 'option';
-	push @dnsmasq_config, "dhcp-option=tag:$tag,$option_string:router,$subnet_config->{gateway}";
+	push @{$config}, "dhcp-option=tag:$tag,$option_string:router,$subnet_config->{gateway}";
     }
 
-    push @dnsmasq_config, "dhcp-option=tag:$tag,$option_string:dns-server,$subnet_config->{'dhcp-dns-server'}"
+    push @{$config}, "dhcp-option=tag:$tag,$option_string:dns-server,$subnet_config->{'dhcp-dns-server'}"
 	if $subnet_config->{'dhcp-dns-server'};
 
-    PVE::Tools::file_set_contents(
-	"$DNSMASQ_CONFIG_ROOT/$dhcpid/10-$subnet_config->{id}.conf",
-	join("\n", @dnsmasq_config) . "\n"
-    );
 }
 
 sub configure_range {
-    my ($class, $dhcpid, $subnet_config, $range_config) = @_;
+    my ($class, $config, $dhcpid, $vnetid, $subnet_config, $range_config) = @_;
 
-    my $subnet_file = "$DNSMASQ_CONFIG_ROOT/$dhcpid/10-$subnet_config->{id}.conf";
     my $tag = $subnet_config->{id};
 
     my ($zone, $network, $mask) = split(/-/, $tag);
@@ -143,9 +133,20 @@ sub configure_range {
 	$mask = join( '.', unpack( "C4", pack( "N", $mask ) ) );
     }
 
-    open(my $fh, '>>', $subnet_file) or die "Could not open file '$subnet_file' $!\n";
-    print $fh "dhcp-range=set:$tag,$network,static,$mask,infinite\n";
-    close $fh;
+    push @{$config}, "dhcp-range=set:$tag,$network,static,$mask,infinite";
+}
+
+sub configure_vnet {
+    my ($class, $config, $dhcpid, $vnetid, $vnet_config) = @_;
+
+    return if @{$config} < 1;
+
+    push @{$config}, "interface=$vnetid";
+
+    PVE::Tools::file_set_contents(
+	"$DNSMASQ_CONFIG_ROOT/$dhcpid/10-$vnetid.conf",
+	join("\n", @{$config}) . "\n"
+    );
 }
 
 sub before_configure {
@@ -192,6 +193,7 @@ CFG
 
     my $default_dnsmasq_config = <<CFG;
 except-interface=lo
+enable-ra
 bind-dynamic
 no-resolv
 no-hosts
