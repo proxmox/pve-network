@@ -11,6 +11,8 @@ use PVE::Tools qw(file_set_contents run_command lock_file);
 use File::Copy;
 use Net::DBus;
 
+use PVE::RESTEnvironment qw(log_warn);
+
 my $DNSMASQ_CONFIG_ROOT = '/etc/dnsmasq.d';
 my $DNSMASQ_DEFAULT_ROOT = '/etc/default';
 my $DNSMASQ_LEASE_ROOT = '/var/lib/misc';
@@ -236,6 +238,12 @@ sub after_configure {
 
 sub before_regenerate {
     my ($class) = @_;
+
+    my $bin_path = "/usr/sbin/dnsmasq";
+    if (!-e $bin_path) {
+	log_warn("Please install dnsmasq in order to use the DHCP feature!");
+	die;
+    }
 
     PVE::Tools::run_command(['systemctl', 'stop', "dnsmasq@*"]);
     PVE::Tools::run_command(['systemctl', 'disable', 'dnsmasq@']);
