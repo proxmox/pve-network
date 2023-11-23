@@ -26,8 +26,8 @@ my sub assert_dnsmasq_installed {
 
     my $bin_path = "/usr/sbin/dnsmasq";
     if (!-e $bin_path) {
-	log_warn("please install the 'dnsmasq' package in order to use the DHCP feature!");
 	return if $noerr; # just ignore, e.g., in case zone doesn't use DHCP at all
+	log_warn("please install the 'dnsmasq' package in order to use the DHCP feature!");
 	die "cannot reload with missing 'dnsmasq' package\n";
     }
     return 1;
