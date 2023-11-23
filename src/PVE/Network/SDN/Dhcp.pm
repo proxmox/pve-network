@@ -67,9 +67,11 @@ sub regenerate_config {
 
     my $plugins = PVE::Network::SDN::Dhcp::Plugin->lookup_types();
 
+    my $any_zone_needs_dhcp = grep { $_->{dhcp} } values $zone_cfg->{ids}->%*;
+
     foreach my $plugin_name (@$plugins) {
 	my $plugin = PVE::Network::SDN::Dhcp::Plugin->lookup($plugin_name);
-	eval { $plugin->before_regenerate() };
+	eval { $plugin->before_regenerate(!$any_zone_needs_dhcp) };
 	die "Could not run before_regenerate for DHCP plugin $plugin_name $@\n" if $@;
     }
 
@@ -113,7 +115,7 @@ sub regenerate_config {
 	    warn "Could not configure vnet $vnetid: $@\n" if $@;
 	}
 
-	eval { $dhcp_plugin->after_configure($zoneid) };
+	eval { $dhcp_plugin->after_configure($zoneid, !$any_zone_needs_dhcp) };
 	warn "Could not run after_configure for DHCP server $zoneid $@\n" if $@;
 
     }

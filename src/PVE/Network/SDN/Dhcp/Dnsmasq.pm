@@ -21,6 +21,18 @@ sub type {
     return 'dnsmasq';
 }
 
+my sub assert_dnsmasq_installed {
+    my ($noerr) = @_;
+
+    my $bin_path = "/usr/sbin/dnsmasq";
+    if (!-e $bin_path) {
+	log_warn("please install the 'dnsmasq' package in order to use the DHCP feature!");
+	return if $noerr; # just ignore, e.g., in case zone doesn't use DHCP at all
+	die "cannot reload with missing 'dnsmasq' package\n";
+    }
+    return 1;
+}
+
 sub add_ip_mapping {
     my ($class, $dhcpid, $macdb, $mac, $ip4, $ip6) = @_;
 
@@ -226,7 +238,9 @@ CFG
 }
 
 sub after_configure {
-    my ($class, $dhcpid) = @_;
+    my ($class, $dhcpid, $noerr) = @_;
+
+    return if !assert_dnsmasq_installed($noerr);
 
     my $service_name = "dnsmasq\@$dhcpid";
 
@@ -236,13 +250,9 @@ sub after_configure {
 }
 
 sub before_regenerate {
-    my ($class) = @_;
+    my ($class, $noerr) = @_;
 
-    my $bin_path = "/usr/sbin/dnsmasq";
-    if (!-e $bin_path) {
-	log_warn("Please install dnsmasq in order to use the DHCP feature!");
-	die;
-    }
+    return if !assert_dnsmasq_installed($noerr);
 
     PVE::Tools::run_command(['systemctl', 'stop', "dnsmasq@*"]);
     PVE::Tools::run_command(['systemctl', 'disable', 'dnsmasq@']);
