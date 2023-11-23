@@ -198,7 +198,6 @@ except-interface=lo
 enable-ra
 quiet-ra
 bind-dynamic
-no-resolv
 no-hosts
 dhcp-leasefile=$DNSMASQ_LEASE_ROOT/dnsmasq.$dhcpid.leases
 dhcp-hostsfile=$config_directory/ethers
