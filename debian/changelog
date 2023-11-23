@@ -1,8 +1,8 @@
-libpve-network-perl (0.9.3) bookworm; urgency=medium
+libpve-network-perl (0.9.4) bookworm; urgency=medium
 
   * dhcp dnsmasq: guard die with any zone having enabled dhcp
 
- -- Proxmox Support Team <support@proxmox.com>  Thu, 23 Nov 2023 11:58:40 +0100
+ -- Proxmox Support Team <support@proxmox.com>  Thu, 23 Nov 2023 12:12:03 +0100
 
 libpve-network-perl (0.9.2) bookworm; urgency=medium
 
