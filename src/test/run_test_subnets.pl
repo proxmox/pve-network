@@ -18,6 +18,23 @@ use JSON;
 use Data::Dumper qw(Dumper);
 $Data::Dumper::Sortkeys = 1;
 
+
+my $locks = {};
+
+my $mocked_cfs_lock_file = sub {
+    my ($filename, $timeout, $code, @param) = @_;
+
+    die "$filename already locked\n" if ($locks->{$filename});
+
+    $locks->{$filename} = 1;
+
+    my $res = eval { $code->(@param); };
+
+    delete $locks->{$filename};
+
+    return $res;
+};
+
 sub read_sdn_config {
     my ($file) = @_;
     # Read structure back in again
@@ -98,7 +115,8 @@ foreach my $path (@plugins) {
 	    write_db => sub {
 		my ($cfg) = @_;
 		$ipamdb = $cfg;
-	    }
+	    },
+	    cfs_lock_file => $mocked_cfs_lock_file,
 	);
     }
 
