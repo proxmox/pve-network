@@ -123,7 +123,7 @@ __PACKAGE__->register_method ({
 	foreach my $id (@sids) {
 	    my $privs = [ 'SDN.Audit', 'SDN.Allocate' ];
 	    my $scfg = &$api_sdn_vnets_config($cfg, $id);
-	    my $zoneid = $scfg->{zone};
+	    my $zoneid = $scfg->{zone} // $scfg->{pending}->{zone};
 	    next if !$rpcenv->check_any($authuser, "/sdn/zones/$zoneid/$id", $privs, 1);
 
 	    push @$res, $scfg;
