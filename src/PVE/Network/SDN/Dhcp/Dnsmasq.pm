@@ -234,7 +234,13 @@ CFG
 	$default_dnsmasq_config
     );
 
-    unlink glob "$config_directory/10-*.conf";
+    my @config_files = ();
+    PVE::Tools::dir_glob_foreach($config_directory, '10-.*\.conf', sub {
+	my ($file) = @_;
+	push @config_files, "$config_directory/$file";
+    });
+
+    unlink @config_files;
 }
 
 sub after_configure {
