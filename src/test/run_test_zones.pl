@@ -36,7 +36,7 @@ foreach my $test (@tests) {
 
     my $sdn_config = read_sdn_config ("./$test/sdn_config");
 
-    open my $fh1, '<', "./$test/interfaces" or die "can't read interfaces file";
+    open(my $fh1, '<', "./$test/interfaces") or die "can't read interfaces file - $!";
     my $interfaces_config = PVE::INotify::__read_etc_network_interfaces($fh1, undef, undef);
     close $fh1;
 
