@@ -81,7 +81,7 @@ sub generate_controller_config {
 
     # read main config for physical interfaces
     my $current_config_file = "/etc/network/interfaces";
-    my $fh = IO::File->new($current_config_file);
+    my $fh = IO::File->new($current_config_file) or die "failed to open $current_config_file - $!\n";
     my $interfaces_config = PVE::INotify::read_etc_network_interfaces($current_config_file, $fh);
     $fh->close();
 
