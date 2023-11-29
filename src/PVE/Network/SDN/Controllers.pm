@@ -79,10 +79,10 @@ sub generate_controller_config {
 
     return if !$vnet_cfg && !$zone_cfg && !$controller_cfg;
 
-    #read main config for physical interfaces
+    # read main config for physical interfaces
     my $current_config_file = "/etc/network/interfaces";
     my $fh = IO::File->new($current_config_file);
-    my $interfaces_config = PVE::INotify::read_etc_network_interfaces(1,$fh);
+    my $interfaces_config = PVE::INotify::read_etc_network_interfaces($current_config_file, $fh);
     $fh->close();
 
     # check uplinks
