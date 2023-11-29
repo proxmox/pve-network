@@ -97,6 +97,7 @@ foreach my $test (@tests) {
     };
 
     if (my $err = $@) {
+	diag("got unexpected error - $err");
 	fail($name);
     } else {
 	is ($result, $expected, $name);
@@ -111,6 +112,7 @@ foreach my $test (@tests) {
 	    $controller_rawconfig = PVE::Network::SDN::Controllers::generate_controller_rawconfig($config);
 	};
 	if (my $err = $@) {
+	    diag("got unexpected error - $err");
 	    fail($name);
 	} else {
 	    is ($controller_rawconfig, $expected, $name);
