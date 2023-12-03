@@ -484,6 +484,7 @@ sub generate_controller_rawconfig {
     generate_frr_recurse($final_config, $config->{frr}, undef, 0);
     generate_frr_list($final_config, $config->{frr_access_list}, "access-list");
     generate_frr_list($final_config, $config->{frr_prefix_list}, "ip prefix-list");
+    generate_frr_list($final_config, $config->{frr_prefix_list_v6}, "ipv6 prefix-list");
     generate_frr_routemap($final_config, $config->{frr_routemap});
     generate_frr_ip_protocol($final_config, $config->{frr_ip_protocol});
 
@@ -534,6 +535,9 @@ sub parse_merge_frr_local_config {
 	    next;
 	} elsif ($line =~ m/^ip prefix-list (.+) seq (\d+) (.*)$/) {
 	    $config->{'frr_prefix_list'}->{$1}->{$2} = $3;
+	    next;
+	} elsif ($line =~ m/^ipv6 prefix-list (.+) seq (\d+) (.*)$/) {
+	    $config->{'frr_prefix_list_v6'}->{$1}->{$2} = $3;
 	    next;
 	} elsif($line =~ m/^exit-address-family$/) {
 	    next;
