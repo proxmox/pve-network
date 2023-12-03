@@ -3,17 +3,25 @@
 auto myvnet
 iface myvnet
 	address 10.0.0.1/24
+	address 192.168.0.1/24
+	address 192.168.10.1/24
+	address 2b0f:1480:4000:6000::1/64
+	address 2b0f:1480:4000:8000::1/64
+	address 2b0f:1480::1/64
 	bridge_ports vxlan_myvnet
 	bridge_stp off
 	bridge_fd 0
 	mtu 1450
 	ip-forward on
+	ip6-forward on
 	arp-accept on
 	vrf vrf_myzone
 
 auto myvnet2
 iface myvnet2
+	address 10.0.0.1/24
 	address 172.16.0.1/24
+	address 172.16.3.1/24
 	bridge_ports vxlan_myvnet2
 	bridge_stp off
 	bridge_fd 0

@@ -162,11 +162,25 @@ sub generate_controller_zone_config {
     #null routes subnets of other zones
     if ($is_gateway) {
 	my $subnets = PVE::Network::SDN::Vnets::get_subnets();
+	my $cidrs = {};
 	foreach my $subnetid (sort keys %{$subnets}) {
 	    my $subnet = $subnets->{$subnetid};
 	    my $cidr = $subnet->{cidr};
 	    my $zone = $subnet->{zone};
-	    push @controller_config, "ip route $cidr null0" if $zone ne $id;
+	    my ($ip, $mask) = split(/\//, $cidr);
+	    $cidrs->{$ip} = $mask if $zone ne $id;
+
+	}
+
+	my @sorted_ip =
+		map  { $_->[0] }
+		sort { $a->[1] <=> $b->[1] }
+		map  { [ $_, eval { Net::IP->new( $_ )->intip } ] }
+		keys %{$cidrs} if $cidrs;
+
+	foreach my $ip (@sorted_ip) {
+	    my $ipversion = Net::IP::ip_is_ipv4($ip) ? 'ip' : 'ipv6';
+	    push @controller_config, "$ipversion route $ip/$cidrs->{$ip} null0";
 	}
     }
 

@@ -7,13 +7,20 @@ service integrated-vtysh-config
 !
 vrf vrf_myzone
  vni 1000
+ ip route 10.0.0.0/24 null0
  ip route 172.16.0.0/24 null0
  ip route 172.16.1.0/24 null0
+ ip route 172.16.3.0/24 null0
 exit-vrf
 !
 vrf vrf_myzone2
  vni 1001
  ip route 10.0.0.0/24 null0
+ ip route 192.168.0.1/24 null0
+ ip route 192.168.10.1/24 null0
+ ipv6 route 2b0f:1480::/64 null0
+ ipv6 route 2b0f:1480:4000:6000::/64 null0
+ ipv6 route 2b0f:1480:4000:8000::/64 null0
 exit-vrf
 !
 router bgp 65000

@@ -19,15 +19,50 @@
 
   subnets => {
 		ids => { 
+			'myzone-192.168.10.1-24' => {
+			    'type' => 'subnet',
+			    'vnet' => 'myvnet',
+			    'gateway' => '192.168.10.1',
+			},
+			'myzone-192.168.0.1-24' => {
+			    'type' => 'subnet',
+			    'vnet' => 'myvnet',
+			    'gateway' => '192.168.0.1',
+			},
 			'myzone-10.0.0.0-24' => {
 			    'type' => 'subnet',
 			    'vnet' => 'myvnet',
 			    'gateway' => '10.0.0.1',
 			},
+			'myzone2-10.0.0.0-24' => {
+			    'type' => 'subnet',
+			    'vnet' => 'myvnet2',
+			    'gateway' => '10.0.0.1',
+			},
+			'myzone-2b0f:1480:4000:8000::-64' => {
+			    'type' => 'subnet',
+			    'vnet' => 'myvnet',
+			    'gateway' => '2b0f:1480:4000:8000::1',
+			},
+			'myzone-2b0f:1480::-64' => {
+			    'type' => 'subnet',
+			    'vnet' => 'myvnet',
+			    'gateway' => '2b0f:1480::1',
+			},
 			'myzone2-172.16.0.0-24' => {
 			    'type' => 'subnet',
 			    'vnet' => 'myvnet2',
 			    'gateway' => '172.16.0.1',
+			},
+			'myzone2-172.16.3.0-24' => {
+			    'type' => 'subnet',
+			    'vnet' => 'myvnet2',
+			    'gateway' => '172.16.3.1',
+			},
+			'myzone-2b0f:1480:4000:6000::-64' => {
+			    'type' => 'subnet',
+			    'vnet' => 'myvnet',
+			    'gateway' => '2b0f:1480:4000:6000::1',
 			},
 			'myzone2-172.16.1.0-24' => {
 			    'type' => 'subnet',
