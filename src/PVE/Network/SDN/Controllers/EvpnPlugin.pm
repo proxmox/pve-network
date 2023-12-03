@@ -188,22 +188,34 @@ sub generate_controller_zone_config {
 
     if ($is_gateway) {
 
+	$config->{frr_prefix_list}->{'only_default'}->{1} = "permit 0.0.0.0/0";
+	$config->{frr_prefix_list_v6}->{'only_default_v6'}->{1} = "permit ::/0";
+
 	if (!$exitnodes_primary || $exitnodes_primary eq $local_node) {
-	    #filter default type5 route coming from other exit nodes on primary node or both nodes if no primary is defined.
+	    #filter default route coming from other exit nodes on primary node or both nodes if no primary is defined.
+	    my $routemap_config_v6 = ();
+	    push @{$routemap_config_v6}, "match ip address prefix-list only_default_v6";
+	    my $routemap_v6 = { rule => $routemap_config_v6, action => "deny" };
+	    unshift(@{$config->{frr_routemap}->{'MAP_VTEP_IN'}}, $routemap_v6);
+
 	    my $routemap_config = ();
-	    push @{$routemap_config}, "match evpn vni $vrfvxlan";
-	    push @{$routemap_config}, "match evpn route-type prefix";
+	    push @{$routemap_config}, "match ip address prefix-list only_default";
 	    my $routemap = { rule => $routemap_config, action => "deny" };
 	    unshift(@{$config->{frr_routemap}->{'MAP_VTEP_IN'}}, $routemap);
+
 	} elsif ($exitnodes_primary ne $local_node) {
+	    my $routemap_config_v6 = ();
+	    push @{$routemap_config_v6}, "match ipv6 address prefix-list only_default_v6";
+	    push @{$routemap_config_v6}, "set metric 200";
+	    my $routemap_v6 = { rule => $routemap_config_v6, action => "permit" };
+	    unshift(@{$config->{frr_routemap}->{'MAP_VTEP_OUT'}}, $routemap_v6);
+
 	    my $routemap_config = ();
-	    push @{$routemap_config}, "match evpn vni $vrfvxlan";
-	    push @{$routemap_config}, "match evpn route-type prefix";
+	    push @{$routemap_config}, "match ip address prefix-list only_default";
 	    push @{$routemap_config}, "set metric 200";
 	    my $routemap = { rule => $routemap_config, action => "permit" };
 	    unshift(@{$config->{frr_routemap}->{'MAP_VTEP_OUT'}}, $routemap);
-        }
-
+	}
 
 	if (!$exitnodes_local_routing) {
 	    @controller_config = ();

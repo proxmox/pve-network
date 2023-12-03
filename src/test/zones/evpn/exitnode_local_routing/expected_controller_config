@@ -40,12 +40,19 @@ router bgp 65000 vrf vrf_myzone
  exit-address-family
 exit
 !
+ip prefix-list only_default seq 1 permit 0.0.0.0/0
+!
+ipv6 prefix-list only_default_v6 seq 1 permit ::/0
+!
 route-map MAP_VTEP_IN deny 1
- match evpn vni 1000
- match evpn route-type prefix
+ match ip address prefix-list only_default
 exit
 !
-route-map MAP_VTEP_IN permit 2
+route-map MAP_VTEP_IN deny 2
+ match ip address prefix-list only_default_v6
+exit
+!
+route-map MAP_VTEP_IN permit 3
 exit
 !
 route-map MAP_VTEP_OUT permit 1
