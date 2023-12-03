@@ -77,9 +77,9 @@ sub generate_controller_config {
     my @controller_config = (
 	"bgp router-id $ifaceip",
 	"no bgp hard-administrative-reset",
-	"no bgp graceful-restart notification",
 	"no bgp default ipv4-unicast",
 	"coalesce-time 1000",
+	"no bgp graceful-restart notification",
     );
 
     push(@{$bgp->{""}}, @controller_config) if keys %{$bgp} == 0;
@@ -104,9 +104,9 @@ sub generate_controller_config {
 
     # address-family l2vpn
     @controller_config = ();
+    push @controller_config, "neighbor VTEP activate";
     push @controller_config, "neighbor VTEP route-map MAP_VTEP_IN in";
     push @controller_config, "neighbor VTEP route-map MAP_VTEP_OUT out";
-    push @controller_config, "neighbor VTEP activate";
     push @controller_config, "advertise-all-vni";
     push @controller_config, "autort as $autortas" if $autortas;
     push(@{$bgp->{"address-family"}->{"l2vpn evpn"}}, @controller_config);
@@ -479,7 +479,7 @@ sub generate_controller_rawconfig {
     my $nodename = PVE::INotify::nodename();
 
     my $final_config = [];
-    push @{$final_config}, "frr version 8.5.1";
+    push @{$final_config}, "frr version 8.5.2";
     push @{$final_config}, "frr defaults datacenter";
     push @{$final_config}, "hostname $nodename";
     push @{$final_config}, "log syslog informational";

@@ -1,4 +1,4 @@
-frr version 8.5.1
+frr version 8.5.2
 frr defaults datacenter
 hostname localhost
 log syslog informational
@@ -19,9 +19,9 @@ exit-vrf
 router bgp 65000
  bgp router-id 192.168.0.1
  no bgp hard-administrative-reset
- no bgp graceful-restart notification
  no bgp default ipv4-unicast
  coalesce-time 1000
+ no bgp graceful-restart notification
  neighbor VTEP peer-group
  neighbor VTEP remote-as 65000
  neighbor VTEP bfd
@@ -39,9 +39,9 @@ router bgp 65000
  exit-address-family
  !
  address-family l2vpn evpn
+  neighbor VTEP activate
   neighbor VTEP route-map MAP_VTEP_IN in
   neighbor VTEP route-map MAP_VTEP_OUT out
-  neighbor VTEP activate
   advertise-all-vni
  exit-address-family
 exit
