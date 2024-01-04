@@ -264,10 +264,9 @@ sub api_request {
     my $req = HTTP::Request->new($method,$url, $headers, $encoded_data);
 
     my $ua = LWP::UserAgent->new(protocols_allowed => ['http', 'https'], timeout => 30);
-    my $proxy = undef;
-
-    if ($proxy) {
-        $ua->proxy(['http', 'https'], $proxy);
+    my $datacenter_cfg = PVE::Cluster::cfs_read_file('datacenter.cfg');
+    if (my $proxy = $datacenter_cfg->{http_proxy}) {
+	$ua->proxy(['http', 'https'], $proxy);
     } else {
 	$ua->env_proxy;
     }
