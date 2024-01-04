@@ -184,6 +184,18 @@ sub add_next_freeip {
     return $ip;
 }
 
+sub add_range_next_freeip {
+    my ($class, $plugin_config, $subnet, $range, $data, $noerr) = @_;
+
+    #not implemented in phpipam, we search in the full subnet
+
+    my $vmid = $data->{vmid};
+    my $mac = $data->{mac};
+    my $hostname = $data->{hostname};
+
+    return $class->add_next_freeip($plugin_config, undef, $subnet, $hostname, $mac, $vmid);
+}
+
 sub del_ip {
     my ($class, $plugin_config, $subnetid, $subnet, $ip, $noerr) = @_;
 
