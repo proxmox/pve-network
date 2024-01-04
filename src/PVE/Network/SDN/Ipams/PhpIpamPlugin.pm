@@ -51,7 +51,7 @@ sub add_subnet {
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Token' => $token];
 
     #search subnet
-    my $internalid = get_prefix_id($url, $cidr, $headers);
+    my $internalid = eval { get_prefix_id($url, $cidr, $headers) };
 
     #create subnet
     if (!$internalid) {
