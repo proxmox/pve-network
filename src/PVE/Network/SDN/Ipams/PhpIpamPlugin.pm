@@ -215,7 +215,8 @@ sub get_ips_from_mac {
     my $ip4 = undef;
     my $ip6 = undef;
 
-    my $ips = PVE::Network::SDN::api_request("GET", "$url/addresses/search_mac/$mac", $headers);
+    my $ips = eval { PVE::Network::SDN::api_request("GET", "$url/addresses/search_mac/$mac", $headers) };
+    return if $@;
 
     #fixme
     die "parsing of result not yet implemented";
