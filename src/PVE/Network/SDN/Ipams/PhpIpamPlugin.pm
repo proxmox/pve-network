@@ -181,7 +181,7 @@ sub add_next_freeip {
         die "can't find free ip in subnet $cidr: $@" if !$noerr;
     }
 
-    return "$ip/$mask" if $ip && $mask;
+    return $ip;
 }
 
 sub del_ip {

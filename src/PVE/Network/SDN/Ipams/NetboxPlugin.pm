@@ -151,17 +151,15 @@ sub add_next_freeip {
 
     my $params = { dns_name => $hostname, description => $description };
 
-    my $ip = undef;
     eval {
 	my $result = PVE::Network::SDN::api_request("POST", "$url/ipam/prefixes/$internalid/available-ips/", $headers, $params);
-	$ip = $result->{address};
+	my ($ip, undef) = split(/\//, $result->{address});
+	return $ip;
     };
 
     if ($@) {
 	die "can't find free ip in subnet $cidr: $@" if !$noerr;
     }
-
-    return $ip;
 }
 
 sub add_range_next_freeip {
@@ -176,19 +174,16 @@ sub add_range_next_freeip {
 
     my $params = { dns_name => $data->{hostname}, description => $description };
 
-    my $ip = undef;
     eval {
 	my $result = PVE::Network::SDN::api_request("POST", "$url/ipam/ip-ranges/$internalid/available-ips/", $headers, $params);
-	$ip = $result->{address};
+	my ($ip, undef) = split(/\//, $result->{address});
 	print "found ip free $ip in range $range->{'start-address'}-$range->{'end-address'}\n" if $ip;
+	return $ip;
     };
 
     if ($@) {
 	die "can't find free ip in range $range->{'start-address'}-$range->{'end-address'}: $@" if !$noerr;
     }
-
-    return $ip;
-
 }
 
 sub del_ip {

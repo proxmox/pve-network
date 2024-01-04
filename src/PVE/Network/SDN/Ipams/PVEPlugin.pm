@@ -176,7 +176,7 @@ sub add_next_freeip {
     });
     die "$@" if $@;
 
-    return "$freeip/$mask";
+    return $freeip;
 }
 
 sub add_range_next_freeip {
