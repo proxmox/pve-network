@@ -269,7 +269,7 @@ sub api_request {
     if ($proxy) {
         $ua->proxy(['http', 'https'], $proxy);
     } else {
-        $ua->env_proxy;
+	$ua->env_proxy;
     }
 
     $ua->ssl_opts(verify_hostname => 0, SSL_verify_mode => 0x00);
@@ -278,8 +278,8 @@ sub api_request {
     my $code = $response->code;
 
     if ($code !~ /^2(\d+)$/) {
-        my $msg = $response->message || 'unknown';
-        die "Invalid response from server: $code $msg\n";
+	my $msg = $response->message || 'unknown';
+	die "Invalid response from server: $code $msg\n";
     }
 
     my $raw = '';
@@ -288,16 +288,12 @@ sub api_request {
     } else {
 	$raw = $response->content;
     }
-
     return if $raw eq '';
 
-    my $json = '';
-    eval {
-	$json = from_json($raw);
-    };
+    my $res = eval { from_json($raw) };
     die "api response is not a json" if $@;
 
-    return $json;
+    return $res;
 }
 
 1;
