@@ -7,6 +7,8 @@ BUILDDIR ?= $(PACKAGE)-$(DEB_VERSION_UPSTREAM)
 DEB=$(PACKAGE)_$(DEB_VERSION_UPSTREAM_REVISION)_all.deb
 DSC=$(PACKAGE)_$(DEB_VERSION_UPSTREAM_REVISION).dsc
 
+all: deb
+
 .PHONY: dinstall
 dinstall: deb
 	dpkg -i $(DEB)
