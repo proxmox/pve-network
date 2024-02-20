@@ -55,19 +55,15 @@ sub add_subnet {
 
     #create subnet
     if (!$internalid) {
-	my $params = { subnet => $network,
-		   mask => $mask,
-		   sectionId => $section,
-		  };
-
-	eval {
-		PVE::Network::SDN::api_request("POST", "$url/subnets/", $headers, $params);
+	my $params = {
+	    subnet => $network,
+	    mask => $mask,
+	    sectionId => $section,
 	};
-	if ($@) {
-	    die "error add subnet to ipam: $@" if !$noerr;
-	}
-    }
 
+	eval { PVE::Network::SDN::api_request("POST", "$url/subnets/", $headers, $params) };
+	die "error add subnet to ipam: $@" if $@ && !$noerr;
+    }
 }
 
 sub del_subnet {
@@ -84,13 +80,8 @@ sub del_subnet {
 
     return; #fixme: check that prefix is empty exluding gateway, before delete
 
-    eval {
-	PVE::Network::SDN::api_request("DELETE", "$url/subnets/$internalid", $headers);
-    };
-    if ($@) {
-	die "error deleting subnet from ipam: $@" if !$noerr;
-    }
-
+    eval { PVE::Network::SDN::api_request("DELETE", "$url/subnets/$internalid", $headers) };
+    die "error deleting subnet from ipam: $@" if $@ && !$noerr;
 }
 
 sub add_ip {
@@ -104,11 +95,12 @@ sub add_ip {
 
     my $internalid = get_prefix_id($url, $cidr, $headers);
 
-    my $params = { ip => $ip,
-		   subnetId => $internalid,
-		   hostname => $hostname,
-		   description => $description,
-		  };
+    my $params = {
+	ip => $ip,
+	subnetId => $internalid,
+	hostname => $hostname,
+	description => $description,
+    };
     $params->{is_gateway} = 1 if $is_gateway;
     $params->{mac} = $mac if $mac;
 
@@ -137,10 +129,10 @@ sub update_ip {
     my $ip_id = get_ip_id($url, $ip, $headers);
     die "can't find ip addresse in ipam" if !$ip_id;
 
-    my $params = { 
-		   hostname => $hostname,
-		   description => $description,
-		  };
+    my $params = {
+	hostname => $hostname,
+	description => $description,
+    };
     $params->{is_gateway} = 1 if $is_gateway;
     $params->{mac} = $mac if $mac;
 
@@ -156,8 +148,8 @@ sub update_ip {
 sub add_next_freeip {
     my ($class, $plugin_config, $subnetid, $subnet, $hostname, $mac, $description, $noerr) = @_;
 
-    my $cidr = $subnet->{cidr};  
-    my $mask = $subnet->{mask};  
+    my $cidr = $subnet->{cidr};
+    my $mask = $subnet->{mask};
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
     my $section = $plugin_config->{section};
@@ -165,9 +157,10 @@ sub add_next_freeip {
 
     my $internalid = get_prefix_id($url, $cidr, $headers);
 
-    my $params = { hostname => $hostname,
-		   description => $description,
-		  };
+    my $params = {
+	hostname => $hostname,
+	description => $description,
+    };
 
     $params->{mac} = $mac if $mac;
 
