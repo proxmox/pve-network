@@ -69,8 +69,7 @@ sub add_a_record {
     my $record = { content => $ip, 
                    disabled => JSON::false, 
 		   name => $fqdn, 
-                   type => $type, 
-                   priority => 0 };
+                   type => $type };
 
     push @$final_records, $record;
 
@@ -108,8 +107,7 @@ sub add_ptr_record {
     my $record = { content => $hostname, 
                    disabled => JSON::false, 
 		   name => $reverseip, 
-                   type => $type, 
-                   priority => 0 };
+                   type => $type };
 
     my $rrset = { name => $reverseip, 
 		  type => $type, 
