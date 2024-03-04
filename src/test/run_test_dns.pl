@@ -151,8 +151,7 @@ foreach my $path (@plugins) {
 		my $record = { content => $ip,
 			       disabled => JSON::false,
 			       name => $fqdn,
-			       type => $type,
-			       priority => 0 };
+			       type => $type };
 
 		my $rrset = { name => $fqdn,
 			      type => $type,
@@ -186,14 +185,12 @@ foreach my $path (@plugins) {
 		my $record = { content => $ip,
 			       disabled => JSON::false,
 			       name => $fqdn,
-			       type => $type,
-			       priority => 0 };
+			       type => $type };
 
 		my $record2 = { content => $ip2,
 				disabled => JSON::false,
 				name => $fqdn,
-				type => $type,
-				priority => 0 };
+				type => $type };
 
 		my $rrset = { name => $fqdn,
 			      type => $type,
@@ -227,8 +224,7 @@ foreach my $path (@plugins) {
 		my $record2 = { content => $ip2,
 				disabled => JSON::false,
 				name => $fqdn,
-				type => $type,
-				priority => 0 };
+				type => $type };
 
 		my $rrset = { name => $fqdn,
 			      type => $type,

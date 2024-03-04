@@ -1,5 +1,5 @@
 bless( {
-                 '_content' => '{"rrsets":[{"changetype":"REPLACE","name":"myhostname.domain.com.","records":[{"content":"10.0.0.1","disabled":false,"name":"myhostname.domain.com.","priority":0,"type":"A"}],"ttl":"3600","type":"A"}]}',
+                 '_content' => '{"rrsets":[{"changetype":"REPLACE","name":"myhostname.domain.com.","records":[{"content":"10.0.0.1","disabled":false,"name":"myhostname.domain.com.","type":"A"}],"ttl":"3600","type":"A"}]}',
                  '_headers' => bless( {
                                         '::std_case' => {
                                                           'x-api-key' => 'X-API-Key'

@@ -1,5 +1,5 @@
 bless( {
-                  '_content' => '{"rrsets":[{"changetype":"REPLACE","name":"8.8.8.8.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.6.8.4.0.6.8.4.1.0.0.2.ip6.arpa.","records":[{"content":"myhostname.","disabled":false,"name":"8.8.8.8.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.6.8.4.0.6.8.4.1.0.0.2.ip6.arpa.","priority":0,"type":"PTR"}],"ttl":"3600","type":"PTR"}]}',
+                  '_content' => '{"rrsets":[{"changetype":"REPLACE","name":"8.8.8.8.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.6.8.4.0.6.8.4.1.0.0.2.ip6.arpa.","records":[{"content":"myhostname.","disabled":false,"name":"8.8.8.8.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.6.8.4.0.6.8.4.1.0.0.2.ip6.arpa.","type":"PTR"}],"ttl":"3600","type":"PTR"}]}',
                   '_headers' => bless( {
                                          '::std_case' => {
                                                            'x-api-key' => 'X-API-Key'
