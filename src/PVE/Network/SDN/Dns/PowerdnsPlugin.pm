@@ -138,7 +138,7 @@ sub del_a_record {
     my $final_records = [ grep { $_->{content} ne $ip } $existing_rrset->{records}->@* ];
     my $final_records_size = scalar($final_records->@*);
     # early return if we didn't find our record (i.e., un/filtered record sets have the same size)
-    return if scalar($existing_rrset->{content}->@*) == $final_records_size;
+    return if scalar($existing_rrset->{records}->@*) == $final_records_size;
 
     my $rrset = {
 	name => $fqdn,
