@@ -29,12 +29,11 @@ sub read_sdn_config {
     return $sdn_config;
 }
 
-
 my @tests = grep { -d } glob './zones/*/*';
 
 foreach my $test (@tests) {
 
-    my $sdn_config = read_sdn_config ("./$test/sdn_config");
+    my $sdn_config = read_sdn_config("./$test/sdn_config");
 
     open(my $fh1, '<', "./$test/interfaces") or die "can't read interfaces file - $!";
     my $interfaces_config = PVE::INotify::__read_etc_network_interfaces($fh1, undef, undef);
@@ -78,7 +77,7 @@ foreach my $test (@tests) {
 	},
 	find_bridge => sub {
 	    return;
-	}
+	},
     );
 
     my $sdn_module = Test::MockModule->new("PVE::Network::SDN");
@@ -97,7 +96,7 @@ foreach my $test (@tests) {
 	diag("got unexpected error - $err");
 	fail($name);
     } else {
-	is ($result, $expected, $name);
+	is($result, $expected, $name);
     }
 
     if ($sdn_config->{controllers}) {
@@ -106,17 +105,17 @@ foreach my $test (@tests) {
 
 	eval {
 	    my $config = PVE::Network::SDN::Controllers::generate_controller_config();
-	    $controller_rawconfig = PVE::Network::SDN::Controllers::generate_controller_rawconfig($config);
+	    $controller_rawconfig =
+		PVE::Network::SDN::Controllers::generate_controller_rawconfig($config);
 	};
 	if (my $err = $@) {
 	    diag("got unexpected error - $err");
 	    fail($name);
 	} else {
-	    is ($controller_rawconfig, $expected, $name);
+	    is($controller_rawconfig, $expected, $name);
 	}
     }
 }
 
 done_testing();
-
 

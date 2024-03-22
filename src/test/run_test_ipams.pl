@@ -20,11 +20,12 @@ $Data::Dumper::Sortkeys = 1;
 
 sub read_sdn_config {
     my ($file) = @_;
+
     # Read structure back in again
     open my $in, '<', $file or die $!;
     my $sdn_config;
     {
-	local $/;    # slurp mode
+	local $/; # slurp mode
 	$sdn_config = eval <$in>;
     }
     close $in;
@@ -32,15 +33,13 @@ sub read_sdn_config {
     return $sdn_config;
 }
 
-
 #my @plugins = <./ipams/*>;
-my @plugins = read_dir( './ipams/', prefix => 1 ) ;
+my @plugins = read_dir('./ipams/', prefix => 1);
 
 foreach my $path (@plugins) {
 
     my (undef, $ipamid) = split(/\//, $path);
-    my $sdn_config = read_sdn_config ("$path/sdn_config");
-
+    my $sdn_config = read_sdn_config("$path/sdn_config");
 
     my $pve_sdn_subnets;
     $pve_sdn_subnets = Test::MockModule->new('PVE::Network::SDN::Subnets');
@@ -54,7 +53,7 @@ foreach my $path (@plugins) {
     $pve_sdn_subnets = Test::MockModule->new('PVE::Network::SDN::Ipams');
     $pve_sdn_subnets->mock(
 	config => sub {
-	    my $ipam_config = read_sdn_config ("$path/ipam_config");
+	    my $ipam_config = read_sdn_config("$path/ipam_config");
 	    return $ipam_config;
 	},
     );
@@ -65,19 +64,17 @@ foreach my $path (@plugins) {
 	    return $sdn_config;
 	},
 	api_request => sub {
-          my ($method, $url, $headers, $data) = @_;
+	    my ($method, $url, $headers, $data) = @_;
 
- 	my $js = JSON->new;
-	$js->canonical(1);
-	
-	  my $encoded_data = $js->encode($data) if $data;
-	  my $req = HTTP::Request->new($method,$url, $headers, $encoded_data);
-          die Dumper($req);
-	}
+	    my $js = JSON->new;
+	    $js->canonical(1);
+
+	    my $encoded_data = $js->encode($data) if $data;
+	    my $req = HTTP::Request->new($method, $url, $headers, $encoded_data);
+	    die Dumper($req);
+	},
     );
 
-
-  
     #test params;
     my $subnetid = "myzone-10.0.0.0-24";
     my $ip = "10.0.0.1";
@@ -86,10 +83,10 @@ foreach my $path (@plugins) {
     my $description = "mydescription";
     my $is_gateway = 1;
 
+    my $subnet =
+	PVE::Network::SDN::Subnets::sdn_subnets_config($sdn_config->{subnets}, $subnetid, 1);
 
-    my $subnet = PVE::Network::SDN::Subnets::sdn_subnets_config($sdn_config->{subnets}, $subnetid, 1);
-
-    my $ipam_cfg = PVE::Network::SDN::Ipams::config(); 
+    my $ipam_cfg = PVE::Network::SDN::Ipams::config();
     my $plugin_config = $ipam_cfg->{ids}->{$ipamid};
     my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
     my $sdn_ipam_plugin = Test::MockModule->new($plugin);
@@ -102,7 +99,7 @@ foreach my $path (@plugins) {
 	},
 	is_ip_gateway => sub {
 	    return 1;
-	}
+	},
     );
 
     ## add_ip
@@ -110,10 +107,11 @@ foreach my $path (@plugins) {
     my $expected = Dumper read_sdn_config("$path/expected.$test");
     my $name = "$ipamid $test";
 
-    $plugin->add_ip($plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway, 1);
+    $plugin->add_ip($plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description,
+	$is_gateway, 1);
 
     if ($@) {
-	is ($@, $expected, $name);
+	is($@, $expected, $name);
     } else {
 	fail($name);
     }
@@ -126,11 +124,10 @@ foreach my $path (@plugins) {
     $plugin->add_next_freeip($plugin_config, $subnetid, $subnet, $hostname, $mac, $description, 1);
 
     if ($@) {
-	is ($@, $expected, $name);
+	is($@, $expected, $name);
     } else {
 	fail($name);
     }
-
 
     ## del_ip
     $test = "del_ip";
@@ -140,7 +137,7 @@ foreach my $path (@plugins) {
     $plugin->del_ip($plugin_config, $subnetid, $subnet, $ip, 1);
 
     if ($@) {
-	is ($@, $expected, $name);
+	is($@, $expected, $name);
     } else {
 	fail($name);
     }
@@ -149,10 +146,11 @@ foreach my $path (@plugins) {
     $test = "update_ip";
     $expected = Dumper read_sdn_config("$path/expected.$test");
     $name = "$ipamid $test";
-    $plugin->update_ip($plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway, 1);
+    $plugin->update_ip($plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description,
+	$is_gateway, 1);
 
     if ($@) {
-	is ($@, $expected, $name);
+	is($@, $expected, $name);
     } else {
 	fail($name);
     }
@@ -163,15 +161,16 @@ foreach my $path (@plugins) {
     $expected = Dumper read_sdn_config("$path/expected.$test");
     $name = "$ipamid $test";
 
-    $plugin->add_ip($plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway, 1);
+    $plugin->add_ip($plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description,
+	$is_gateway, 1);
 
     if ($@) {
-	is ($@, $expected, $name);
+	is($@, $expected, $name);
     } else {
 	fail($name);
     }
 
-     $sdn_ipam_plugin->mock(
+    $sdn_ipam_plugin->mock(
 	get_prefix_id => sub {
 	    return undef;
 	},
@@ -185,7 +184,7 @@ foreach my $path (@plugins) {
     $plugin->add_subnet($plugin_config, $subnetid, $subnet, 1);
 
     if ($@) {
-	is ($@, $expected, $name);
+	is($@, $expected, $name);
     } else {
 	fail($name);
     }
@@ -193,5 +192,4 @@ foreach my $path (@plugins) {
 }
 
 done_testing();
-
 
