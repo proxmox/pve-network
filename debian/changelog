@@ -1,3 +1,20 @@
+libpve-network-perl (0.9.6) bookworm; urgency=medium
+
+  * controllers: evpn: add ipv6 prefix-list support
+
+  * controllers: evpn: use prefix-list in route-map instead evpn match to cope
+    with FRR regression
+
+  * controllers: evpn: fix order of routes for null and ipv6 ones
+
+  * prefer proxy from datacenter.cfg for external api calls
+
+  * ipam: improve phpIPAM support a bit
+
+  * fix #5275: remove priority field from powerdns
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 22 Mar 2024 10:15:29 +0100
+
 libpve-network-perl (0.9.5) bookworm; urgency=medium
 
   * validation: add support for arrays to change tracking
