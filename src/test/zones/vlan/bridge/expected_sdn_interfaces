@@ -4,20 +4,24 @@ auto ln_myvnet
 iface ln_myvnet
 	link-type veth
 	veth-peer-name pr_myvnet
+	mtu 9200
 
 auto myvnet
 iface myvnet
 	bridge_ports ln_myvnet
 	bridge_stp off
 	bridge_fd 0
+	mtu 9200
 
 auto pr_myvnet
 iface pr_myvnet
 	link-type veth
 	veth-peer-name ln_myvnet
+	mtu 9200
 
 auto vmbr0v100
 iface vmbr0v100
 	bridge_ports  eth0.100 pr_myvnet
 	bridge_stp off
 	bridge_fd 0
+	mtu 9200

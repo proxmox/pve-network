@@ -106,17 +106,20 @@ sub generate_sdn_config {
 	@iface_config = ();
 	push @iface_config, "link-type veth";
 	push @iface_config, "veth-peer-name $vnet_uplinkpeer";
+	push @iface_config, "mtu $mtu" if $mtu;
 	push(@{$config->{$vnet_uplink}}, @iface_config) if !$config->{$vnet_uplink};
 
 	@iface_config = ();
 	push @iface_config, "link-type veth";
 	push @iface_config, "veth-peer-name $vnet_uplink";
+	push @iface_config, "mtu $mtu" if $mtu;
 	push(@{$config->{$vnet_uplinkpeer}}, @iface_config) if !$config->{$vnet_uplinkpeer};
 
 	@iface_config = ();
 	push @iface_config, "bridge_ports $bridge_ports $vnet_uplinkpeer";
 	push @iface_config, "bridge_stp off";
 	push @iface_config, "bridge_fd 0";
+	push @iface_config, "mtu $mtu" if $mtu;
 	push(@{$config->{$bridgevlan}}, @iface_config) if !$config->{$bridgevlan};
     }
 

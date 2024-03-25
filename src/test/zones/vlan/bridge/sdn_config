@@ -6,6 +6,6 @@
                       },
              },
   zones   => {
-               ids => { myzone => { bridge => "vmbr0", ipam => "pve", type => "vlan" } },
+               ids => { myzone => { bridge => "vmbr0", ipam => "pve", type => "vlan", mtu => "9200" } },
              },
 }
