@@ -1,5 +1,8 @@
 *.deb
+/*.build
 /*.buildinfo
 /*.changes
+/*.dsc
 /.vscode/
 /libpve-network-perl-[0-9]*/
+/libpve-network-perl_[0-9]*.tar.xz
