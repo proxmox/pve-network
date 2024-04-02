@@ -46,8 +46,20 @@ foreach my $test (@tests) {
 	    return 'localhost';
 	},
 	read_file => sub {
+	    # HACK this assumes we are always calling PVE::INotify::read_file('interfaces');
 	    return $interfaces_config;
 	},
+	read_etc_network_interfaces => sub {
+	    return $interfaces_config;
+	},
+    );
+
+    my $mocked_pve_sdn_controllers;
+    $mocked_pve_sdn_controllers = Test::MockModule->new('PVE::Network::SDN::Controllers');
+    $mocked_pve_sdn_controllers->mock(
+	read_etc_network_interfaces => sub {
+	    return $interfaces_config;
+	}
     );
 
     my $pve_sdn_subnets;
@@ -86,6 +98,25 @@ foreach my $test (@tests) {
 	    return $sdn_config;
 	},
     );
+
+    my ($first_plugin) = %{$sdn_config->{controllers}->{ids}} if defined $sdn_config->{controllers};
+    if ($first_plugin) {
+	my $controller_plugin = PVE::Network::SDN::Controllers::Plugin->lookup(
+	    $sdn_config->{controllers}->{ids}->{$first_plugin}->{type}
+	);
+	my $mocked_controller_plugin = Test::MockModule->new($controller_plugin);
+	$mocked_controller_plugin->mock(
+	    write_controller_config => sub {
+		return;
+	    },
+	    reload_controller => sub {
+		return;
+	    },
+	    read_local_frr_config => sub {
+		return;
+	    },
+	);
+    }
 
     my $name = $test;
     my $expected = read_file("./$test/expected_sdn_interfaces");
