@@ -487,6 +487,12 @@ sub generate_frr_list {
     }
 }
 
+sub read_local_frr_config {
+    if (-e "/etc/frr/frr.conf.local") {
+	return file_get_contents("/etc/frr/frr.conf.local");
+    }
+};
+
 sub generate_controller_rawconfig {
     my ($class, $plugin_config, $config) = @_;
 
@@ -500,8 +506,8 @@ sub generate_controller_rawconfig {
     push @{$final_config}, "service integrated-vtysh-config";
     push @{$final_config}, "!";
 
-    if (-e "/etc/frr/frr.conf.local") {
-	my $local_conf = file_get_contents("/etc/frr/frr.conf.local");
+    my $local_conf = read_local_frr_config();
+    if ($local_conf) {
 	parse_merge_frr_local_config($config, $local_conf);
     }
 
