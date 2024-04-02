@@ -10,7 +10,7 @@ clean:
 
 .PHONY: test
 test:
-	[ -e /run/lock/sbuild ] || $(MAKE) -C $@
+	$(MAKE) -C $@
 
 .PHONY: install
 install:
