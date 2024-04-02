@@ -70,6 +70,16 @@ sub complete_sdn_controller {
     return  $cmdname eq 'add' ? [] : [ PVE::Network::SDN::sdn_controllers_ids($cfg) ];
 }
 
+sub read_etc_network_interfaces {
+    # read main config for physical interfaces
+    my $current_config_file = "/etc/network/interfaces";
+    my $fh = IO::File->new($current_config_file) or die "failed to open $current_config_file - $!\n";
+    my $interfaces_config = PVE::INotify::read_etc_network_interfaces($current_config_file, $fh);
+    $fh->close();
+
+    return $interfaces_config;
+}
+
 sub generate_controller_config {
 
     my $cfg = PVE::Network::SDN::running_config();
@@ -79,11 +89,7 @@ sub generate_controller_config {
 
     return if !$vnet_cfg && !$zone_cfg && !$controller_cfg;
 
-    # read main config for physical interfaces
-    my $current_config_file = "/etc/network/interfaces";
-    my $fh = IO::File->new($current_config_file) or die "failed to open $current_config_file - $!\n";
-    my $interfaces_config = PVE::INotify::read_etc_network_interfaces($current_config_file, $fh);
-    $fh->close();
+    my $interfaces_config = read_etc_network_interfaces();
 
     # check uplinks
     my $uplinks = {};
