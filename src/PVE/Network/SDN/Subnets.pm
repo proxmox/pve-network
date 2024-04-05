@@ -206,7 +206,7 @@ sub del_subnet {
 }
 
 sub add_next_free_ip {
-    my ($zone, $subnetid, $subnet, $hostname, $mac, $vmid, $skipdns, $dhcprange) = @_;
+    my ($zone, $subnetid, $subnet, $hostname, $mac, $vmid, $skipdns, $dhcprange, $ipversion) = @_;
 
     my $cidr = undef;
     my $ip = undef;

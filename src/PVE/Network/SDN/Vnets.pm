@@ -95,7 +95,7 @@ sub get_subnet_from_vnet_ip {
 }
 
 sub add_next_free_cidr {
-    my ($vnetid, $hostname, $mac, $vmid, $skipdns, $dhcprange) = @_;
+    my ($vnetid, $hostname, $mac, $vmid, $skipdns, $dhcprange, $ipversion) = @_;
 
     my $vnet = PVE::Network::SDN::Vnets::get_vnet($vnetid);
     return if !$vnet;
@@ -109,7 +109,7 @@ sub add_next_free_cidr {
 
     my $ips = {};
 
-    my @ipversions = qw/ 4 6 /;
+    my @ipversions = defined($ipversion) ? ($ipversion) : qw/ 4 6 /;
     for my $ipversion (@ipversions) {
 	my $ip = undef;
 	my $subnetcount = 0;
@@ -125,7 +125,7 @@ sub add_next_free_cidr {
 	    };
 	    die $@ if $@;
 
-            if ($ip) {
+	    if ($ip) {
 		$ips->{$ipversion} = $ip;
 		last;
 	    }
