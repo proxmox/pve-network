@@ -33,10 +33,15 @@ my sub assert_dnsmasq_installed {
     return 1;
 }
 
+sub ethers_file {
+    my ($dhcpid) = @_;
+    return "$DNSMASQ_CONFIG_ROOT/$dhcpid/ethers";
+}
+
 sub add_ip_mapping {
     my ($class, $dhcpid, $macdb, $mac, $ip4, $ip6) = @_;
 
-    my $ethers_file = "$DNSMASQ_CONFIG_ROOT/$dhcpid/ethers";
+    my $ethers_file = ethers_file($dhcpid);
     my $ethers_tmp_file = "$ethers_file.tmp";
 
     my $reload = undef;
