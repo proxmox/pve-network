@@ -131,7 +131,17 @@ sub add_next_free_cidr {
 		last;
 	    }
 	}
-	die "can't find any free ip" if !$ip && $subnetcount > 0;
+
+	if (!$ip && $subnetcount > 0) {
+	    foreach my $version (sort keys %{$ips}) {
+		my $ip = $ips->{$version};
+		my ($subnetid, $subnet) = PVE::Network::SDN::Subnets::find_ip_subnet($ip, $subnets);
+
+		PVE::Network::SDN::Subnets::del_ip($zone, $subnetid, $subnet, $ip, $hostname, $mac, $skipdns);
+	    }
+
+	    die "can't find any free ip in zone $zoneid for IPv$ipversion";
+	}
     }
 }
 
