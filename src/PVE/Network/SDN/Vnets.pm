@@ -118,6 +118,7 @@ sub add_next_free_cidr {
 	    my $network = $subnet->{network};
 
 	    next if Net::IP::ip_get_version($network) != $ipversion || $ips->{$ipversion};
+	    next if !$subnet->{'dhcp-range'};
 	    $subnetcount++;
 
 	    eval {
