@@ -186,6 +186,10 @@ __PACKAGE__->register_method ({
 	return &$api_sdn_zones_config($cfg, $param->{zone});
     }});
 
+sub create_etc_interfaces_sdn_dir {
+    mkdir("/etc/pve/sdn");
+}
+
 __PACKAGE__->register_method ({
     name => 'create',
     protected => 1,
@@ -207,7 +211,7 @@ __PACKAGE__->register_method ({
 	my $opts = $plugin->check_config($id, $param, 1, 1);
 
 	PVE::Cluster::check_cfs_quorum();
-	mkdir("/etc/pve/sdn");
+	create_etc_interfaces_sdn_dir();
 
 	PVE::Network::SDN::lock_sdn_config(sub {
 	    my $zone_cfg = PVE::Network::SDN::Zones::config();
