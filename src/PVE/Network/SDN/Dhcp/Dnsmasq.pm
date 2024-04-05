@@ -38,6 +38,17 @@ sub ethers_file {
     return "$DNSMASQ_CONFIG_ROOT/$dhcpid/ethers";
 }
 
+sub update_lease {
+    my ($dhcpid, $ip4, $mac) = @_;
+    #update lease as ip could still be associated to an old removed mac
+    my $bus = Net::DBus->system();
+    my $dnsmasq = $bus->get_service("uk.org.thekelleys.dnsmasq.$dhcpid");
+    my $manager = $dnsmasq->get_object("/uk/org/thekelleys/dnsmasq","uk.org.thekelleys.dnsmasq.$dhcpid");
+
+    my @hostname = unpack("C*", "*");
+    $manager->AddDhcpLease($ip4, $mac, \@hostname, undef, 0, 0, 0) if $ip4;
+}
+
 sub add_ip_mapping {
     my ($class, $dhcpid, $macdb, $mac, $ip4, $ip6) = @_;
 
@@ -107,16 +118,7 @@ sub add_ip_mapping {
 
     my $service_name = "dnsmasq\@$dhcpid";
     systemctl_service('reload', $service_name) if $reload;
-
-    #update lease as ip could still be associated to an old removed mac
-    my $bus = Net::DBus->system();
-    my $dnsmasq = $bus->get_service("uk.org.thekelleys.dnsmasq.$dhcpid");
-    my $manager = $dnsmasq->get_object("/uk/org/thekelleys/dnsmasq","uk.org.thekelleys.dnsmasq.$dhcpid");
-
-    my @hostname = unpack("C*", "*");
-    $manager->AddDhcpLease($ip4, $mac, \@hostname, undef, 0, 0, 0) if $ip4;
-#    $manager->AddDhcpLease($ip6, $mac, \@hostname, undef, 0, 0, 0) if $ip6;
-
+    update_lease($dhcpid, $ip4, $mac);
 }
 
 sub configure_subnet {
