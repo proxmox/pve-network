@@ -139,7 +139,7 @@ sub vnet_update_hook {
     raise_param_exc({ tag => "vlan tag is not allowed on simple zone"}) if defined($tag);
 
     if (!defined($vnet->{mac})) {
-        my $dc = PVE::Cluster::cfs_read_file('datacenter.cfg');
+        my $dc = PVE::Network::SDN::Zones::Plugin::datacenter_config();
         $vnet->{mac} = PVE::Tools::random_ether_addr($dc->{mac_prefix});
     }
 }

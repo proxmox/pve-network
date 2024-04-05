@@ -356,4 +356,9 @@ sub get_bridge_ifaces {
 
     return @bridge_ifaces;
 }
+
+sub datacenter_config {
+    return PVE::Cluster::cfs_read_file('datacenter.cfg');
+}
+
 1;

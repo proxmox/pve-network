@@ -3,6 +3,7 @@ package PVE::Network::SDN::Zones::EvpnPlugin;
 use strict;
 use warnings;
 use PVE::Network::SDN::Zones::VxlanPlugin;
+use PVE::Network::SDN::Zones::Plugin;
 use PVE::Exception qw(raise raise_param_exc);
 use PVE::JSONSchema qw(get_standard_option);
 use PVE::Tools qw($IPV4RE);
@@ -294,7 +295,7 @@ sub on_update_hook {
     }
 
     if (!defined($zone_cfg->{ids}->{$zoneid}->{'mac'})) {
-	my $dc = PVE::Cluster::cfs_read_file('datacenter.cfg');
+        my $dc = PVE::Network::SDN::Zones::Plugin->datacenter_config();
 	$zone_cfg->{ids}->{$zoneid}->{'mac'} = PVE::Tools::random_ether_addr($dc->{mac_prefix});
     }
 }
