@@ -101,7 +101,7 @@ sub add_ip_mapping {
     }
 
     my $service_name = "dnsmasq\@$dhcpid";
-    PVE::Tools::run_command(['systemctl', 'reload', $service_name]) if $reload;
+    systemctl_service('reload', $service_name) if $reload;
 
     #update lease as ip could still be associated to an old removed mac
     my $bus = Net::DBus->system();
@@ -161,6 +161,12 @@ sub configure_vnet {
 	"$DNSMASQ_CONFIG_ROOT/$dhcpid/10-$vnetid.conf",
 	join("\n", @{$config}) . "\n"
     );
+}
+
+sub systemctl_service {
+    my ($action, $service) = @_;
+
+    PVE::Tools::run_command(['systemctl', $action, $service]);
 }
 
 sub before_configure {
@@ -250,9 +256,9 @@ sub after_configure {
 
     my $service_name = "dnsmasq\@$dhcpid";
 
-    PVE::Tools::run_command(['systemctl', 'reload', 'dbus']);
-    PVE::Tools::run_command(['systemctl', 'enable', $service_name]);
-    PVE::Tools::run_command(['systemctl', 'restart', $service_name]);
+    systemctl_service('reload', 'dbus');
+    systemctl_service('enable', $service_name);
+    systemctl_service('restart', $service_name);
 }
 
 sub before_regenerate {
@@ -260,8 +266,8 @@ sub before_regenerate {
 
     return if !assert_dnsmasq_installed($noerr);
 
-    PVE::Tools::run_command(['systemctl', 'stop', "dnsmasq@*"]);
-    PVE::Tools::run_command(['systemctl', 'disable', 'dnsmasq@']);
+    systemctl_service('stop', "dnsmasq@*");
+    systemctl_service('disable', 'dnsmasq@');
 }
 
 sub after_regenerate {
