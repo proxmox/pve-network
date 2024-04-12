@@ -1,0 +1,45 @@
+frr version 8.5.2
+frr defaults datacenter
+hostname localhost
+log syslog informational
+service integrated-vtysh-config
+!
+!
+vrf vrf_myzone
+ vni 1000
+exit-vrf
+!
+router bgp 65000
+ bgp router-id 17.29.105.96
+ no bgp hard-administrative-reset
+ no bgp default ipv4-unicast
+ coalesce-time 1000
+ no bgp graceful-restart notification
+ neighbor VTEP peer-group
+ neighbor VTEP remote-as 65000
+ neighbor VTEP bfd
+ neighbor 2a08:2200:100:1::11 peer-group VTEP
+ neighbor 2a08:2200:100:1::12 peer-group VTEP
+ !
+ address-family l2vpn evpn
+  neighbor VTEP activate
+  neighbor VTEP route-map MAP_VTEP_IN in
+  neighbor VTEP route-map MAP_VTEP_OUT out
+  advertise-all-vni
+ exit-address-family
+exit
+!
+router bgp 65000 vrf vrf_myzone
+ bgp router-id 17.29.105.96
+ no bgp hard-administrative-reset
+ no bgp graceful-restart notification
+exit
+!
+route-map MAP_VTEP_IN permit 1
+exit
+!
+route-map MAP_VTEP_OUT permit 1
+exit
+!
+line vty
+!

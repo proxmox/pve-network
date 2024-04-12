@@ -118,4 +118,25 @@ sub on_update_hook {
     # do nothing by default
 }
 
+#helpers
+
+sub read_iface_mac {
+    my ($iface) = @_;
+    return PVE::Tools::file_read_firstline("/sys/class/net/$iface/master/address");
+}
+
+sub get_router_id {
+    my ($ip, $iface) = @_;
+
+    return $ip if Net::IP::ip_is_ipv4($ip);
+
+    #for ipv6, use 4 last bytes of iface mac address as unique id
+    my $mac = read_iface_mac($iface);
+
+    die "can't autofind a router-id value from ip or mac" if !$mac;
+
+    my @mac_bytes = split(':', $mac);
+    return hex($mac_bytes[2]).".".hex($mac_bytes[3]).".".hex($mac_bytes[4]).".".hex($mac_bytes[5]);
+}
+
 1;

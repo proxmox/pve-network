@@ -99,6 +99,14 @@ foreach my $test (@tests) {
 	},
     );
 
+    my $pve_sdn_controllers_plugin;
+    $pve_sdn_controllers_plugin = Test::MockModule->new('PVE::Network::SDN::Controllers::Plugin');
+    $pve_sdn_controllers_plugin->mock(
+	read_iface_mac => sub {
+	    return "bc:24:11:1d:69:60";
+	},
+    );
+
     my ($first_plugin) = %{$sdn_config->{controllers}->{ids}} if defined $sdn_config->{controllers};
     if ($first_plugin) {
 	my $controller_plugin = PVE::Network::SDN::Controllers::Plugin->lookup(

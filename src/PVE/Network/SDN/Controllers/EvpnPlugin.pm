@@ -70,12 +70,13 @@ sub generate_controller_config {
     my $bgp = $config->{frr}->{router}->{"bgp $asn"} //= {};
 
     my ($ifaceip, $interface) = PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers, $loopback);
+    my $routerid = PVE::Network::SDN::Controllers::Plugin::get_router_id($ifaceip, $interface);
 
     my $remoteas = $ebgp ? "external" : $asn;
 
     #global options
     my @controller_config = (
-	"bgp router-id $ifaceip",
+	"bgp router-id $routerid",
 	"no bgp hard-administrative-reset",
 	"no bgp default ipv4-unicast",
 	"coalesce-time 1000",
@@ -153,6 +154,8 @@ sub generate_controller_zone_config {
     return if !$vrf || !$vrfvxlan || !$asn;
 
     my ($ifaceip, $interface) = PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers, $loopback);
+    my $routerid = PVE::Network::SDN::Controllers::Plugin::get_router_id($ifaceip, $interface);
+
     my $is_gateway = $exitnodes->{$local_node};
 
     # vrf
@@ -188,7 +191,7 @@ sub generate_controller_zone_config {
 
     #main vrf router
     @controller_config = ();
-    push @controller_config, "bgp router-id $ifaceip";
+    push @controller_config, "bgp router-id $routerid";
     push @controller_config, "no bgp hard-administrative-reset";
     push @controller_config, "no bgp graceful-restart notification";
 
