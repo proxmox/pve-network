@@ -208,7 +208,7 @@ sub generate_controller_zone_config {
 	if (!$exitnodes_primary || $exitnodes_primary eq $local_node) {
 	    #filter default route coming from other exit nodes on primary node or both nodes if no primary is defined.
 	    my $routemap_config_v6 = ();
-	    push @{$routemap_config_v6}, "match ip address prefix-list only_default_v6";
+	    push @{$routemap_config_v6}, "match ipv6 address prefix-list only_default_v6";
 	    my $routemap_v6 = { rule => $routemap_config_v6, action => "deny" };
 	    unshift(@{$config->{frr_routemap}->{'MAP_VTEP_IN'}}, $routemap_v6);
 

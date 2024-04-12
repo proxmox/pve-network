@@ -65,7 +65,7 @@ route-map MAP_VTEP_IN deny 1
 exit
 !
 route-map MAP_VTEP_IN deny 2
- match ip address prefix-list only_default_v6
+ match ipv6 address prefix-list only_default_v6
 exit
 !
 route-map MAP_VTEP_IN permit 3
