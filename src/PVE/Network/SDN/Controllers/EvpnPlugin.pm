@@ -421,17 +421,16 @@ sub generate_frr_vrf {
     push @{$final_config}, @config;
 }
 
-sub generate_frr_ip_protocol {
-   my ($final_config, $ips) = @_;
+sub generate_frr_simple_list {
+   my ($final_config, $rules) = @_;
 
-   return if !$ips;
+   return if !$rules;
 
    my @config = ();
    push @{$final_config}, "!";
-   foreach my $rule (sort @$ips) {
+   foreach my $rule (sort @$rules) {
 	push @{$final_config}, $rule;
    }
-
 }
 
 sub generate_frr_interfaces {
@@ -517,8 +516,9 @@ sub generate_controller_rawconfig {
     generate_frr_list($final_config, $config->{frr_access_list}, "access-list");
     generate_frr_list($final_config, $config->{frr_prefix_list}, "ip prefix-list");
     generate_frr_list($final_config, $config->{frr_prefix_list_v6}, "ipv6 prefix-list");
+    generate_frr_simple_list($final_config, $config->{frr_bgp_community_list});
     generate_frr_routemap($final_config, $config->{frr_routemap});
-    generate_frr_ip_protocol($final_config, $config->{frr_ip_protocol});
+    generate_frr_simple_list($final_config, $config->{frr_ip_protocol});
 
     push @{$final_config}, "!";
     push @{$final_config}, "line vty";
@@ -552,6 +552,9 @@ sub parse_merge_frr_local_config {
 	    next;
 	} elsif ($line =~ m/^interface (.+)$/) {
 	    $section = \$config->{'frr_interfaces'}->{$1};
+	    next;
+	} elsif ($line =~ m/^bgp community-list (.+)$/) {
+	    push(@{$config->{'frr_bgp_community_list'}}, $line);
 	    next;
 	} elsif ($line =~ m/address-family (.+)$/) {
 	    $section = \$config->{'frr'}->{'router'}->{$router}->{'address-family'}->{$1};
