@@ -17,6 +17,16 @@ sub type {
     return 'isis';
 }
 
+PVE::JSONSchema::register_format('pve-sdn-isis-net', \&pve_verify_sdn_isis_net);
+sub pve_verify_sdn_isis_net {
+    my ($net) = @_;
+
+    if ($net !~ m/^[a-fA-F0-9]{2}(\.[a-fA-F0-9]{4}){3,9}\.[a-fA-F0-9]{2}$/) {
+	die "value does not look like a valid isis net\n";
+    }
+    return $net;
+}
+
 sub properties {
     return {
 	'isis-domain' => {
@@ -29,7 +39,7 @@ sub properties {
 	},
 	'isis-net' => {
 	    description => "ISIS network entity title.",
-	    type => 'string'
+	    type => 'string', format => 'pve-sdn-isis-net',
 	},
     };
 }
