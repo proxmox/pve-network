@@ -100,7 +100,7 @@ __PACKAGE__->register_method ({
 			    dnszone => { type => 'string', optional => 1},
 			    ipam => { type => 'string', optional => 1},
 			    dhcp => { type => 'string', optional => 1},
-			    pending => { optional => 1},
+			    pending => { type => 'boolean', optional => 1 },
 			    state => { type => 'string', optional => 1},
 			    nodes => { type => 'string', optional => 1},
 			  },

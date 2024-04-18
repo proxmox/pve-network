@@ -71,7 +71,7 @@ __PACKAGE__->register_method ({
 	    properties => { controller => { type => 'string' },
 			    type => { type => 'string' },
 			    state => { type => 'string', optional => 1 },
-                            pending => { optional => 1},
+			    pending => { type => 'boolean', optional => 1 },
 	    },
 	},
 	links => [ { rel => 'child', href => "{controller}" } ],
