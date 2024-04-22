@@ -56,7 +56,7 @@ sub generate_sdn_config {
 
     my $mac = $vnet->{mac};
     my $alias = $vnet->{alias};
-    my $mtu = $plugin_config->{mtu} if $plugin_config->{mtu};
+    my $mtu = $class->get_mtu($plugin_config);
 
     # vnet bridge
     my @iface_config = ();
@@ -142,6 +142,12 @@ sub vnet_update_hook {
         my $dc = PVE::Network::SDN::Zones::Plugin::datacenter_config();
         $vnet->{mac} = PVE::Tools::random_ether_addr($dc->{mac_prefix});
     }
+}
+
+sub get_mtu {
+    my ($class, $plugin_config) = @_;
+
+    return $plugin_config->{mtu};
 }
 
 1;

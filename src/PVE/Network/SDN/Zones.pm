@@ -27,6 +27,7 @@ PVE::Network::SDN::Zones::SimplePlugin->register();
 PVE::Network::SDN::Zones::Plugin->init();
 
 my $local_network_sdn_file = "/etc/network/interfaces.d/sdn";
+my $default_mtu = 1500;
 
 sub sdn_zones_config {
     my ($cfg, $id, $noerr) = @_;
@@ -367,6 +368,13 @@ sub del_bridge_fdb {
     my $plugin_config = get_plugin_config($vnet);
     my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
     $plugin->del_bridge_fdb($plugin_config, $iface, $macaddr);
+}
+
+sub get_mtu {
+    my ($zone_config) = @_;
+
+    my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($zone_config->{type});
+    return $plugin->get_mtu($zone_config) // $default_mtu;
 }
 
 1;

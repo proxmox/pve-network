@@ -361,4 +361,11 @@ sub datacenter_config {
     return PVE::Cluster::cfs_read_file('datacenter.cfg');
 }
 
+
+sub get_mtu {
+    my ($class, $plugin_config) = @_;
+
+    die "please implement inside plugin";
+}
+
 1;
