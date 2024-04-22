@@ -1,3 +1,23 @@
+libpve-network-perl (0.9.7) bookworm; urgency=medium
+
+  * various DHCP related fixes:
+    - get next free ip for a specific IP version
+    - request both IPv4 and IPv6 addresses on VM start
+    - only consider subnets that have dhcp-range configured
+    - rollback allocated ips on failure
+
+  * api: fix missing types for 'pending' fields
+
+  * fix #5319: frr.local: add support for bgp-community
+
+  * fix #5344: isis: add isis networkid parser
+
+  * fix #5361: evpn: fix ipv6 route-map
+
+  * fix #5364: bgp|evpn: derivated router-id from mac address for ipv6 underlay
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 22 Apr 2024 13:59:25 +0200
+
 libpve-network-perl (0.9.6) bookworm; urgency=medium
 
   * controllers: evpn: add ipv6 prefix-list support
