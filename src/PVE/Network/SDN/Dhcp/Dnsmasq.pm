@@ -177,7 +177,7 @@ sub systemctl_service {
 }
 
 sub before_configure {
-    my ($class, $dhcpid) = @_;
+    my ($class, $dhcpid, $zone_cfg) = @_;
 
     my $dbus_config = <<DBUSCFG;
 <!DOCTYPE busconfig PUBLIC
@@ -218,6 +218,8 @@ CFG
 	$default_config
     );
 
+    my $mtu = PVE::Network::SDN::Zones::get_mtu($zone_cfg);
+
     my $default_dnsmasq_config = <<CFG;
 except-interface=lo
 enable-ra
@@ -227,6 +229,9 @@ no-hosts
 dhcp-leasefile=$DNSMASQ_LEASE_ROOT/dnsmasq.$dhcpid.leases
 dhcp-hostsfile=$config_directory/ethers
 dhcp-ignore=tag:!known
+
+dhcp-option=26,$mtu
+ra-param=*,mtu:$mtu,0
 
 # Send an empty WPAD option. This may be REQUIRED to get windows 7 to behave.
 dhcp-option=252,"\\n"

@@ -84,7 +84,7 @@ sub regenerate_config {
 
 	die "Could not find DHCP plugin: $dhcp_plugin_name" if !$dhcp_plugin;
 
-	eval { $dhcp_plugin->before_configure($zoneid) };
+	eval { $dhcp_plugin->before_configure($zoneid, $zone) };
 	die "Could not run before_configure for DHCP server $zoneid $@\n" if $@;
 
 	for my $vnetid (sort keys %{$vnet_cfg->{ids}}) {
