@@ -1,3 +1,11 @@
+libpve-network-perl (0.9.8) bookworm; urgency=medium
+
+  * zones: add method for getting MTU
+
+  * dhcp: dnsmasq: send mtu option via dhcp
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 23 Apr 2024 19:37:50 +0200
+
 libpve-network-perl (0.9.7) bookworm; urgency=medium
 
   * various DHCP related fixes:
