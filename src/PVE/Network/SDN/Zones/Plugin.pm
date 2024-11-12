@@ -236,6 +236,7 @@ sub tap_plug {
 
     my $opts = {};
     $opts->{learning} = 0 if $plugin_config->{'bridge-disable-mac-learning'};
+    $opts->{isolation} = 1 if $vnet->{'isolate-ports'};
     PVE::Network::tap_plug($iface, $vnetid, $tag, $firewall, $trunks, $rate, $opts);
 }
 

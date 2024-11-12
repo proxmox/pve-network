@@ -72,6 +72,10 @@ sub properties {
             maxLength => 256,
 	    optional => 1,
         },
+	'isolate-ports' => {
+	    type => 'boolean',
+	    description => "If true, sets the isolated property for all members of this VNet",
+	}
     };
 }
 
@@ -81,6 +85,7 @@ sub options {
         tag => { optional => 1},
         alias => { optional => 1 },
         vlanaware => { optional => 1 },
+	'isolate-ports' => { optional => 1 },
     };
 }
 
