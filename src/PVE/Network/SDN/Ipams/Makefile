@@ -1,4 +1,4 @@
-SOURCES=Plugin.pm PhpIpamPlugin.pm NetboxPlugin.pm PVEPlugin.pm
+SOURCES=Plugin.pm PhpIpamPlugin.pm NetboxPlugin.pm PVEPlugin.pm NautobotPlugin.pm
 
 
 PERL5DIR=${DESTDIR}/usr/share/perl5

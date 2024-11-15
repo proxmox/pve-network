@@ -12,11 +12,14 @@ use PVE::Network;
 
 use PVE::Network::SDN::Ipams::PVEPlugin;
 use PVE::Network::SDN::Ipams::NetboxPlugin;
+use PVE::Network::SDN::Ipams::NautobotPlugin;
 use PVE::Network::SDN::Ipams::PhpIpamPlugin;
 use PVE::Network::SDN::Ipams::Plugin;
 
+
 PVE::Network::SDN::Ipams::PVEPlugin->register();
 PVE::Network::SDN::Ipams::NetboxPlugin->register();
+PVE::Network::SDN::Ipams::NautobotPlugin->register();
 PVE::Network::SDN::Ipams::PhpIpamPlugin->register();
 PVE::Network::SDN::Ipams::Plugin->init();
 

@@ -12,6 +12,7 @@ use PVE::Network::SDN::Ipams::Plugin;
 use PVE::Network::SDN::Ipams::PVEPlugin;
 use PVE::Network::SDN::Ipams::PhpIpamPlugin;
 use PVE::Network::SDN::Ipams::NetboxPlugin;
+use PVE::Network::SDN::Ipams::NautobotPlugin;
 use PVE::Network::SDN::Dhcp;
 use PVE::Network::SDN::Vnets;
 use PVE::Network::SDN::Zones;
