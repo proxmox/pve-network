@@ -14,9 +14,11 @@ use Data::Dumper;
 use PVE::JSONSchema qw(get_standard_option);
 use base qw(PVE::SectionConfig);
 
-PVE::Cluster::cfs_register_file('sdn/ipams.cfg',
-				 sub { __PACKAGE__->parse_config(@_); },
-				 sub { __PACKAGE__->write_config(@_); });
+PVE::Cluster::cfs_register_file(
+    'sdn/ipams.cfg',
+     sub { __PACKAGE__->parse_config(@_); },
+     sub { __PACKAGE__->write_config(@_); },
+ );
 
 PVE::JSONSchema::register_standard_option('pve-sdn-ipam-id', {
     description => "The SDN ipam object identifier.",
@@ -42,8 +44,9 @@ my $defaultData = {
 	    type => 'string', format => 'pve-configid',
 	    type => 'string',
 	},
-        ipam => get_standard_option('pve-sdn-ipam-id',
-            { completion => \&PVE::Network::SDN::Ipams::complete_sdn_ipam }),
+	ipam => get_standard_option('pve-sdn-ipam-id', {
+	    completion => \&PVE::Network::SDN::Ipams::complete_sdn_ipam,
+	}),
     },
 };
 

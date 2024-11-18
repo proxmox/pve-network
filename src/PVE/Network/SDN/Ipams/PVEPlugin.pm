@@ -16,9 +16,11 @@ use base('PVE::Network::SDN::Ipams::Plugin');
 
 my $ipamdb_file = "priv/ipam.db";
 
-PVE::Cluster::cfs_register_file($ipamdb_file,
-                                 sub { PVE::Network::SDN::Ipams::PVEPlugin->parse_config(@_); },
-                                 sub { PVE::Network::SDN::Ipams::PVEPlugin->write_config(@_); });
+PVE::Cluster::cfs_register_file(
+    $ipamdb_file,
+    sub { PVE::Network::SDN::Ipams::PVEPlugin->parse_config(@_); },
+    sub { PVE::Network::SDN::Ipams::PVEPlugin->write_config(@_); },
+);
 
 sub type {
     return 'pve';
