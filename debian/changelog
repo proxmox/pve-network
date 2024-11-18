@@ -1,3 +1,19 @@
+libpve-network-perl (0.9.9) UNRELEASED; urgency=medium
+
+  * split package into implementation and API endpoints
+
+  * fix #5324: non-vlan-aware zone: set MTU for veth links if it's configured
+    for the zone
+
+  * ipam: move state file of PVE plugin over to common sdn directory
+
+  * vnets: add ports isolation, allowing one to drop traffic between all ports
+    that have isolation enabled on the local bridge, while still allowing
+    traffic with non-isolated ports. Basically one can relatively simply
+    disable traffic between guests but still allow traffic from outside.
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 18 Nov 2024 18:10:34 +0100
+
 libpve-network-perl (0.9.8) bookworm; urgency=medium
 
   * zones: add method for getting MTU
