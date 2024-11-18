@@ -20,9 +20,34 @@ PVE::Network::SDN::Ipams::NetboxPlugin->register();
 PVE::Network::SDN::Ipams::PhpIpamPlugin->register();
 PVE::Network::SDN::Ipams::Plugin->init();
 
-my $macdb_filename = 'priv/macs.db';
+my $macdb_filename = "sdn/mac-cache.json";
+my $macdb_filename_legacy = 'priv/macs.db';
 
-cfs_register_file($macdb_filename, \&json_reader, \&json_writer);
+cfs_register_file(
+    $macdb_filename,
+    sub {
+	my ($filename , $data) = @_;
+	if (defined($data)) {
+	    return json_reader($filename, $data);
+	} else {
+	    # TODO: remove legacy cache file handling with PVE 9+ after ensuring all call sites got
+	    # switched over.
+	    return cfs_read_file($macdb_filename_legacy);
+	}
+    },
+    sub {
+	my ($filename , $data) = @_;
+	# TODO: remove below with PVE 9+, add a pve8to9 check to allow doing so.
+	if (-e $macdb_filename_legacy && -e $macdb_filename) {
+	    # only clean-up if we succeeded to write the new path at least once
+	    unlink $macdb_filename_legacy or $!{ENOENT} or warn "failed to unlink legacy MAC cache - $!\n";
+	}
+	return json_writer->($filename, $data);
+    }
+);
+
+# drop reading $macdb_filename_legacy with PVE 9+ - for now do not write it anymore.
+cfs_register_file($macdb_filename_legacy, \&json_reader, undef);
 
 sub json_reader {
     my ($filename, $data) = @_;
