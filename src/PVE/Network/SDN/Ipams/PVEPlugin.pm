@@ -32,7 +32,7 @@ PVE::Cluster::cfs_register_file(
     sub {
 	my ($filename, $data) = @_;
 	# TODO: remove below with PVE 9+, add a pve8to9 check to allow doing so.
-	if (-e $ipamdb_file_legacy && $ipamdb_file) {
+	if (-e $ipamdb_file_legacy && -e $ipamdb_file) {
 	    # only clean-up if we succeeded to write the new path at least once
 	    unlink $ipamdb_file_legacy or $!{ENOENT} or warn "failed to unlink legacy IPAM DB - $!\n";
 	}
