@@ -4,14 +4,17 @@ PACKAGE=libpve-network-perl
 
 BUILDDIR ?= $(PACKAGE)-$(DEB_VERSION_UPSTREAM)
 
-DEB=$(PACKAGE)_$(DEB_VERSION_UPSTREAM_REVISION)_all.deb
+DEBS=\
+      $(PACKAGE)_$(DEB_VERSION_UPSTREAM_REVISION)_all.deb \
+      libpve-network-api-perl_$(DEB_VERSION_UPSTREAM_REVISION)_all.deb \
+
 DSC=$(PACKAGE)_$(DEB_VERSION_UPSTREAM_REVISION).dsc
 
 all: deb
 
 .PHONY: dinstall
 dinstall: deb
-	dpkg -i $(DEB)
+	dpkg -i $(DEBS)
 
 $(BUILDDIR): src debian
 	rm -rf $@ $@.tmp
@@ -21,10 +24,10 @@ $(BUILDDIR): src debian
 	mv $@.tmp $@
 
 .PHONY: deb
-deb: $(DEB)
-$(DEB): $(BUILDDIR)
+deb: $(DEBS)
+$(DEBS): $(BUILDDIR)
 	cd $(BUILDDIR); dpkg-buildpackage -b -us -uc
-	lintian $(DEB)
+	lintian $(DEBS)
 
 .PHONY: dsc
 dsc: clean
@@ -44,5 +47,5 @@ clean:
 
 .PHONY: upload
 upload: UPLOAD_DIST ?= $(DEB_DISTRIBUTION)
-upload: $(DEB)
-	tar cf - $(DEB)|ssh -X repoman@repo.proxmox.com -- upload --product pve --dist $(UPLOAD_DIST)
+upload: $(DEBS)
+	tar cf - $(DEBS)|ssh -X repoman@repo.proxmox.com -- upload --product pve --dist $(UPLOAD_DIST)
