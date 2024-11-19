@@ -14,6 +14,7 @@ use PVE::Network::SDN::VnetPlugin;
 use PVE::Network::SDN::Subnets;
 use PVE::API2::Network::SDN::Subnets;
 use PVE::API2::Network::SDN::Ips;
+use PVE::API2::Firewall::Vnet;
 
 use Storable qw(dclone);
 use PVE::JSONSchema qw(get_standard_option);
@@ -23,6 +24,11 @@ use PVE::Exception qw(raise raise_param_exc);
 use PVE::RESTHandler;
 
 use base qw(PVE::RESTHandler);
+
+__PACKAGE__->register_method ({
+    subclass => "PVE::API2::Firewall::Vnet",
+    path => '{vnet}/firewall',
+});
 
 __PACKAGE__->register_method ({
     subclass => "PVE::API2::Network::SDN::Subnets",
