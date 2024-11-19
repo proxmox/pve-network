@@ -1,4 +1,4 @@
-libpve-network-perl (0.9.9) UNRELEASED; urgency=medium
+libpve-network-perl (0.9.9) bookworm; urgency=medium
 
   * split package into implementation and API endpoints
 
@@ -12,7 +12,11 @@ libpve-network-perl (0.9.9) UNRELEASED; urgency=medium
     traffic with non-isolated ports. Basically one can relatively simply
     disable traffic between guests but still allow traffic from outside.
 
- -- Proxmox Support Team <support@proxmox.com>  Mon, 18 Nov 2024 18:10:34 +0100
+  * api: add endpoints for vnet-level firewall
+
+  * debian: migrate legacy mac/ipam cache/state files on upgrade
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 19 Nov 2024 16:27:15 +0100
 
 libpve-network-perl (0.9.8) bookworm; urgency=medium
 
