@@ -1,0 +1,35 @@
+#!/bin/sh
+
+set -e
+
+migrate_ipam_db() {
+  LEGACY_IPAM_DB_FILE="/etc/pve/priv/ipam.db"
+  IPAM_DB_FILE="/etc/pve/sdn/pve-ipam-state.json"
+
+  if test -f "$LEGACY_IPAM_DB_FILE" && test ! -f "$IPAM_DB_FILE"; then
+    echo "copying over existing legacy IPAM state file to new path..."
+    cp $LEGACY_IPAM_DB_FILE $IPAM_DB_FILE
+  fi
+}
+
+migrate_mac_cache() {
+  LEGACY_MAC_DB_FILE="/etc/pve/priv/macs.db"
+  MAC_DB_FILE="/etc/pve/sdn/mac-cache.json"
+
+  if test -f "$LEGACY_MAC_DB_FILE" && test ! -f "$MAC_DB_FILE"; then
+    echo "copying over existing legacy IPAM MAC-map cache file to new path..."
+    cp $LEGACY_MAC_DB_FILE $MAC_DB_FILE
+  fi
+}
+
+case "$1" in
+  configure)
+    # TODO: remove with PVE 9+
+    if dpkg --compare-versions "$2" 'lt' '0.9.9'; then
+      migrate_ipam_db
+      migrate_mac_cache
+    fi
+  ;;
+esac
+
+exit 0
