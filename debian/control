@@ -9,6 +9,7 @@ Build-Depends: debhelper-compat (= 13),
                libtest-mockmodule-perl,
                perl,
                pve-cluster (>= 8.0.10),
+               pve-firewall (>= 5.1.0~),
                pve-doc-generator (>= 5.3-3),
                libpve-access-control,
 Standards-Version: 4.6.1
@@ -32,6 +33,7 @@ Description: Proxmox VE's SDN (Software Defined Network) stack
 Package: libpve-network-api-perl
 Architecture: all
 Depends: libpve-common-perl (>= 5.0-45),
+         pve-firewall (>= 5.1.0~),
          pve-cluster (>= 8.0.9),
          libpve-network-perl (= ${binary:Version}),
          ${misc:Depends},
