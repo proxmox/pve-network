@@ -8,7 +8,7 @@ migrate_ipam_db() {
 
   if test -f "$LEGACY_IPAM_DB_FILE" && test ! -f "$IPAM_DB_FILE"; then
     echo "copying over existing legacy IPAM state file to new path..."
-    cp $LEGACY_IPAM_DB_FILE $IPAM_DB_FILE
+    cp $LEGACY_IPAM_DB_FILE $IPAM_DB_FILE || echo "copying IPAM state file failed!"
   fi
 }
 
@@ -18,7 +18,7 @@ migrate_mac_cache() {
 
   if test -f "$LEGACY_MAC_DB_FILE" && test ! -f "$MAC_DB_FILE"; then
     echo "copying over existing legacy IPAM MAC-map cache file to new path..."
-    cp $LEGACY_MAC_DB_FILE $MAC_DB_FILE
+    cp $LEGACY_MAC_DB_FILE $MAC_DB_FILE || echo "copying IPAM MAC-map cache file failed!"
   fi
 }
 
