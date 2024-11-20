@@ -1,3 +1,9 @@
+libpve-network-perl (0.10.0) bookworm; urgency=medium
+
+  * d/postinst: do not break, if moving either ipam state or cache file fails
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 20 Nov 2024 16:14:39 +0100
+
 libpve-network-perl (0.9.9) bookworm; urgency=medium
 
   * split package into implementation and API endpoints
