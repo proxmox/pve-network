@@ -5,6 +5,7 @@ use warnings;
 use PVE::INotify;
 use PVE::Cluster;
 use PVE::Tools;
+use NetAddr::IP;
 
 use base('PVE::Network::SDN::Ipams::NetboxPlugin');
 
@@ -95,6 +96,66 @@ sub add_ip {
     }
 }
 
+sub add_next_freeip {
+    my ($class, $plugin_config, $subnetid, $subnet, $hostname, $mac, $vmid, $noerr) = @_;
+
+    my $cidr = $subnet->{cidr};
+
+    my $url = $plugin_config->{url};
+    my $namespace = $plugin_config->{namespace};
+    my $headers = default_headers($plugin_config);
+
+    my $internalid = PVE::Network::SDN::Ipams::NetboxPlugin::get_prefix_id($url, $cidr, $headers);
+
+    my $description = "mac:$mac" if $mac;
+
+    my $params = { type => "dhcp", dns_name => $hostname, description => $description, namespace => $namespace, status => default_ip_status() };
+
+    my $ip = eval {
+	my $result = PVE::Network::SDN::api_request("POST", "$url/ipam/prefixes/$internalid/available-ips/", $headers, $params);
+	my ($ip, undef) = split(/\//, $result->{address});
+	return $ip;
+    };
+
+    if ($@) {
+	die "can't find free ip in subnet $cidr: $@" if !$noerr;
+    }
+    return $ip;
+}
+
+sub add_range_next_freeip {
+    my ($class, $plugin_config, $subnet, $range, $data, $noerr) = @_;
+
+    my $url = $plugin_config->{url};
+    my $namespace = $plugin_config->{namespace};
+    my $headers = default_headers($plugin_config);
+    my $cidr = $subnet->{cidr};
+
+    # ranges are not supported natively in nautobot, hence why we have to get a little hacky.
+    my $minimal_size = NetAddr::IP->new($range->{'start-address'}) - NetAddr::IP->new($cidr);
+    my $internalid = PVE::Network::SDN::Ipams::NetboxPlugin::get_prefix_id($url, $cidr, $headers);
+
+    my $ip = eval {
+	my $result = PVE::Network::SDN::api_request("GET", "$url/ipam/prefixes/$internalid/available-ips/?limit=$minimal_size", $headers);
+	# v important for NetAddr::IP comparison!
+	my @ips = map((split(/\//,$_->{address}))[0], @{$result});
+	# get 1st result
+	my $ip = (get_ips_within_range($range->{'start-address'}, $range->{'end-address'}, @ips))[0];
+
+	if ($ip) {
+	    print "found free ip $ip in range $range->{'start-address'}-$range->{'end-address'}\n"
+	} else { die "prefix out of space in range"; }
+
+	$class->add_ip($plugin_config, undef,  $subnet, $ip, $data->{hostname}, $data->{mac}, undef, 0, 0);
+	return $ip;
+    };
+
+    if ($@) {
+	die "can't find free ip in range $range->{'start-address'}-$range->{'end-address'}: $@" if !$noerr;
+    }
+    return $ip;
+}
+
 
 sub update_ip {
     my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $vmid, $is_gateway, $noerr) = @_;
@@ -174,6 +235,13 @@ sub on_update_hook {
 }
 
 # helpers
+sub get_ips_within_range {
+    my ($start_address, $end_address, @list) = @_;
+    $start_address = NetAddr::IP->new($start_address);
+    $end_address = NetAddr::IP->new($end_address);
+    return grep($start_address <= NetAddr::IP->new($_) <= $end_address, @list);
+}
+
 sub get_namespace_id {
     my ($url, $namespace, $headers) = @_;
 
