@@ -118,11 +118,10 @@ sub add_next_free_cidr {
 	    my $network = $subnet->{network};
 
 	    next if Net::IP::ip_get_version($network) != $ipversion || $ips->{$ipversion};
-	    next if !$subnet->{'dhcp-range'};
 	    $subnetcount++;
 
 	    eval {
-		$ip = PVE::Network::SDN::Subnets::add_next_free_ip($zone, $subnetid, $subnet, $hostname, $mac, $vmid, $skipdns, $dhcprange);
+		$ip = PVE::Network::SDN::Subnets::add_next_free_ip($zone, $subnetid, $subnet, $hostname, $mac, $vmid, $skipdns, $subnet->{'dhcp-range'});
 	    };
 	    die $@ if $@;
 
