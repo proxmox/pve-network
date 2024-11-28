@@ -129,6 +129,15 @@ sub configure_subnet {
 
     my $tag = $subnet_config->{id};
 
+    my ($zone, $network, $mask) = split(/-/, $tag);
+
+    if (Net::IP::ip_is_ipv4($network)) {
+	$mask = (2 ** $mask - 1) << (32 - $mask);
+	$mask = join( '.', unpack( "C4", pack( "N", $mask ) ) );
+    }
+
+    push @{$config}, "dhcp-range=set:$tag,$network,static,$mask,infinite";
+
     my $option_string;
     if (ip_is_ipv6($subnet_config->{network})) {
 	$option_string = 'option6';
@@ -139,22 +148,10 @@ sub configure_subnet {
 
     push @{$config}, "dhcp-option=tag:$tag,$option_string:dns-server,$subnet_config->{'dhcp-dns-server'}"
 	if $subnet_config->{'dhcp-dns-server'};
-
 }
 
 sub configure_range {
-    my ($class, $config, $dhcpid, $vnetid, $subnet_config, $range_config) = @_;
-
-    my $tag = $subnet_config->{id};
-
-    my ($zone, $network, $mask) = split(/-/, $tag);
-
-    if (Net::IP::ip_is_ipv4($network)) {
-	$mask = (2 ** $mask - 1) << (32 - $mask);
-	$mask = join( '.', unpack( "C4", pack( "N", $mask ) ) );
-    }
-
-    push @{$config}, "dhcp-range=set:$tag,$network,static,$mask,infinite";
+    # noop, everything is done within configure_subnet
 }
 
 sub configure_vnet {
