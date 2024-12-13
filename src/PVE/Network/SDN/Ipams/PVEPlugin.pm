@@ -201,7 +201,11 @@ sub add_next_freeip {
 
 	die "can't find free ip in subnet '$cidr'\n" if !$freeip;
 
-	$dbsubnet->{ips}->{$freeip} = {};
+	$dbsubnet->{ips}->{$freeip} = {
+	    mac => $mac,
+	    hostname => $hostname,
+	    vmid => $vmid
+	};
 
 	write_db($db);
     });
