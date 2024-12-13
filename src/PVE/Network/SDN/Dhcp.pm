@@ -100,7 +100,6 @@ sub regenerate_config {
 
 		my ($zone, $subnet_network, $subnet_mask) = split(/-/, $subnet_id);
 		next if $zone ne $zoneid;
-		next if !$dhcp_ranges;
 
 		eval { $dhcp_plugin->configure_subnet($config, $zoneid, $vnetid, $subnet_config) };
 		warn "Could not configure subnet $subnet_id: $@\n" if $@;
