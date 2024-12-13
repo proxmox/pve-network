@@ -237,7 +237,13 @@ foreach my $path (@plugins) {
 	. $ip
 	. '":{"gateway":1},"'
 	. $ipnextfree
-	. '":{},"'
+	. '":{"hostname":"'
+        . $hostname
+        . '","mac":"'
+	. $mac
+	. '","vmid":"'
+	. $vmid
+        . '"},"'
 	. $ip2
 	. '":{"hostname":"'
 	. $hostname
@@ -268,7 +274,13 @@ foreach my $path (@plugins) {
 	. $subnet_cidr
 	. '":{"ips":{"'
 	. $ipnextfree
-	. '":{},"'
+	. '":{"hostname":"'
+        . $hostname
+        . '","mac":"'
+	. $mac
+	. '","vmid":"'
+	. $vmid
+        . '"},"'
 	. $ip2
 	. '":{"hostname":"'
 	. $hostname
@@ -328,7 +340,13 @@ foreach my $path (@plugins) {
 	. $subnet_cidr
 	. '":{"ips":{"'
 	. $ipnextfree
-	. '":{},"'
+	. '":{"hostname":"'
+        . $hostname
+        . '","mac":"'
+	. $mac
+	. '","vmid":"'
+	. $vmid
+        . '"},"'
 	. $ip2
 	. '":{"hostname":"'
 	. $hostname

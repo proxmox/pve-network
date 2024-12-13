@@ -413,7 +413,6 @@ sub test_nic_join {
     die "$test_name: we're expecting an array of subnets" if !$subnets;
     my $num_subnets = scalar $subnets->@*;
     die "$test_name: we're expecting an array of subnets. $num_subnets elements found" if ($num_subnets < 1);
-    my $num_dhcp_ranges = scalar grep { $_->{'dhcp-range'} } $subnets->@*;
 
     my $zoneid = "TESTZONE";
     my $vnetid = "testvnet";
@@ -452,7 +451,7 @@ sub test_nic_join {
 
     my @ips = get_ips_from_mac($mac);
     my $num_ips = scalar @ips;
-    is ($num_ips, $num_dhcp_ranges, "$test_name: Expecting $num_dhcp_ranges IPs, found $num_ips");
+    is ($num_ips, $num_subnets, "$test_name: Expecting $num_subnets IPs, found $num_ips");
     ok ((all { ($_->{vnet} eq $vnetid && $_->{zone} eq $zoneid) } @ips),
 	"$test_name: all IPs in correct vnet and zone"
     );
@@ -678,8 +677,7 @@ sub test_nic_start {
     die "$test_name: we're expecting an array of subnets" if !$subnets;
     my $num_subnets = scalar $subnets->@*;
     die "$test_name: we're expecting an array of subnets. $num_subnets elements found" if ($num_subnets < 1);
-
-    $num_expected_ips = scalar grep { $_->{'dhcp-range'} } $subnets->@* if !defined $num_expected_ips;
+    $num_expected_ips = $num_subnets if !defined $num_expected_ips;
 
     my $zoneid = "TESTZONE";
     my $vnetid = "testvnet";
