@@ -7,7 +7,7 @@ use PVE::Cluster;
 use PVE::Tools;
 use NetAddr::IP;
 
-use base('PVE::Network::SDN::Ipams::NetboxPlugin');
+use base('PVE::Network::SDN::Ipams::Plugin');
 
 sub type {
     return 'nautobot';
@@ -51,7 +51,7 @@ sub add_subnet {
     my $namespace = $plugin_config->{namespace};
     my $headers = default_headers($plugin_config);
 
-    my $internalid = PVE::Network::SDN::Ipams::NetboxPlugin::get_prefix_id($url, $cidr, $headers);
+    my $internalid = get_prefix_id($url, $cidr, $headers, $noerr);
 
     #create subnet
     if (!$internalid) {
@@ -63,6 +63,27 @@ sub add_subnet {
 	if ($@) {
 	    die "error adding subnet to ipam: $@" if !$noerr;
 	}
+    }
+}
+
+sub del_subnet {
+    my ($class, $plugin_config, $subnetid, $subnet, $noerr) = @_;
+
+    my $cidr = $subnet->{cidr};
+    my $url = $plugin_config->{url};
+    my $headers = default_headers($plugin_config);
+
+    my $internalid = get_prefix_id($url, $cidr, $headers, $noerr);
+    return if !$internalid;
+
+    # TODO check that prefix is empty before deletion
+    return;
+
+    eval {
+	PVE::Network::SDN::api_request("DELETE", "$url/ipam/prefixes/$internalid/", $headers);
+    };
+    if ($@) {
+	die "error deleting subnet in Nautobot: $@" if !$noerr;
     }
 }
 
@@ -89,7 +110,7 @@ sub add_ip {
 
     if ($@) {
 	if($is_gateway) {
-	    die "error adding subnet ip to ipam: ip $ip already exists: $@" if !PVE::Network::SDN::Ipams::NetboxPlugin::is_ip_gateway($url, $ip, $headers) && !$noerr;
+	    die "error adding subnet ip to ipam: ip $ip already exists: $@" if !$noerr && !is_ip_gateway($url, $ip, $headers, $noerr);
 	} else {
 	    die "error adding subnet ip to ipam: ip $ip already exists: $@" if !$noerr;
 	}
@@ -105,7 +126,8 @@ sub add_next_freeip {
     my $namespace = $plugin_config->{namespace};
     my $headers = default_headers($plugin_config);
 
-    my $internalid = PVE::Network::SDN::Ipams::NetboxPlugin::get_prefix_id($url, $cidr, $headers);
+    my $internalid = get_prefix_id($url, $cidr, $headers, $noerr);
+    die "cannot find prefix $cidr in Nautobot" if !$internalid;
 
     my $description = "mac:$mac" if $mac;
 
@@ -133,7 +155,7 @@ sub add_range_next_freeip {
 
     # ranges are not supported natively in nautobot, hence why we have to get a little hacky.
     my $minimal_size = NetAddr::IP->new($range->{'start-address'}) - NetAddr::IP->new($cidr);
-    my $internalid = PVE::Network::SDN::Ipams::NetboxPlugin::get_prefix_id($url, $cidr, $headers);
+    my $internalid = get_prefix_id($url, $cidr, $headers, $noerr);
 
     my $ip = eval {
 	my $result = PVE::Network::SDN::api_request("GET", "$url/ipam/prefixes/$internalid/available-ips/?limit=$minimal_size", $headers);
@@ -174,14 +196,34 @@ sub update_ip {
 
     my $params = { address => "$ip/$mask", type => "dhcp", dns_name => $hostname, description => $description, namespace => $namespace, status => default_ip_status()};
 
-    my $ip_id = PVE::Network::SDN::Ipams::NetboxPlugin::get_ip_id($url, $ip, $headers);
-    die "can't find ip $ip in ipam" if !$ip_id;
+    my $ip_id = get_ip_id($url, $ip, $headers, $noerr);
+    die "can't find ip $ip in ipam" if !$noerr && !$ip_id;
 
     eval {
 	PVE::Network::SDN::api_request("PATCH", "$url/ipam/ip-addresses/$ip_id/", $headers, $params);
     };
     if ($@) {
 	die "error updating ip $ip: $@" if !$noerr;
+    }
+}
+
+
+sub del_ip {
+    my ($class, $plugin_config, $subnetid, $subnet, $ip, $noerr) = @_;
+
+    return if !$ip;
+
+    my $url = $plugin_config->{url};
+    my $headers = default_headers($plugin_config);
+
+    my $ip_id = get_ip_id($url, $ip, $headers, $noerr);
+    die "can't find ip $ip in ipam" if !$ip_id && !$noerr;
+
+    eval {
+	PVE::Network::SDN::api_request("DELETE", "$url/ipam/ip-addresses/$ip_id/", $headers);
+    };
+    if ($@) {
+	die "error deleting ip $ip : $@" if !$noerr;
     }
 }
 
@@ -196,8 +238,8 @@ sub verify_api {
     # check that the namespace exists AND that default IP active status
     # exists AND that we have indeed API access
     eval {
-	get_namespace_id($url, $namespace, $headers) // die "namespace $namespace does not exist";
-	get_status_id($url, default_ip_status(), $headers) // die "default IP status ". default_ip_status() . " not found";
+	get_namespace_id($url, $namespace, $headers, 0) // die "namespace $namespace does not exist";
+	get_status_id($url, default_ip_status(), $headers, 0) // die "default IP status ". default_ip_status() . " not found";
     };
     if ($@) {
 	die "Can't use nautobot api: $@";
@@ -242,22 +284,80 @@ sub get_ips_within_range {
     return grep($start_address <= NetAddr::IP->new($_) <= $end_address, @list);
 }
 
-sub get_namespace_id {
-    my ($url, $namespace, $headers) = @_;
+sub get_ip_id {
+    my ($url, $ip, $headers, $noerr) = @_;
 
-    my $result = PVE::Network::SDN::api_request("GET", "$url/ipam/namespaces/?q=$namespace", $headers);
+    my $result = eval {
+	return PVE::Network::SDN::api_request("GET", "$url/ipam/ip-addresses/?q=$ip", $headers);
+    };
+    if ($@) {
+	die "error while querying for ip $ip id: $@" if !$noerr;
+    }
+
+    my $data = @{$result->{results}}[0];
+    my $ip_id = $data->{id};
+    return $ip_id;
+}
+
+sub get_prefix_id {
+    my ($url, $cidr, $headers, $noerr) = @_;
+
+    my $result = eval {
+	return PVE::Network::SDN::api_request("GET", "$url/ipam/prefixes/?q=$cidr", $headers);
+    };
+    if ($@) {
+	die "error while querying for cidr $cidr prefix id: $@" if !$noerr;
+    }
+
+    my $data = @{$result->{results}}[0];
+    my $internalid = $data->{id};
+    return $internalid;
+}
+
+sub get_namespace_id {
+    my ($url, $namespace, $headers, $noerr) = @_;
+
+    my $result = eval {
+	return PVE::Network::SDN::api_request("GET", "$url/ipam/namespaces/?q=$namespace", $headers);
+    };
+    if ($@) {
+	die "error while querying for namespace $namespace id: $@" if !$noerr;
+    }
+
     my $data = @{$result->{results}}[0];
     my $internalid = $data->{id};
     return $internalid;
 }
 
 sub get_status_id {
-    my ($url, $status, $headers) = @_;
+    my ($url, $status, $headers, $noerr) = @_;
 
-    my $result = PVE::Network::SDN::api_request("GET", "$url/extras/statuses/?q=$status", $headers);
+    my $result = eval {
+	return PVE::Network::SDN::api_request("GET", "$url/extras/statuses/?q=$status", $headers);
+    };
+    if ($@) {
+	die "error while querying for status $status id: $@" if !$noerr;
+    }
+
     my $data = @{$result->{results}}[0];
     my $internalid = $data->{id};
     return $internalid;
+}
+
+sub is_ip_gateway {
+    my ($url, $ip, $headers, $noerr) = @_;
+
+    my $result = eval {
+	return PVE::Network::SDN::api_request("GET", "$url/ipam/ip-addresses/?q=$ip", $headers);
+    };
+    if ($@) {
+	die "error while checking if $ip is a gateway" if !$noerr;
+    }
+
+    my $data = @{$result->{results}}[0];
+    my $description = $data->{description};
+    my $is_gateway = 1 if $description eq 'gateway';
+    return $is_gateway;
 }
 
 1;
