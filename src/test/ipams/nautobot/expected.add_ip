@@ -1,0 +1,11 @@
+bless( {
+                  '_content' => '{"address":"10.0.0.1/24","description":"gateway","dns_name":"myhostname","namespace":"TestNamespace","status":"Active","type":"dhcp"}',
+                  '_headers' => bless( {
+                                         'authorization' => 'token FAKETESTTOKEN',
+                                         'content-type' => 'application/json',
+					 'accept' => 'application/json'
+                                       }, 'HTTP::Headers' ),
+                  '_max_body_size' => undef,
+                  '_method' => 'POST',
+                  '_uri' => bless( do{\(my $o = 'http://localhost:8080/api/ipam/ip-addresses/')}, 'URI::http' )
+                }, 'HTTP::Request' );

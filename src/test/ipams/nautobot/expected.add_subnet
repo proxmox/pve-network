@@ -1,0 +1,11 @@
+bless({
+	'_content' => '{"namespace":"TestNamespace","prefix":"10.0.0.0/24","status":"Active"}',
+	'_headers' => bless({
+		   'authorization' => 'token FAKETESTTOKEN',
+		   'content-type' => 'application/json',
+		   'accept' => 'application/json',
+	}, 'HTTP::Headers'),
+	'_max_body_size' => undef,
+	'_method' => 'POST',
+	'_uri' => bless(do{\(my $o = 'http://localhost:8080/api/ipam/prefixes/')}, 'URI::http'),
+}, 'HTTP::Request');

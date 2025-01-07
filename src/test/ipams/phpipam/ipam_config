@@ -13,6 +13,12 @@
                                    'token' => '0123456789abcdef0123456789abcdef01234567',
                                    'type' => 'netbox',
                                    'url' => 'http://localhost:8000/api'
-                                 }
+                                 },
+		      'nautobot' => {
+				    'url' => 'http://localhost:8080/api',
+				    'type' => 'nautobot',
+				    'token' => 'FAKETESTTOKEN',
+				    'namespace' => 'TestNamespace'
+		      }
                    },
 }

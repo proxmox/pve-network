@@ -1,0 +1,11 @@
+bless( {
+                  '_content' => '{"description":"mac:da:65:8f:18:9b:6f","dns_name":"myhostname","namespace":"TestNamespace","status":"Active","type":"dhcp"}',
+                  '_headers' => bless( {
+                                         'authorization' => 'token FAKETESTTOKEN',
+                                         'content-type' => 'application/json',
+					 'accept' => 'application/json'
+                                       }, 'HTTP::Headers' ),
+                  '_max_body_size' => undef,
+                  '_method' => 'POST',
+                  '_uri' => bless( do{\(my $o = 'http://localhost:8080/api/ipam/prefixes/1/available-ips/')}, 'URI::http' )
+                }, 'HTTP::Request' );
