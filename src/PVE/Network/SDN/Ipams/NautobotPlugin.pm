@@ -54,7 +54,7 @@ sub add_subnet {
 
     my $internalid = get_prefix_id($url, $cidr, $headers, $noerr);
 
-    #create subnet
+    #create subnet if it doesn't already exists
     if (!$internalid) {
 	my $params = { prefix => $cidr, namespace => $namespace, status => default_ip_status()};
 
@@ -81,6 +81,7 @@ sub del_subnet {
 	die "cannot delete prefix $cidr, not empty!";
     }
 
+    # delete associated IP addresses (normally should only be gateway IPs)
     empty_subnet($class, $plugin_config, $subnetid, $subnet, $internalid, $noerr);
 
     eval {
@@ -163,7 +164,7 @@ sub add_range_next_freeip {
 
     my $ip = eval {
 	my $result = PVE::Network::SDN::api_request("GET", "$url/ipam/prefixes/$internalid/available-ips/?limit=$minimal_size", $headers);
-	# v important for NetAddr::IP comparison!
+	# v important for NetAddr::IP comparison! (otherwise we would be comparing subnets)
 	my @ips = map((split(/\//,$_->{address}))[0], @{$result});
 	# get 1st result
 	my $ip = (get_ips_within_range($range->{'start-address'}, $range->{'end-address'}, @ips))[0];
