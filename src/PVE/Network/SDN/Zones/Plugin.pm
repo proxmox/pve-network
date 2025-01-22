@@ -7,6 +7,7 @@ use PVE::Tools qw(run_command);
 use PVE::JSONSchema;
 use PVE::Cluster;
 use PVE::Network;
+use PVE::Network::SDN::Dhcp::Plugin;
 
 use PVE::JSONSchema qw(get_standard_option);
 use base qw(PVE::SectionConfig);
@@ -50,6 +51,11 @@ my $defaultData = {
 	    type => 'string',
 	    description => "use a specific ipam",
 	    optional => 1,
+	},
+	dhcp => {
+	    type => 'string',
+	    description => 'which dhcp backend to use',
+	    enum => PVE::Network::SDN::Dhcp::Plugin->lookup_types(),
 	},
     },
 };

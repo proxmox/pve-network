@@ -100,6 +100,7 @@ sub options {
 	reversedns => { optional => 1 },
 	dnszone => { optional => 1 },
 	ipam => { optional => 1 },
+	dhcp => { optional => 1 },
     };
 }
 
@@ -321,6 +322,12 @@ sub vnet_update_hook {
 	next if $other_zone->{type} ne 'vxlan' && $other_zone->{type} ne 'evpn';
 	raise_param_exc({ tag => "vxlan tag $tag already exist in vnet $id in zone $other_zoneid "}) if $other_tag && $tag eq $other_tag;
     }
+}
+
+sub get_mtu {
+    my ($class, $plugin_config) = @_;
+
+    return 1500;
 }
 
 1;

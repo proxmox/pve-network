@@ -48,6 +48,7 @@ sub options {
 	reversedns => { optional => 1 },
 	dnszone => { optional => 1 },
 	ipam => { optional => 1 },
+	dhcp => { optional => 1 },
     };
 }
 
