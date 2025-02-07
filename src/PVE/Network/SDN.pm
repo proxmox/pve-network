@@ -115,8 +115,8 @@ sub pending_config {
 	my $config_object = $config_objects->{$id};
 
 	foreach my $key (sort keys %{$config_object}) {
-	    my $config_value = PVE::Network::SDN::encode_value(undef, $key, $config_object->{$key}) if $config_object->{$key};
-	    my $running_value = PVE::Network::SDN::encode_value(undef, $key, $running_object->{$key}) if $running_object->{$key};
+	    my $config_value = PVE::Network::SDN::encode_value(undef, $key, $config_object->{$key});
+	    my $running_value = PVE::Network::SDN::encode_value(undef, $key, $running_object->{$key});
 	    if($key eq 'type' || $key eq 'vnet') {
 		$pending->{$id}->{$key} = $config_value;
 	    } else {
