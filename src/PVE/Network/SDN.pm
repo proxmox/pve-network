@@ -3,7 +3,9 @@ package PVE::Network::SDN;
 use strict;
 use warnings;
 
+use IO::Socket::SSL; # important for SSL_verify_callback
 use JSON;
+use Net::SSLeay;
 
 use PVE::INotify;
 
@@ -256,7 +258,7 @@ sub encode_value {
 
 #helpers
 sub api_request {
-    my ($method, $url, $headers, $data) = @_;
+    my ($method, $url, $headers, $data, $expected_fingerprint) = @_;
 
     my $encoded_data = to_json($data) if $data;
 
@@ -270,7 +272,24 @@ sub api_request {
 	$ua->env_proxy;
     }
 
-    $ua->ssl_opts(verify_hostname => 0, SSL_verify_mode => 0x00);
+    if (defined($expected_fingerprint)) {
+	my $ssl_verify_callback = sub {
+	    my (undef, undef, undef, undef, $cert, $depth) = @_;
+
+	    # we don't care about intermediate or root certificates, always return as valid as the
+	    # callback will be executed for all levels and all must be valid.
+	    return 1 if $depth != 0;
+
+	    my $fingerprint = Net::SSLeay::X509_get_fingerprint($cert, 'sha256');
+
+	    return $fingerprint eq $expected_fingerprint ? 1 : 0;
+	};
+	$ua->ssl_opts(
+	    verify_hostname => 0,
+	    SSL_verify_mode => SSL_VERIFY_PEER,
+	    SSL_verify_callback => $ssl_verify_callback,
+	);
+    }
 
     my $response = $ua->request($req);
 

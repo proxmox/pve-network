@@ -19,6 +19,7 @@ Package: libpve-network-perl
 Architecture: all
 Depends: libpve-common-perl (>= 5.0-45),
          pve-cluster (>= 8.0.10),
+         libio-socket-ssl-perl,
          libnet-subnet-perl,
          libnet-ip-perl,
          libnetaddr-ip-perl,
