@@ -44,7 +44,6 @@ sub add_subnet {
     my $network = $subnet->{network};
     my $mask = $subnet->{mask};
 
-    my $gateway = $subnet->{gateway};
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
     my $section = $plugin_config->{section};
@@ -72,7 +71,6 @@ sub del_subnet {
     my $cidr = $subnet->{cidr};
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
-    my $section = $plugin_config->{section};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Token' => $token];
 
     my $internalid = get_prefix_id($url, $cidr, $headers);
@@ -90,7 +88,6 @@ sub add_ip {
     my $cidr = $subnet->{cidr};
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
-    my $section = $plugin_config->{section};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Token' => $token];
 
     my $internalid = get_prefix_id($url, $cidr, $headers);
@@ -123,7 +120,6 @@ sub update_ip {
     my $cidr = $subnet->{cidr};
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
-    my $section = $plugin_config->{section};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Token' => $token];
 
     my $ip_id = get_ip_id($url, $ip, $headers);
@@ -152,7 +148,6 @@ sub add_next_freeip {
     my $mask = $subnet->{mask};
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
-    my $section = $plugin_config->{section};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Token' => $token];
 
     my $internalid = get_prefix_id($url, $cidr, $headers);
