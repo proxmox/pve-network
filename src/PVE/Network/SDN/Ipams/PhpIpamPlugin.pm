@@ -32,6 +32,7 @@ sub options {
         url => { optional => 0},
         token => { optional => 0 },
         section => { optional => 0 },
+        fingerprint => { optional => 1 },
     };
 }
 
@@ -47,6 +48,7 @@ sub add_subnet {
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
     my $section = $plugin_config->{section};
+    my $fingerprint = $plugin_config->{fingerprint};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Token' => $token];
 
     #search subnet
@@ -60,7 +62,7 @@ sub add_subnet {
 	    sectionId => $section,
 	};
 
-	eval { PVE::Network::SDN::api_request("POST", "$url/subnets/", $headers, $params) };
+	eval { PVE::Network::SDN::api_request("POST", "$url/subnets/", $headers, $params, $fingerprint) };
 	die "error add subnet to ipam: $@" if $@ && !$noerr;
     }
 }
@@ -71,6 +73,7 @@ sub del_subnet {
     my $cidr = $subnet->{cidr};
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
+    my $fingerprint = $plugin_config->{fingerprint};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Token' => $token];
 
     my $internalid = get_prefix_id($url, $cidr, $headers);
@@ -78,7 +81,7 @@ sub del_subnet {
 
     return; #fixme: check that prefix is empty exluding gateway, before delete
 
-    eval { PVE::Network::SDN::api_request("DELETE", "$url/subnets/$internalid", $headers) };
+    eval { PVE::Network::SDN::api_request("DELETE", "$url/subnets/$internalid", $headers, undef, $fingerprint) };
     die "error deleting subnet from ipam: $@" if $@ && !$noerr;
 }
 
@@ -88,6 +91,7 @@ sub add_ip {
     my $cidr = $subnet->{cidr};
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
+    my $fingerprint = $plugin_config->{fingerprint};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Token' => $token];
 
     my $internalid = get_prefix_id($url, $cidr, $headers);
@@ -102,7 +106,7 @@ sub add_ip {
     $params->{mac} = $mac if $mac;
 
     eval {
-	PVE::Network::SDN::api_request("POST", "$url/addresses/", $headers, $params);
+	PVE::Network::SDN::api_request("POST", "$url/addresses/", $headers, $params, $fingerprint);
     };
 
     if ($@) {
@@ -120,6 +124,7 @@ sub update_ip {
     my $cidr = $subnet->{cidr};
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
+    my $fingerprint = $plugin_config->{fingerprint};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Token' => $token];
 
     my $ip_id = get_ip_id($url, $ip, $headers);
@@ -133,7 +138,7 @@ sub update_ip {
     $params->{mac} = $mac if $mac;
 
     eval {
-	PVE::Network::SDN::api_request("PATCH", "$url/addresses/$ip_id", $headers, $params);
+	PVE::Network::SDN::api_request("PATCH", "$url/addresses/$ip_id", $headers, $params,$fingerprint);
     };
 
     if ($@) {
@@ -148,6 +153,7 @@ sub add_next_freeip {
     my $mask = $subnet->{mask};
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
+    my $fingerprint = $plugin_config->{fingerprint};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Token' => $token];
 
     my $internalid = get_prefix_id($url, $cidr, $headers);
@@ -161,7 +167,7 @@ sub add_next_freeip {
 
     my $ip = undef;
     eval {
-	my $result = PVE::Network::SDN::api_request("POST", "$url/addresses/first_free/$internalid/", $headers, $params);
+	my $result = PVE::Network::SDN::api_request("POST", "$url/addresses/first_free/$internalid/", $headers, $params, $fingerprint);
 	$ip = $result->{data};
     };
 
@@ -191,13 +197,14 @@ sub del_ip {
 
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
+    my $fingerprint = $plugin_config->{fingerprint};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Token' => $token];
 
     my $ip_id = get_ip_id($url, $ip, $headers);
     return if !$ip_id;
 
     eval {
-	PVE::Network::SDN::api_request("DELETE", "$url/addresses/$ip_id", $headers);
+	PVE::Network::SDN::api_request("DELETE", "$url/addresses/$ip_id", $headers, undef, $fingerprint);
     };
     if ($@) {
 	die "error delete ip $ip: $@" if !$noerr;
@@ -210,12 +217,13 @@ sub get_ips_from_mac {
 
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
+    my $fingerprint = $plugin_config->{fingerprint};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Token' => $token];
 
     my $ip4 = undef;
     my $ip6 = undef;
 
-    my $ips = eval { PVE::Network::SDN::api_request("GET", "$url/addresses/search_mac/$mac", $headers) };
+    my $ips = eval { PVE::Network::SDN::api_request("GET", "$url/addresses/search_mac/$mac", $headers, undef, $fingerprint) };
     return if $@;
 
     #fixme
@@ -240,10 +248,11 @@ sub verify_api {
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
     my $sectionid = $plugin_config->{section};
+    my $fingerprint = $plugin_config->{fingerprint};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Token' => $token];
 
     eval {
-	PVE::Network::SDN::api_request("GET", "$url/sections/$sectionid", $headers);
+	PVE::Network::SDN::api_request("GET", "$url/sections/$sectionid", $headers, undef, $fingerprint);
     };
     if ($@) {
 	die "Can't connect to phpipam api: $@";
