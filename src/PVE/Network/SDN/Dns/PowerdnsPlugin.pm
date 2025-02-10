@@ -40,6 +40,7 @@ sub options {
 	    optional => 1,
 	    description => "force a different netmask for the ipv6 reverse zone name.",
 	},
+	fingerprint => { optional => 1 },
     };
 }
 
@@ -52,6 +53,7 @@ sub add_a_record {
     my $key = $plugin_config->{key};
     my $ttl = $plugin_config->{ttl} ? $plugin_config->{ttl} : 14400;
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'X-API-Key' => $key];
+    my $fingerprint = $plugin_config->{fingerprint};
 
     my $type = Net::IP::ip_is_ipv6($ip) ? "AAAA" : "A";
     my $fqdn = $hostname.".".$zone.".";
@@ -85,7 +87,9 @@ sub add_a_record {
 	}],
     };
 
-    eval { PVE::Network::SDN::api_request("PATCH", "$url/zones/$zone", $headers, $params) };
+    eval {
+	PVE::Network::SDN::api_request("PATCH", "$url/zones/$zone", $headers, $params, $fingerprint)
+    };
     die "error add $fqdn to zone $zone: $@" if $@ && !$noerr;
 }
 
@@ -97,6 +101,7 @@ sub add_ptr_record {
     my $ttl = $plugin_config->{ttl} ? $plugin_config->{ttl} : 14400;
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'X-API-Key' => $key];
     $hostname .= ".";
+    my $fingerprint = $plugin_config->{fingerprint};
 
     my $reverseip = Net::IP->new($ip)->reverse_ip();
 
@@ -119,7 +124,9 @@ sub add_ptr_record {
 	}],
     };
 
-    eval { PVE::Network::SDN::api_request("PATCH", "$url/zones/$zone", $headers, $params) };
+    eval {
+	PVE::Network::SDN::api_request("PATCH", "$url/zones/$zone", $headers, $params, $fingerprint)
+    };
     die "error add $reverseip to zone $zone: $@" if $@ && !$noerr;
 }
 
@@ -131,6 +138,7 @@ sub del_a_record {
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'X-API-Key' => $key];
     my $fqdn = $hostname.".".$zone.".";
     my $type = Net::IP::ip_is_ipv6($ip) ? "AAAA" : "A";
+    my $fingerprint = $plugin_config->{fingerprint};
 
     my $zonecontent = get_zone_content($plugin_config, $zone);
     my $existing_rrset = get_zone_rrset($zonecontent, $fqdn);
@@ -157,7 +165,9 @@ sub del_a_record {
 
     my $params = { rrsets => [ $rrset ] };
 
-    eval { PVE::Network::SDN::api_request("PATCH", "$url/zones/$zone", $headers, $params) };
+    eval {
+	PVE::Network::SDN::api_request("PATCH", "$url/zones/$zone", $headers, $params, $fingerprint)
+    };
     die "error delete $fqdn from zone $zone: $@" if $@ && !$noerr;
 }
 
@@ -167,6 +177,7 @@ sub del_ptr_record {
     my $url = $plugin_config->{url};
     my $key = $plugin_config->{key};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'X-API-Key' => $key];
+    my $fingerprint = $plugin_config->{fingerprint};
 
     my $reverseip = Net::IP->new($ip)->reverse_ip();
 
@@ -181,7 +192,9 @@ sub del_ptr_record {
 	}],
     };
 
-    eval { PVE::Network::SDN::api_request("PATCH", "$url/zones/$zone", $headers, $params) };
+    eval {
+	PVE::Network::SDN::api_request("PATCH", "$url/zones/$zone", $headers, $params, $fingerprint)
+    };
     die "error delete $reverseip from zone $zone: $@" if $@ && !$noerr;
 }
 
@@ -193,8 +206,12 @@ sub verify_zone {
     my $url = $plugin_config->{url};
     my $key = $plugin_config->{key};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'X-API-Key' => $key];
+    my $fingerprint = $plugin_config->{fingerprint};
 
-    eval { PVE::Network::SDN::api_request("GET", "$url/zones/$zone?rrsets=false", $headers) };
+    eval {
+	PVE::Network::SDN::api_request(
+	    "GET", "$url/zones/$zone?rrsets=false", $headers, undef, $fingerprint)
+    };
     die "can't read zone $zone: $@" if $@ && !$noerr;
 }
 
@@ -256,8 +273,9 @@ sub on_update_hook {
     my $url = $plugin_config->{url};
     my $key = $plugin_config->{key};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'X-API-Key' => $key];
+    my $fingerprint = $plugin_config->{fingerprint};
 
-    eval { PVE::Network::SDN::api_request("GET", "$url", $headers) };
+    eval { PVE::Network::SDN::api_request("GET", "$url", $headers, undef, $fingerprint) };
     die "dns api error: $@" if $@;
 }
 
@@ -270,8 +288,11 @@ sub get_zone_content {
     my $url = $plugin_config->{url};
     my $key = $plugin_config->{key};
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'X-API-Key' => $key];
+    my $fingerprint = $plugin_config->{fingerprint};
 
-    my $result = eval { PVE::Network::SDN::api_request("GET", "$url/zones/$zone", $headers) };
+    my $result = eval {
+	PVE::Network::SDN::api_request("GET", "$url/zones/$zone", $headers, undef, $fingerprint)
+    };
     die "can't read zone $zone: $@" if $@;
 
     return $result;
