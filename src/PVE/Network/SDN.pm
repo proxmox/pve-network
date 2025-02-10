@@ -273,10 +273,10 @@ sub api_request {
     $ua->ssl_opts(verify_hostname => 0, SSL_verify_mode => 0x00);
 
     my $response = $ua->request($req);
-    my $code = $response->code;
 
-    if ($code !~ /^2(\d+)$/) {
+    if (!$response->is_success) {
 	my $msg = $response->message || 'unknown';
+	my $code = $response->code;
 	die "Invalid response from server: $code $msg\n";
     }
 
