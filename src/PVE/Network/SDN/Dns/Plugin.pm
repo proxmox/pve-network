@@ -43,6 +43,7 @@ my $defaultData = {
         reversev6mask => { type => 'integer', optional => 1 },
         dns => get_standard_option('pve-sdn-dns-id',
             { completion => \&PVE::Network::SDN::Dns::complete_sdn_dns }),
+	fingerprint => get_standard_option('fingerprint-sha256', { optional => 1 }),
     },
 };
 
