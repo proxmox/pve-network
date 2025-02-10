@@ -7,7 +7,6 @@ use PVE::Tools;
 use PVE::JSONSchema;
 use PVE::Cluster;
 
-use Data::Dumper;
 use PVE::JSONSchema qw(get_standard_option);
 use base qw(PVE::SectionConfig);
 

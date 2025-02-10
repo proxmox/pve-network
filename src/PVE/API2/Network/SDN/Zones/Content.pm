@@ -2,7 +2,6 @@ package PVE::API2::Network::SDN::Zones::Content;
 
 use strict;
 use warnings;
-use Data::Dumper;
 
 use PVE::SafeSyslog;
 use PVE::Cluster;

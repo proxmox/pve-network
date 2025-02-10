@@ -3,7 +3,6 @@ package PVE::Network::SDN;
 use strict;
 use warnings;
 
-use Data::Dumper;
 use JSON;
 
 use PVE::INotify;

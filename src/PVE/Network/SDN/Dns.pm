@@ -3,7 +3,6 @@ package PVE::Network::SDN::Dns;
 use strict;
 use warnings;
 
-use Data::Dumper;
 use JSON;
 
 use PVE::Tools qw(extract_param dir_glob_regex run_command);

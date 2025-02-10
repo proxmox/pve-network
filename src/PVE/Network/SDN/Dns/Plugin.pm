@@ -9,7 +9,6 @@ use PVE::Cluster;
 use HTTP::Request;
 use LWP::UserAgent;
 
-use Data::Dumper;
 use PVE::JSONSchema qw(get_standard_option);
 use base qw(PVE::SectionConfig);
 
