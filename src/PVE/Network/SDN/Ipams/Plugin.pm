@@ -46,6 +46,7 @@ my $defaultData = {
 	ipam => get_standard_option('pve-sdn-ipam-id', {
 	    completion => \&PVE::Network::SDN::Ipams::complete_sdn_ipam,
 	}),
+	fingerprint => get_standard_option('fingerprint-sha256', { optional => 1 }),
     },
 };
 
