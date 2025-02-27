@@ -66,7 +66,7 @@ sub add_a_record {
     my $fqdn = $hostname.".".$zone.".";
 
     my $zonecontent = get_zone_content($plugin_config, $zone);
-    my $existing_rrset = get_zone_rrset($zonecontent, $fqdn);
+    my $existing_rrset = get_zone_rrset($zonecontent, $fqdn, $type);
 
     my $final_records = [];
     for my $record (@{$existing_rrset->{records}}) {
@@ -136,7 +136,7 @@ sub del_a_record {
     my $type = Net::IP::ip_is_ipv6($ip) ? "AAAA" : "A";
 
     my $zonecontent = get_zone_content($plugin_config, $zone);
-    my $existing_rrset = get_zone_rrset($zonecontent, $fqdn);
+    my $existing_rrset = get_zone_rrset($zonecontent, $fqdn, $type);
 
     my $final_records = [ grep { $_->{content} ne $ip } $existing_rrset->{records}->@* ];
     my $final_records_size = scalar($final_records->@*);
@@ -262,10 +262,10 @@ sub get_zone_content {
 }
 
 sub get_zone_rrset {
-    my ($zonecontent, $name) = @_;
+    my ($zonecontent, $name, $type) = @_;
 
     for my $rrset (@{$zonecontent->{rrsets}}) {
-	return $rrset if $rrset->{name} eq $name;
+	return $rrset if $rrset->{name} eq $name and ($rrset->{type} eq $type);
     }
     return; # not found
 }
