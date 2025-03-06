@@ -1,3 +1,15 @@
+libpve-network-perl (0.10.1) bookworm; urgency=medium
+
+  * sdn: fix comparison of pending configuration values
+
+  * api request helper: enforce TLS cert-check and add cert-fingerprint option
+
+  * ipam: add fingerprint to available properties for IPAM base and DNS base
+    plugin and expose it in the respective integrations for phpIPAM, NetBox
+    abd PowerDNS.
+
+ -- Proxmox Support Team <support@proxmox.com>  Thu, 06 Mar 2025 10:21:35 +0100
+
 libpve-network-perl (0.10.0) bookworm; urgency=medium
 
   * d/postinst: do not break, if moving either ipam state or cache file fails
