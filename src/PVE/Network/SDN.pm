@@ -3,21 +3,23 @@ package PVE::Network::SDN;
 use strict;
 use warnings;
 
+use HTTP::Request;
 use IO::Socket::SSL; # important for SSL_verify_callback
-use JSON;
+use JSON qw(decode_json from_json to_json);
+use LWP::UserAgent;
 use Net::SSLeay;
 
+use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 use PVE::INotify;
+use PVE::RESTEnvironment qw(log_warn);
+use PVE::RPCEnvironment;
+use PVE::Tools qw(extract_param dir_glob_regex run_command);
 
 use PVE::Network::SDN::Vnets;
 use PVE::Network::SDN::Zones;
 use PVE::Network::SDN::Controllers;
 use PVE::Network::SDN::Subnets;
 use PVE::Network::SDN::Dhcp;
-
-use PVE::Tools qw(extract_param dir_glob_regex run_command);
-use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
-use PVE::RESTEnvironment qw(log_warn);
 
 my $running_cfg = "sdn/.running-config";
 
