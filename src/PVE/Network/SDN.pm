@@ -262,7 +262,7 @@ sub encode_value {
 sub api_request {
     my ($method, $url, $headers, $data, $expected_fingerprint) = @_;
 
-    my $encoded_data = to_json($data) if $data;
+    my $encoded_data = $data ? to_json($data) : undef;
 
     my $req = HTTP::Request->new($method,$url, $headers, $encoded_data);
 
