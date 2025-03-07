@@ -3,7 +3,7 @@ package PVE::Network::SDN::SubnetPlugin;
 use strict;
 use warnings;
 
-use Net::IP;
+use Net::IP qw($IP_NO_OVERLAP);
 use Net::Subnet qw(subnet_matcher);
 
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
@@ -82,6 +82,8 @@ sub validate_dhcp_ranges {
 
     my $dhcp_ranges = PVE::Network::SDN::Subnets::get_dhcp_ranges($subnet);
 
+    my $validated_ranges = [];
+
     foreach my $dhcp_range (@$dhcp_ranges) {
 	my $dhcp_start = $dhcp_range->{'start-address'};
 	my $dhcp_end = $dhcp_range->{'end-address'};
@@ -102,6 +104,15 @@ sub validate_dhcp_ranges {
 
 	raise_param_exc({ 'dhcp-range' => "start-address $dhcp_start is not in subnet $cidr" }) if !$subnet_matcher->($dhcp_start);
 	raise_param_exc({ 'dhcp-range' => "end-address $dhcp_end is not in subnet $cidr" }) if !$subnet_matcher->($dhcp_end);
+
+	my $ip_range = Net::IP->new("$dhcp_range->{'start-address'} - $dhcp_range->{'end-address'}");
+	for my $other_range (@$validated_ranges) {
+	    if ($ip_range->overlaps($other_range) != $Net::IP::IP_NO_OVERLAP) {
+		raise_param_exc({ 'dhcp-range' => "dhcp ranges must not overlap" });
+	    }
+	}
+
+	push @$validated_ranges, $ip_range;
     }
 }
 
