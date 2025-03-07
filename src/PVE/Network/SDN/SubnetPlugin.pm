@@ -86,13 +86,13 @@ sub validate_dhcp_ranges {
 	my $dhcp_start = $dhcp_range->{'start-address'};
 	my $dhcp_end = $dhcp_range->{'end-address'};
 
-	my $start_ip = new Net::IP($dhcp_start);
+	my $start_ip = Net::IP->new($dhcp_start);
 	raise_param_exc({ 'dhcp-range' => "start-adress is not a valid IP $dhcp_start" }) if !$start_ip;
 
-	my $end_ip = new Net::IP($dhcp_end);
+	my $end_ip = Net::IP->new($dhcp_end);
 	raise_param_exc({ 'dhcp-range' => "end-adress is not a valid IP $dhcp_end" }) if !$end_ip;
 
-	if (Net::IP::ip_bincomp($end_ip->binip(), 'lt', $start_ip->binip()) == 1) {
+	if ($start_ip->bincomp('gt', $end_ip)) {
 	    raise_param_exc({ 'dhcp-range' => "start-address $dhcp_start must be smaller than end-address $dhcp_end" })
 	}
 
