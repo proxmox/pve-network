@@ -71,7 +71,22 @@ sub del_subnet {
 
     my $internalid = get_prefix_id($plugin_config, $cidr, $noerr);
 
-    return; #fixme: check that prefix is empty exluding gateway, before delete
+    # definedness check, because ID could be 0
+    if (!defined($internalid)) {
+	warn "could not find id for ip prefix $cidr";
+	return;
+    }
+
+    if (!is_prefix_empty($plugin_config, $cidr, $noerr)) {
+	return if $noerr;
+	die "not deleting prefix $cidr because it still contains entries";
+    }
+
+    # last IP is assumed to be the gateway, delete it
+    if (!$class->del_ip($plugin_config, $subnetid, $subnet, $subnet->{gateway}, $noerr)) {
+	return if $noerr;
+	die "could not delete gateway ip from subnet $subnetid";
+    }
 
     eval {
 	netbox_api_request($plugin_config, "DELETE", "/ipam/prefixes/$internalid/");
@@ -217,6 +232,8 @@ sub del_ip {
     if ($@) {
 	die "error delete ip $ip : $@" if !$noerr;
     }
+
+    return 1;
 }
 
 sub get_ips_from_mac {
@@ -322,6 +339,19 @@ sub is_ip_gateway {
     my $description = $data->{description};
     my $is_gateway = 1 if $description eq 'gateway';
     return $is_gateway;
+}
+
+sub is_prefix_empty {
+    my ($config, $cidr, $noerr) = @_;
+
+    my $result = eval { netbox_api_request($config, "GET", "/ipam/ip-addresses/?parent=$cidr") };
+    if ($@) {
+	return if $noerr;
+	die "could not query children for prefix $cidr: $@";
+    }
+
+    # checking against 1, because we do not count the gateway
+    return scalar(@{$result->{results}}) <= 1;
 }
 
 1;
