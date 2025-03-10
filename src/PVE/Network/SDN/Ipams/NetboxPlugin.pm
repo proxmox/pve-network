@@ -40,6 +40,33 @@ sub netbox_api_request {
     );
 }
 
+sub add_dhcp_range {
+    my ($config, $dhcp_range, $noerr) = @_;
+
+    my $result = eval {
+	netbox_api_request($config, "POST", "/ipam/ip-ranges/", {
+	    start_address => $dhcp_range->{'start-address'},
+	    end_address => $dhcp_range->{'end-address'},
+	});
+    };
+    if ($@) {
+	return if $noerr;
+	die "could not create ip range $dhcp_range->{'start-address'}:$dhcp_range->{'end-address'}: $@";
+    }
+
+    return $result->{id};
+}
+
+sub del_dhcp_range {
+    my ($config, $id, $noerr) = @_;
+
+    eval {
+	netbox_api_request($config, "DELETE", "/ipam/ip-ranges/$id/");
+    };
+
+    die "could not create dhcp range: $@" if $@ && !$noerr;
+}
+
 # Plugin implementation
 
 sub add_subnet {
@@ -61,6 +88,11 @@ sub add_subnet {
     if ($@) {
 	return if $noerr;
 	die "error adding subnet to ipam: $@";
+    }
+
+    my $dhcp_ranges = PVE::Network::SDN::Subnets::get_dhcp_ranges($subnet);
+    for my $dhcp_range (@$dhcp_ranges) {
+	add_dhcp_range($plugin_config, $dhcp_range, $noerr);
     }
 }
 
@@ -86,6 +118,19 @@ sub del_subnet {
     if (!$class->del_ip($plugin_config, $subnetid, $subnet, $subnet->{gateway}, $noerr)) {
 	return if $noerr;
 	die "could not delete gateway ip from subnet $subnetid";
+    }
+
+    my $dhcp_ranges = PVE::Network::SDN::Subnets::get_dhcp_ranges($subnet);
+    for my $dhcp_range (@$dhcp_ranges) {
+	my $internalid = get_iprange_id($plugin_config, $dhcp_range, $noerr);
+
+	# definedness check, because ID could be 0
+	if (!defined($internalid)) {
+	    warn "could not find id for ip range $dhcp_range->{'start-address'}:$dhcp_range->{'end-address'}";
+	    next;
+	}
+
+	del_dhcp_range($plugin_config, $internalid, $noerr);
     }
 
     eval {
