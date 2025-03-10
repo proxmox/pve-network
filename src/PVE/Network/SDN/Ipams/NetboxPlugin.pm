@@ -247,6 +247,10 @@ sub get_ips_from_mac {
     my $data = eval {
 	netbox_api_request($plugin_config, "GET", "/ipam/ip-addresses/?description__ic=$mac");
     };
+    if ($@) {
+	return if $noerr;
+	die "could not query ip address entry for mac $mac: $@";
+    }
 
     for my $ip (@{$data->{results}}) {
 	if ($ip->{family}->{value} == 4 && !$ip4) {
