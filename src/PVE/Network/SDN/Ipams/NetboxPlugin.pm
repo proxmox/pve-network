@@ -169,7 +169,8 @@ sub add_next_freeip {
 	die "could not find id for prefix $cidr";
     }
 
-    my $description = "mac:$mac" if $mac;
+    my $description = undef;
+    $description = "mac:$mac" if $mac;
 
     eval {
 	my $result = netbox_api_request($plugin_config, "POST", "/ipam/prefixes/$internalid/available-ips/", {
@@ -197,7 +198,8 @@ sub add_range_next_freeip {
 	die "could not find id for ip range $range->{'start-address'}:$range->{'end-address'}";
     }
 
-    my $description = "mac:$data->{mac}" if $data->{mac};
+    my $description = undef;
+    $description = "mac:$data->{mac}" if $data->{mac};
 
     eval {
 	my $result = netbox_api_request($plugin_config, "POST", "/ipam/ip-ranges/$internalid/available-ips/", {
