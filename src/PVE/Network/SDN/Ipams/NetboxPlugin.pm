@@ -172,7 +172,7 @@ sub add_next_freeip {
     my $description = undef;
     $description = "mac:$mac" if $mac;
 
-    eval {
+    my $ip = eval {
 	my $result = netbox_api_request($plugin_config, "POST", "/ipam/prefixes/$internalid/available-ips/", {
 	    dns_name => $hostname,
 	    description => $description,
@@ -185,6 +185,8 @@ sub add_next_freeip {
     if ($@) {
 	die "can't find free ip in subnet $cidr: $@" if !$noerr;
     }
+
+    return $ip;
 }
 
 sub add_range_next_freeip {
@@ -201,7 +203,7 @@ sub add_range_next_freeip {
     my $description = undef;
     $description = "mac:$data->{mac}" if $data->{mac};
 
-    eval {
+    my $ip = eval {
 	my $result = netbox_api_request($plugin_config, "POST", "/ipam/ip-ranges/$internalid/available-ips/", {
 	    dns_name => $data->{hostname},
 	    description => $description,
@@ -215,6 +217,8 @@ sub add_range_next_freeip {
     if ($@) {
 	die "can't find free ip in range $range->{'start-address'}-$range->{'end-address'}: $@" if !$noerr;
     }
+
+    return $ip;
 }
 
 sub del_ip {
