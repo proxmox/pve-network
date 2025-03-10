@@ -288,8 +288,7 @@ sub get_prefix_id {
     }
 
     my $data = @{$result->{results}}[0];
-    my $internalid = $data->{id};
-    return $internalid;
+    return $data->{id};
 }
 
 sub get_iprange_id {
@@ -308,8 +307,7 @@ sub get_iprange_id {
     }
 
     my $data = @{$result->{results}}[0];
-    my $internalid = $data->{id};
-    return $internalid;
+    return $data->{id};
 }
 
 sub get_ip_id {
@@ -322,8 +320,7 @@ sub get_ip_id {
     }
 
     my $data = @{$result->{results}}[0];
-    my $ip_id = $data->{id};
-    return $ip_id;
+    return $data->{id};
 }
 
 sub is_ip_gateway {
@@ -336,9 +333,7 @@ sub is_ip_gateway {
     }
 
     my $data = @{$result->{data}}[0];
-    my $description = $data->{description};
-    my $is_gateway = 1 if $description eq 'gateway';
-    return $is_gateway;
+    return $data->{description} eq 'gateway';
 }
 
 sub is_prefix_empty {
