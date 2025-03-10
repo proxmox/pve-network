@@ -96,6 +96,60 @@ sub add_subnet {
     }
 }
 
+sub update_subnet {
+    my ($class, $plugin_config, $subnetid, $subnet, $old_subnet, $noerr) = @_;
+
+    # old subnet in SubnetPlugin hook has already parsed dhcp-ranges
+    # new subnet doesn't
+    my $old_dhcp_ranges = $old_subnet->{'dhcp-range'};
+    my $new_dhcp_ranges = PVE::Network::SDN::Subnets::get_dhcp_ranges($subnet);
+
+    my $hash_range = sub {
+	my ($dhcp_range) = @_;
+	"$dhcp_range->{'start-address'} - $dhcp_range->{'end-address'}"
+    };
+
+    my $old_lookup = {};
+    for my $dhcp_range (@$old_dhcp_ranges) {
+	my $hash = $hash_range->($dhcp_range);
+	$old_lookup->{$hash} = undef;
+    }
+
+    my $new_lookup = {};
+    for my $dhcp_range (@$new_dhcp_ranges) {
+	my $hash = $hash_range->($dhcp_range);
+	$new_lookup->{$hash} = undef;
+    }
+
+    my $to_delete_ids = ();
+
+    # delete first so we don't get errors with overlapping ranges
+    for my $dhcp_range (@$old_dhcp_ranges) {
+	my $hash = $hash_range->($dhcp_range);
+
+	if (exists($new_lookup->{$hash})) {
+	    next;
+	}
+
+	my $internalid = get_iprange_id($plugin_config, $dhcp_range, $noerr);
+
+	# definedness check, because ID could be 0
+	if (!defined($internalid)) {
+	    warn "could not find id for ip range $dhcp_range->{'start-address'}:$dhcp_range->{'end-address'}";
+	    next;
+	}
+
+	del_dhcp_range($plugin_config, $internalid, $noerr);
+    }
+
+    for my $dhcp_range (@$new_dhcp_ranges) {
+	my $hash = $hash_range->($dhcp_range);
+
+	add_dhcp_range($plugin_config, $dhcp_range, $noerr)
+	    if !exists($old_lookup->{$hash});
+    }
+}
+
 sub del_subnet {
     my ($class, $plugin_config, $subnetid, $subnet, $noerr) = @_;
 

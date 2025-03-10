@@ -75,6 +75,12 @@ sub add_subnet {
     die "please implement inside plugin";
 }
 
+sub update_subnet {
+    my ($class, $plugin_config, $subnetid, $subnet, $old_subnet, $noerr) = @_;
+
+    die "please implement inside plugin";
+}
+
 sub del_subnet {
     my ($class, $plugin_config, $subnetid, $subnet, $noerr) = @_;
 

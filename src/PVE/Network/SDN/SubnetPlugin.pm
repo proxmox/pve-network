@@ -186,7 +186,11 @@ sub on_update_hook {
     validate_dhcp_ranges($subnet);
 
     if ($ipam) {
-	PVE::Network::SDN::Subnets::add_subnet($zone, $subnetid, $subnet);
+	if ($old_subnet) {
+	    PVE::Network::SDN::Subnets::update_subnet($zone, $subnetid, $subnet, $old_subnet);
+	} else {
+	    PVE::Network::SDN::Subnets::add_subnet($zone, $subnetid, $subnet);
+	}
 
 	#don't register gateway for pointopoint
 	return if $pointopoint;

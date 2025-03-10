@@ -67,6 +67,11 @@ sub add_subnet {
     }
 }
 
+sub update_subnet {
+    my ($class, $plugin_config, $subnetid, $subnet, $old_subnet, $noerr) = @_;
+    # we don't need to do anything on update
+}
+
 sub del_subnet {
     my ($class, $plugin_config, $subnetid, $subnet, $noerr) = @_;
 

@@ -82,6 +82,11 @@ sub add_subnet {
     die "$@" if $@;
 }
 
+sub update_subnet {
+    my ($class, $plugin_config, $subnetid, $subnet, $old_subnet, $noerr) = @_;
+    # we don't need to do anything on update
+}
+
 sub only_gateway_remains {
     my ($ips) = @_;
 
