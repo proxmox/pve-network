@@ -1,3 +1,21 @@
+libpve-network-perl (0.11.0) bookworm; urgency=medium
+
+  * dns: powerdns: correctly handle different records types (A / AAAA)
+
+  * ipam: netbox: implement deleting subnets and improve error handling.
+
+  * fix #5496: fix handling DHCP ranges and allocation for Netbox IPAM
+    plugin.
+
+  * vnet: do not skip if no range is defined, ask for allocation inside prefix
+    instead.
+
+  * correctly register reservation details when allocating the next free IP.
+
+  * subnet: dhcp: do not allow overlapping DHCP ranges.
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 08 Apr 2025 13:52:02 +0200
+
 libpve-network-perl (0.10.1) bookworm; urgency=medium
 
   * sdn: fix comparison of pending configuration values
