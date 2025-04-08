@@ -206,11 +206,14 @@ sub add_ip {
     }
 
     eval {
-	netbox_api_request($plugin_config, "POST", "/ipam/ip-addresses/", {
+	my $params = {
 	    address => "$ip/$mask",
-	    dns_name => $hostname,
 	    description => $description,
-	});
+	};
+
+	$params->{dns_name} = $hostname if $hostname;
+
+	netbox_api_request($plugin_config, "POST", "/ipam/ip-addresses/", $params);
     };
 
     if ($@) {
@@ -244,11 +247,14 @@ sub update_ip {
     }
 
     eval {
-	netbox_api_request($plugin_config, "PATCH", "/ipam/ip-addresses/$ip_id/", {
+	my $params = {
 	    address => "$ip/$mask",
-	    dns_name => $hostname,
 	    description => $description,
-	});
+	};
+
+	$params->{dns_name} = $hostname if $hostname;
+
+	netbox_api_request($plugin_config, "PATCH", "/ipam/ip-addresses/$ip_id/", $params);
     };
     if ($@) {
 	die "error update ip $ip : $@" if !$noerr;
@@ -272,10 +278,13 @@ sub add_next_freeip {
     $description = "mac:$mac" if $mac;
 
     my $ip = eval {
-	my $result = netbox_api_request($plugin_config, "POST", "/ipam/prefixes/$internalid/available-ips/", {
-	    dns_name => $hostname,
+	my $params = {
 	    description => $description,
-	});
+	};
+
+	$params->{dns_name} = $hostname if $hostname;
+
+	my $result = netbox_api_request($plugin_config, "POST", "/ipam/prefixes/$internalid/available-ips/", $params);
 
 	my ($ip, undef) = split(/\//, $result->{address});
 	return $ip;
@@ -303,10 +312,13 @@ sub add_range_next_freeip {
     $description = "mac:$data->{mac}" if $data->{mac};
 
     my $ip = eval {
-	my $result = netbox_api_request($plugin_config, "POST", "/ipam/ip-ranges/$internalid/available-ips/", {
-	    dns_name => $data->{hostname},
+	my $params = {
 	    description => $description,
-	});
+	};
+
+	$params->{dns_name} = $data->{hostname} if $data->{hostname};
+
+	my $result = netbox_api_request($plugin_config, "POST", "/ipam/ip-ranges/$internalid/available-ips/", $params);
 
 	my ($ip, undef) = split(/\//, $result->{address});
 	print "found ip free $ip in range $range->{'start-address'}-$range->{'end-address'}\n" if $ip;
