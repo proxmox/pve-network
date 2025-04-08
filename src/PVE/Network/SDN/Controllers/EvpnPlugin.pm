@@ -625,6 +625,9 @@ sub reload_controller {
 	return;
     }
 
+    run_command(['systemctl', 'enable', '--now', 'frr'])
+	if !-e "/etc/systemd/system/multi-user.target.wants/frr.service";
+
     my $err = sub {
 	my $line = shift;
 	if ($line =~ /ERROR:/) {
