@@ -634,7 +634,7 @@ sub reload_controller {
 
     if (-e $conf_file && -e $bin_path) {
 	eval {
-	    run_command([$bin_path, '--stdout', '--reload', $conf_file], outfunc => {}, errfunc => $err);
+	    run_command([$bin_path, '--stdout', '--reload', $conf_file], errfunc => $err);
 	};
 	if ($@) {
 	    warn "frr reload command fail. Restarting frr.";
