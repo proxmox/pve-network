@@ -1,3 +1,13 @@
+libpve-network-perl (0.11.2) bookworm; urgency=medium
+
+  * frr: remove filtering outfunc of frr-reload command, new FRR 10.2 behavior
+    causes issues with that.
+
+  * frr: actively enable frr systemd service unit if not enabled and start frr
+    on reloading the controller config
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 09 Apr 2025 08:16:38 +0200
+
 libpve-network-perl (0.11.1) bookworm; urgency=medium
 
   * ipam: netbox: fix adding VMs without a name set in the options
