@@ -235,7 +235,7 @@ __PACKAGE__->register_method ({
 		PVE::SectionConfig::delete_from_config($scfg, $options, $opts, $delete);
 	    }
 
-	    foreach my $k (%$opts) {
+	    for my $k (keys %{$opts}) {
 		$scfg->{$k} = $opts->{$k};
 	    }
 
