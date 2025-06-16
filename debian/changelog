@@ -1,3 +1,9 @@
+libpve-network-perl (1.0.0) trixie; urgency=medium
+
+  * re-build for Debian 13 Trixie based Proxmox VE 9 releases.
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 16 Jun 2025 22:33:03 +0200
+
 libpve-network-perl (0.11.2) bookworm; urgency=medium
 
   * frr: remove filtering outfunc of frr-reload command, new FRR 10.2 behavior
