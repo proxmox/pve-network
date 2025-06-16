@@ -26,24 +26,26 @@ my $macdb_filename_legacy = 'priv/macs.db';
 cfs_register_file(
     $macdb_filename,
     sub {
-	my ($filename , $data) = @_;
-	if (defined($data)) {
-	    return json_reader($filename, $data);
-	} else {
-	    # TODO: remove legacy cache file handling with PVE 9+ after ensuring all call sites got
-	    # switched over.
-	    return cfs_read_file($macdb_filename_legacy);
-	}
+        my ($filename, $data) = @_;
+        if (defined($data)) {
+            return json_reader($filename, $data);
+        } else {
+            # TODO: remove legacy cache file handling with PVE 9+ after ensuring all call sites got
+            # switched over.
+            return cfs_read_file($macdb_filename_legacy);
+        }
     },
     sub {
-	my ($filename , $data) = @_;
-	# TODO: remove below with PVE 9+, add a pve8to9 check to allow doing so.
-	if (-e $macdb_filename_legacy && -e $macdb_filename) {
-	    # only clean-up if we succeeded to write the new path at least once
-	    unlink $macdb_filename_legacy or $!{ENOENT} or warn "failed to unlink legacy MAC cache - $!\n";
-	}
-	return json_writer->($filename, $data);
-    }
+        my ($filename, $data) = @_;
+        # TODO: remove below with PVE 9+, add a pve8to9 check to allow doing so.
+        if (-e $macdb_filename_legacy && -e $macdb_filename) {
+            # only clean-up if we succeeded to write the new path at least once
+            unlink $macdb_filename_legacy
+                or $!{ENOENT}
+                or warn "failed to unlink legacy MAC cache - $!\n";
+        }
+        return json_writer->($filename, $data);
+    },
 );
 
 # drop reading $macdb_filename_legacy with PVE 9+ - for now do not write it anymore.
@@ -76,31 +78,40 @@ sub write_macdb {
 sub add_cache_mac_ip {
     my ($mac, $ip) = @_;
 
-    cfs_lock_file($macdb_filename, undef, sub {
-	my $db = read_macdb();
-	if (Net::IP::ip_is_ipv4($ip)) {
-	    $db->{macs}->{$mac}->{ip4} = $ip;
-	} else {
-	    $db->{macs}->{$mac}->{ip6} = $ip;
-	}
-	write_macdb($db);
-    });
+    cfs_lock_file(
+        $macdb_filename,
+        undef,
+        sub {
+            my $db = read_macdb();
+            if (Net::IP::ip_is_ipv4($ip)) {
+                $db->{macs}->{$mac}->{ip4} = $ip;
+            } else {
+                $db->{macs}->{$mac}->{ip6} = $ip;
+            }
+            write_macdb($db);
+        },
+    );
     warn "$@" if $@;
 }
 
 sub del_cache_mac_ip {
     my ($mac, $ip) = @_;
 
-    cfs_lock_file($macdb_filename, undef, sub {
-	my $db = read_macdb();
-	if (Net::IP::ip_is_ipv4($ip)) {
-	    delete $db->{macs}->{$mac}->{ip4};
-	} else {
-	    delete $db->{macs}->{$mac}->{ip6};
-	}
-        delete $db->{macs}->{$mac} if !defined($db->{macs}->{$mac}->{ip4}) && !defined($db->{macs}->{$mac}->{ip6});
-	write_macdb($db);
-    });
+    cfs_lock_file(
+        $macdb_filename,
+        undef,
+        sub {
+            my $db = read_macdb();
+            if (Net::IP::ip_is_ipv4($ip)) {
+                delete $db->{macs}->{$mac}->{ip4};
+            } else {
+                delete $db->{macs}->{$mac}->{ip6};
+            }
+            delete $db->{macs}->{$mac}
+                if !defined($db->{macs}->{$mac}->{ip4}) && !defined($db->{macs}->{$mac}->{ip6});
+            write_macdb($db);
+        },
+    );
     warn "$@" if $@;
 }
 
@@ -138,7 +149,7 @@ sub write_config {
 sub sdn_ipams_ids {
     my ($cfg) = @_;
 
-    return keys %{$cfg->{ids}};
+    return keys %{ $cfg->{ids} };
 }
 
 sub complete_sdn_vnet {
@@ -146,7 +157,7 @@ sub complete_sdn_vnet {
 
     my $cfg = PVE::Network::SDN::Ipams::config();
 
-    return  $cmdname eq 'add' ? [] : [ PVE::Network::SDN::Vnets::sdn_ipams_ids($cfg) ];
+    return $cmdname eq 'add' ? [] : [PVE::Network::SDN::Vnets::sdn_ipams_ids($cfg)];
 }
 
 sub get_ips_from_mac {
@@ -157,7 +168,8 @@ sub get_ips_from_mac {
 
     my $plugin_config = get_plugin_config($zone);
     my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
-    ($macdb->{macs}->{$mac}->{ip4}, $macdb->{macs}->{$mac}->{ip6}) = $plugin->get_ips_from_mac($plugin_config, $mac, $zoneid);
+    ($macdb->{macs}->{$mac}->{ip4}, $macdb->{macs}->{$mac}->{ip6}) =
+        $plugin->get_ips_from_mac($plugin_config, $mac, $zoneid);
 
     write_macdb($macdb);
 

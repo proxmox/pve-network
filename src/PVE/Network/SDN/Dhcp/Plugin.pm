@@ -10,11 +10,11 @@ use base qw(PVE::SectionConfig);
 
 my $defaultData = {
     propertyList => {
-       type => {
-           description => "Plugin type.",
-           format => 'pve-configid',
-           type => 'string',
-       },
+        type => {
+            description => "Plugin type.",
+            format => 'pve-configid',
+            type => 'string',
+        },
     },
 };
 

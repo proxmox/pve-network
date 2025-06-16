@@ -44,8 +44,8 @@ sub config {
     my ($running) = @_;
 
     if ($running) {
-	my $cfg = PVE::Network::SDN::running_config();
-	return $cfg->{zones};
+        my $cfg = PVE::Network::SDN::running_config();
+        return $cfg->{zones};
     }
 
     return cfs_read_file("sdn/zones.cfg");
@@ -67,7 +67,7 @@ sub write_config {
 sub sdn_zones_ids {
     my ($cfg) = @_;
 
-    return sort keys %{$cfg->{ids}};
+    return sort keys %{ $cfg->{ids} };
 }
 
 sub complete_sdn_zone {
@@ -75,7 +75,7 @@ sub complete_sdn_zone {
 
     my $cfg = PVE::Network::SDN::running_config();
 
-    return  $cmdname eq 'add' ? [] : [ PVE::Network::SDN::sdn_zones_ids($cfg) ];
+    return $cmdname eq 'add' ? [] : [PVE::Network::SDN::sdn_zones_ids($cfg)];
 }
 
 sub get_zone {
@@ -96,7 +96,7 @@ sub get_vnets {
     my $vnets_config = PVE::Network::SDN::Vnets::config($running);
     my $vnets = undef;
 
-    for my $vnetid (keys %{$vnets_config->{ids}}) {
+    for my $vnetid (keys %{ $vnets_config->{ids} }) {
         my $vnet = PVE::Network::SDN::Vnets::sdn_vnets_config($vnets_config, $vnetid);
         next if !$vnet->{zone} || $vnet->{zone} ne $zoneid;
         $vnets->{$vnetid} = $vnet;
@@ -122,47 +122,57 @@ sub generate_etc_network_config {
     my $config = {};
     my $nodename = PVE::INotify::nodename();
 
-    for my $id (sort keys %{$vnet_cfg->{ids}}) {
-	my $vnet = $vnet_cfg->{ids}->{$id};
-	my $zone = $vnet->{zone};
+    for my $id (sort keys %{ $vnet_cfg->{ids} }) {
+        my $vnet = $vnet_cfg->{ids}->{$id};
+        my $zone = $vnet->{zone};
 
-	if (!$zone) {
-	    warn "can't generate vnet '$id': no zone assigned!\n";
-	    next;
-	}
+        if (!$zone) {
+            warn "can't generate vnet '$id': no zone assigned!\n";
+            next;
+        }
 
-	my $plugin_config = $zone_cfg->{ids}->{$zone};
+        my $plugin_config = $zone_cfg->{ids}->{$zone};
 
-	if (!defined($plugin_config)) {
-	    warn "can't generate vnet '$id': zone $zone don't exist\n";
-	    next;
-	}
+        if (!defined($plugin_config)) {
+            warn "can't generate vnet '$id': zone $zone don't exist\n";
+            next;
+        }
 
-	next if defined($plugin_config->{nodes}) && !$plugin_config->{nodes}->{$nodename};
+        next if defined($plugin_config->{nodes}) && !$plugin_config->{nodes}->{$nodename};
 
-	my $controller;
-	if (my $controllerid = $plugin_config->{controller}) {
-	    $controller = $controller_cfg->{ids}->{$controllerid};
-	}
+        my $controller;
+        if (my $controllerid = $plugin_config->{controller}) {
+            $controller = $controller_cfg->{ids}->{$controllerid};
+        }
 
-	my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
-	eval {
-	    $plugin->generate_sdn_config($plugin_config, $zone, $id, $vnet, $controller, $controller_cfg, $subnet_cfg, $interfaces_config, $config);
-	};
-	if (my $err = $@) {
-	    warn "zone $zone : vnet $id : $err\n";
-	    next;
-	}
+        my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
+        eval {
+            $plugin->generate_sdn_config(
+                $plugin_config,
+                $zone,
+                $id,
+                $vnet,
+                $controller,
+                $controller_cfg,
+                $subnet_cfg,
+                $interfaces_config,
+                $config,
+            );
+        };
+        if (my $err = $@) {
+            warn "zone $zone : vnet $id : $err\n";
+            next;
+        }
     }
 
     my $raw_network_config = "\#version:$version\n";
     foreach my $iface (sort keys %$config) {
-	$raw_network_config .= "\n";
-	$raw_network_config .= "auto $iface\n";
-	$raw_network_config .= "iface $iface\n";
-	foreach my $option (@{$config->{$iface}}) {
-	    $raw_network_config .= "\t$option\n";
-	}
+        $raw_network_config .= "\n";
+        $raw_network_config .= "auto $iface\n";
+        $raw_network_config .= "iface $iface\n";
+        foreach my $option (@{ $config->{$iface} }) {
+            $raw_network_config .= "\t$option\n";
+        }
     }
 
     return $raw_network_config;
@@ -173,7 +183,7 @@ sub write_etc_network_config {
 
     return if !$rawconfig;
 
-    my $writefh = IO::File->new($local_network_sdn_file,">");
+    my $writefh = IO::File->new($local_network_sdn_file, ">");
     print $writefh $rawconfig;
     $writefh->close();
 }
@@ -184,31 +194,29 @@ sub read_etc_network_config_version {
     return if !defined($versionstr);
 
     if ($versionstr =~ m/^\#version:(\d+)$/) {
-	return $1;
+        return $1;
     }
 }
 
 sub ifquery_check {
 
-    my $cmd = ['ifquery', '-a', '-c', '-o','json'];
+    my $cmd = ['ifquery', '-a', '-c', '-o', 'json'];
 
     my $result = '';
     my $reader = sub { $result .= shift };
 
-    eval {
-	run_command($cmd, outfunc => $reader);
-    };
+    eval { run_command($cmd, outfunc => $reader); };
 
     my $resultjson = decode_json($result);
     my $interfaces = {};
 
     foreach my $interface (@$resultjson) {
-	my $name = $interface->{name};
-	$interfaces->{$name} = {
-	    status => $interface->{status},
-	    config => $interface->{config},
-	    config_status => $interface->{config_status},
-	};
+        my $name = $interface->{name};
+        $interfaces->{$name} = {
+            status => $interface->{status},
+            config => $interface->{config},
+            config_status => $interface->{config_status},
+        };
     }
 
     return $interfaces;
@@ -227,19 +235,19 @@ sub status {
     return if !$sdn_version;
 
     if (!$local_version) {
-	$err_config = "local sdn network configuration is not yet generated, please reload";
-	if (!$warned_about_reload) {
-	    $warned_about_reload = 1;
-	    warn "$err_config\n";
-	}
+        $err_config = "local sdn network configuration is not yet generated, please reload";
+        if (!$warned_about_reload) {
+            $warned_about_reload = 1;
+            warn "$err_config\n";
+        }
     } elsif ($local_version < $sdn_version) {
-	$err_config = "local sdn network configuration is too old, please reload";
-	if (!$warned_about_reload) {
-	    $warned_about_reload = 1;
-	    warn "$err_config\n";
-	}
+        $err_config = "local sdn network configuration is too old, please reload";
+        if (!$warned_about_reload) {
+            $warned_about_reload = 1;
+            warn "$err_config\n";
+        }
     } else {
-	$warned_about_reload = 0;
+        $warned_about_reload = 0;
     }
 
     my $status = ifquery_check();
@@ -251,42 +259,44 @@ sub status {
     my $vnet_status = {};
     my $zone_status = {};
 
-    for my $id (sort keys %{$zone_cfg->{ids}}) {
-	next if defined($zone_cfg->{ids}->{$id}->{nodes}) && !$zone_cfg->{ids}->{$id}->{nodes}->{$nodename};
-	$zone_status->{$id}->{status} = $err_config ? 'pending' : 'available';
+    for my $id (sort keys %{ $zone_cfg->{ids} }) {
+        next
+            if defined($zone_cfg->{ids}->{$id}->{nodes})
+            && !$zone_cfg->{ids}->{$id}->{nodes}->{$nodename};
+        $zone_status->{$id}->{status} = $err_config ? 'pending' : 'available';
     }
 
-    foreach my $id (sort keys %{$vnet_cfg->{ids}}) {
-	my $vnet = $vnet_cfg->{ids}->{$id};
-	my $zone = $vnet->{zone};
-	next if !defined($zone);
+    foreach my $id (sort keys %{ $vnet_cfg->{ids} }) {
+        my $vnet = $vnet_cfg->{ids}->{$id};
+        my $zone = $vnet->{zone};
+        next if !defined($zone);
 
-	my $plugin_config = $zone_cfg->{ids}->{$zone};
+        my $plugin_config = $zone_cfg->{ids}->{$zone};
 
-	if (!defined($plugin_config)) {
-	    $vnet_status->{$id}->{status} = 'error';
-	    $vnet_status->{$id}->{statusmsg} = "unknown zone '$zone' configured";
-	    next;
-	}
+        if (!defined($plugin_config)) {
+            $vnet_status->{$id}->{status} = 'error';
+            $vnet_status->{$id}->{statusmsg} = "unknown zone '$zone' configured";
+            next;
+        }
 
-	next if defined($plugin_config->{nodes}) && !$plugin_config->{nodes}->{$nodename};
+        next if defined($plugin_config->{nodes}) && !$plugin_config->{nodes}->{$nodename};
 
-	$vnet_status->{$id}->{zone} = $zone;
-	$vnet_status->{$id}->{status} = 'available';
+        $vnet_status->{$id}->{zone} = $zone;
+        $vnet_status->{$id}->{status} = 'available';
 
-	if ($err_config) {
-	    $vnet_status->{$id}->{status} = 'pending';
-	    $vnet_status->{$id}->{statusmsg} = $err_config;
-	    next;
-	}
+        if ($err_config) {
+            $vnet_status->{$id}->{status} = 'pending';
+            $vnet_status->{$id}->{statusmsg} = $err_config;
+            next;
+        }
 
-	my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
-	my $err_msg = $plugin->status($plugin_config, $zone, $id, $vnet, $status);
-	if (@{$err_msg} > 0) {
-	    $vnet_status->{$id}->{status} = 'error';
-	    $vnet_status->{$id}->{statusmsg} = join(',', @{$err_msg});
-	    $zone_status->{$zone}->{status} = 'error';
-	}
+        my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
+        my $err_msg = $plugin->status($plugin_config, $zone, $id, $vnet, $status);
+        if (@{$err_msg} > 0) {
+            $vnet_status->{$id}->{status} = 'error';
+            $vnet_status->{$id}->{statusmsg} = join(',', @{$err_msg});
+            $zone_status->{$zone}->{status} = 'error';
+        }
     }
 
     return ($zone_status, $vnet_status);
@@ -297,8 +307,8 @@ sub tap_create {
 
     my $vnet = PVE::Network::SDN::Vnets::get_vnet($bridge, 1);
     if (!$vnet) { # fallback for classic bridge
-	PVE::Network::tap_create($iface, $bridge);
-	return;
+        PVE::Network::tap_create($iface, $bridge);
+        return;
     }
 
     my $plugin_config = get_plugin_config($vnet);
@@ -311,8 +321,8 @@ sub veth_create {
 
     my $vnet = PVE::Network::SDN::Vnets::get_vnet($bridge, 1);
     if (!$vnet) { # fallback for classic bridge
-	PVE::Network::veth_create($veth, $vethpeer, $bridge, $hwaddr);
-	return;
+        PVE::Network::veth_create($veth, $vethpeer, $bridge, $hwaddr);
+        return;
     }
 
     my $plugin_config = get_plugin_config($vnet);
@@ -325,18 +335,20 @@ sub tap_plug {
 
     my $vnet = PVE::Network::SDN::Vnets::get_vnet($bridge, 1);
     if (!$vnet) { # fallback for classic bridge
-	my $interfaces_config = PVE::INotify::read_file('interfaces');
-	my $opts = {};
-	$opts->{learning} = 0 if $interfaces_config->{ifaces}->{$bridge} && $interfaces_config->{ifaces}->{$bridge}->{'bridge-disable-mac-learning'};
-	PVE::Network::tap_plug($iface, $bridge, $tag, $firewall, $trunks, $rate, $opts);
-	return;
+        my $interfaces_config = PVE::INotify::read_file('interfaces');
+        my $opts = {};
+        $opts->{learning} = 0
+            if $interfaces_config->{ifaces}->{$bridge}
+            && $interfaces_config->{ifaces}->{$bridge}->{'bridge-disable-mac-learning'};
+        PVE::Network::tap_plug($iface, $bridge, $tag, $firewall, $trunks, $rate, $opts);
+        return;
     }
 
     my $plugin_config = get_plugin_config($vnet);
     my $nodename = PVE::INotify::nodename();
 
     die "vnet $bridge is not allowed on this node\n"
-	if $plugin_config->{nodes} && !defined($plugin_config->{nodes}->{$nodename});
+        if $plugin_config->{nodes} && !defined($plugin_config->{nodes}->{$nodename});
 
     my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
     $plugin->tap_plug($plugin_config, $vnet, $tag, $iface, $bridge, $firewall, $trunks, $rate);
@@ -347,8 +359,8 @@ sub add_bridge_fdb {
 
     my $vnet = PVE::Network::SDN::Vnets::get_vnet($bridge, 1);
     if (!$vnet) { # fallback for classic bridge
-	PVE::Network::add_bridge_fdb($iface, $macaddr);
-	return;
+        PVE::Network::add_bridge_fdb($iface, $macaddr);
+        return;
     }
 
     my $plugin_config = get_plugin_config($vnet);
@@ -361,8 +373,8 @@ sub del_bridge_fdb {
 
     my $vnet = PVE::Network::SDN::Vnets::get_vnet($bridge, 1);
     if (!$vnet) { # fallback for classic bridge
-	PVE::Network::del_bridge_fdb($iface, $macaddr);
-	return;
+        PVE::Network::del_bridge_fdb($iface, $macaddr);
+        return;
     }
 
     my $plugin_config = get_plugin_config($vnet);

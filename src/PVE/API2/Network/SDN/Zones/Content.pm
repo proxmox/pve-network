@@ -14,71 +14,75 @@ use PVE::Network::SDN;
 
 use base qw(PVE::RESTHandler);
 
-__PACKAGE__->register_method ({
+__PACKAGE__->register_method({
     name => 'index',
     path => '',
     method => 'GET',
     description => "List zone content.",
     permissions => {
-	check => ['perm', '/sdn/zones/{zone}', ['SDN.Audit'], any => 1],
+        check => ['perm', '/sdn/zones/{zone}', ['SDN.Audit'], any => 1],
     },
     protected => 1,
     proxyto => 'node',
     parameters => {
-    	additionalProperties => 0,
-	properties => {
-	    node => get_standard_option('pve-node'),
-	    zone => get_standard_option('pve-sdn-zone-id', {
-		completion => \&PVE::Network::SDN::Zones::complete_sdn_zone,
-            }),
-	},
+        additionalProperties => 0,
+        properties => {
+            node => get_standard_option('pve-node'),
+            zone => get_standard_option(
+                'pve-sdn-zone-id',
+                {
+                    completion => \&PVE::Network::SDN::Zones::complete_sdn_zone,
+                },
+            ),
+        },
     },
     returns => {
-	type => 'array',
-	items => {
-	    type => "object",
-	    properties => {
-		vnet => {
-		    description => "Vnet identifier.",
-		    type => 'string',
-		},
-		status => {
-		    description => "Status.",
-		    type => 'string',
-		    optional => 1,
-		},
-		statusmsg => {
-		    description => "Status details",
-		    type => 'string',
-		    optional => 1,
-		},
-	    },
-	},
-	links => [ { rel => 'child', href => "{vnet}" } ],
+        type => 'array',
+        items => {
+            type => "object",
+            properties => {
+                vnet => {
+                    description => "Vnet identifier.",
+                    type => 'string',
+                },
+                status => {
+                    description => "Status.",
+                    type => 'string',
+                    optional => 1,
+                },
+                statusmsg => {
+                    description => "Status details",
+                    type => 'string',
+                    optional => 1,
+                },
+            },
+        },
+        links => [{ rel => 'child', href => "{vnet}" }],
     },
     code => sub {
-	my ($param) = @_;
+        my ($param) = @_;
 
-	my $rpcenv = PVE::RPCEnvironment::get();
+        my $rpcenv = PVE::RPCEnvironment::get();
 
-	my $authuser = $rpcenv->get_user();
+        my $authuser = $rpcenv->get_user();
 
-	my $zoneid = $param->{zone};
+        my $zoneid = $param->{zone};
 
-	my $res = [];
+        my $res = [];
 
         my ($zone_status, $vnet_status) = PVE::Network::SDN::status();
 
-	foreach my $id (keys %{$vnet_status}) {
-	    if ($vnet_status->{$id}->{zone} eq $zoneid) {
-		my $item->{vnet} = $id;
-		$item->{status} = $vnet_status->{$id}->{'status'};
-		$item->{statusmsg} = $vnet_status->{$id}->{'statusmsg'};
-		push @$res,$item;
-	    }
+        foreach my $id (keys %{$vnet_status}) {
+            if ($vnet_status->{$id}->{zone} eq $zoneid) {
+                my $item->{vnet} = $id;
+                $item->{status} = $vnet_status->{$id}->{'status'};
+                $item->{statusmsg} = $vnet_status->{$id}->{'statusmsg'};
+                push @$res, $item;
+            }
         }
 
-	return $res;
-    }});
+        return $res;
+    },
+});
 
 1;

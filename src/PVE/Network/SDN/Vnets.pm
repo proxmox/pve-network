@@ -30,8 +30,8 @@ sub config {
     my ($running) = @_;
 
     if ($running) {
-	my $cfg = PVE::Network::SDN::running_config();
-	return $cfg->{vnets};
+        my $cfg = PVE::Network::SDN::running_config();
+        return $cfg->{vnets};
     }
 
     return cfs_read_file("sdn/vnets.cfg");
@@ -46,7 +46,7 @@ sub write_config {
 sub sdn_vnets_ids {
     my ($cfg) = @_;
 
-    return sort keys %{$cfg->{ids}};
+    return sort keys %{ $cfg->{ids} };
 }
 
 sub complete_sdn_vnet {
@@ -54,7 +54,7 @@ sub complete_sdn_vnet {
 
     my $cfg = PVE::Network::SDN::Vnets::config();
 
-    return  $cmdname eq 'add' ? [] : [ PVE::Network::SDN::Vnets::sdn_vnet_ids($cfg) ];
+    return $cmdname eq 'add' ? [] : [PVE::Network::SDN::Vnets::sdn_vnet_ids($cfg)];
 }
 
 sub get_vnet {
@@ -72,10 +72,10 @@ sub get_subnets {
     my $subnets = undef;
     my $subnets_cfg = PVE::Network::SDN::Subnets::config($running);
 
-    foreach my $subnetid (sort keys %{$subnets_cfg->{ids}}) {
-	my $subnet = PVE::Network::SDN::Subnets::sdn_subnets_config($subnets_cfg, $subnetid);
-	next if !$subnet->{vnet} || ($vnetid && $subnet->{vnet} ne $vnetid);
-	$subnets->{$subnetid} = $subnet;
+    foreach my $subnetid (sort keys %{ $subnets_cfg->{ids} }) {
+        my $subnet = PVE::Network::SDN::Subnets::sdn_subnets_config($subnets_cfg, $subnetid);
+        next if !$subnet->{vnet} || ($vnetid && $subnet->{vnet} ne $vnetid);
+        $subnets->{$subnetid} = $subnet;
     }
 
     return $subnets;
@@ -111,36 +111,47 @@ sub add_next_free_cidr {
 
     my @ipversions = defined($ipversion) ? ($ipversion) : qw/ 4 6 /;
     for my $ipversion (@ipversions) {
-	my $ip = undef;
-	my $subnetcount = 0;
-	foreach my $subnetid (sort keys %{$subnets}) {
-	    my $subnet = $subnets->{$subnetid};
-	    my $network = $subnet->{network};
+        my $ip = undef;
+        my $subnetcount = 0;
+        foreach my $subnetid (sort keys %{$subnets}) {
+            my $subnet = $subnets->{$subnetid};
+            my $network = $subnet->{network};
 
-	    next if Net::IP::ip_get_version($network) != $ipversion || $ips->{$ipversion};
-	    $subnetcount++;
+            next if Net::IP::ip_get_version($network) != $ipversion || $ips->{$ipversion};
+            $subnetcount++;
 
-	    eval {
-		$ip = PVE::Network::SDN::Subnets::add_next_free_ip($zone, $subnetid, $subnet, $hostname, $mac, $vmid, $skipdns, $subnet->{'dhcp-range'});
-	    };
-	    die $@ if $@;
+            eval {
+                $ip = PVE::Network::SDN::Subnets::add_next_free_ip(
+                    $zone,
+                    $subnetid,
+                    $subnet,
+                    $hostname,
+                    $mac,
+                    $vmid,
+                    $skipdns,
+                    $subnet->{'dhcp-range'},
+                );
+            };
+            die $@ if $@;
 
-	    if ($ip) {
-		$ips->{$ipversion} = $ip;
-		last;
-	    }
-	}
+            if ($ip) {
+                $ips->{$ipversion} = $ip;
+                last;
+            }
+        }
 
-	if (!$ip && $subnetcount > 0) {
-	    foreach my $version (sort keys %{$ips}) {
-		my $ip = $ips->{$version};
-		my ($subnetid, $subnet) = PVE::Network::SDN::Subnets::find_ip_subnet($ip, $subnets);
+        if (!$ip && $subnetcount > 0) {
+            foreach my $version (sort keys %{$ips}) {
+                my $ip = $ips->{$version};
+                my ($subnetid, $subnet) = PVE::Network::SDN::Subnets::find_ip_subnet($ip, $subnets);
 
-		PVE::Network::SDN::Subnets::del_ip($zone, $subnetid, $subnet, $ip, $hostname, $mac, $skipdns);
-	    }
+                PVE::Network::SDN::Subnets::del_ip(
+                    $zone, $subnetid, $subnet, $ip, $hostname, $mac, $skipdns,
+                );
+            }
 
-	    die "can't find any free ip in zone $zoneid for IPv$ipversion";
-	}
+            die "can't find any free ip in zone $zoneid for IPv$ipversion";
+        }
     }
 }
 
@@ -148,9 +159,12 @@ sub add_ip {
     my ($vnetid, $ip, $hostname, $mac, $vmid, $skipdns) = @_;
 
     return if !$vnetid;
-    
-    my ($zone, $subnetid, $subnet) = PVE::Network::SDN::Vnets::get_subnet_from_vnet_ip($vnetid, $ip);
-    PVE::Network::SDN::Subnets::add_ip($zone, $subnetid, $subnet, $ip, $hostname, $mac, $vmid, undef, $skipdns);
+
+    my ($zone, $subnetid, $subnet) =
+        PVE::Network::SDN::Vnets::get_subnet_from_vnet_ip($vnetid, $ip);
+    PVE::Network::SDN::Subnets::add_ip(
+        $zone, $subnetid, $subnet, $ip, $hostname, $mac, $vmid, undef, $skipdns,
+    );
 }
 
 sub update_ip {
@@ -158,8 +172,11 @@ sub update_ip {
 
     return if !$vnetid;
 
-    my ($zone, $subnetid, $subnet) = PVE::Network::SDN::Vnets::get_subnet_from_vnet_ip($vnetid, $ip);
-    PVE::Network::SDN::Subnets::update_ip($zone, $subnetid, $subnet, $ip, $hostname, $oldhostname, $mac, $vmid, $skipdns);
+    my ($zone, $subnetid, $subnet) =
+        PVE::Network::SDN::Vnets::get_subnet_from_vnet_ip($vnetid, $ip);
+    PVE::Network::SDN::Subnets::update_ip(
+        $zone, $subnetid, $subnet, $ip, $hostname, $oldhostname, $mac, $vmid, $skipdns,
+    );
 }
 
 sub del_ip {
@@ -167,7 +184,8 @@ sub del_ip {
 
     return if !$vnetid;
 
-    my ($zone, $subnetid, $subnet) = PVE::Network::SDN::Vnets::get_subnet_from_vnet_ip($vnetid, $ip);
+    my ($zone, $subnetid, $subnet) =
+        PVE::Network::SDN::Vnets::get_subnet_from_vnet_ip($vnetid, $ip);
     PVE::Network::SDN::Subnets::del_ip($zone, $subnetid, $subnet, $ip, $hostname, $mac, $skipdns);
 }
 
@@ -206,8 +224,8 @@ sub add_dhcp_mapping {
     return if !$zone->{ipam} || !$zone->{dhcp};
 
     my ($ip4, $ip6) = PVE::Network::SDN::Vnets::get_ips_from_mac($vnetid, $mac);
-    add_next_free_cidr($vnetid, $name, $mac, "$vmid", undef, 1, 4) if ! $ip4;
-    add_next_free_cidr($vnetid, $name, $mac, "$vmid", undef, 1, 6) if ! $ip6;
+    add_next_free_cidr($vnetid, $name, $mac, "$vmid", undef, 1, 4) if !$ip4;
+    add_next_free_cidr($vnetid, $name, $mac, "$vmid", undef, 1, 6) if !$ip6;
 
     ($ip4, $ip6) = PVE::Network::SDN::Vnets::get_ips_from_mac($vnetid, $mac);
     PVE::Network::SDN::Dhcp::add_mapping($vnetid, $mac, $ip4, $ip6) if $ip4 || $ip6;

@@ -30,9 +30,7 @@ my $parse_running_cfg = sub {
 
     return $cfg if !defined($raw) || $raw eq '';
 
-    eval {
-	$cfg = from_json($raw);
-    };
+    eval { $cfg = from_json($raw); };
     return {} if $@;
 
     return $cfg;
@@ -48,30 +46,27 @@ my $write_running_cfg = sub {
 
 PVE::Cluster::cfs_register_file($running_cfg, $parse_running_cfg, $write_running_cfg);
 
-
 # improve me : move status code inside plugins ?
 
 sub ifquery_check {
 
-    my $cmd = ['ifquery', '-a', '-c', '-o','json'];
+    my $cmd = ['ifquery', '-a', '-c', '-o', 'json'];
 
     my $result = '';
     my $reader = sub { $result .= shift };
 
-    eval {
-	run_command($cmd, outfunc => $reader);
-    };
+    eval { run_command($cmd, outfunc => $reader); };
 
     my $resultjson = decode_json($result);
     my $interfaces = {};
 
     foreach my $interface (@$resultjson) {
-	my $name = $interface->{name};
-	$interfaces->{$name} = {
-	    status => $interface->{status},
-	    config => $interface->{config},
-	    config_status => $interface->{config_status},
-	};
+        my $name = $interface->{name};
+        $interfaces->{$name} = {
+            status => $interface->{status},
+            config => $interface->{config},
+            config_status => $interface->{config_status},
+        };
     }
 
     return $interfaces;
@@ -80,7 +75,7 @@ sub ifquery_check {
 sub status {
 
     my ($zone_status, $vnet_status) = PVE::Network::SDN::Zones::status();
-    return($zone_status, $vnet_status);
+    return ($zone_status, $vnet_status);
 }
 
 sub running_config {
@@ -96,45 +91,50 @@ sub pending_config {
     my $config_objects = $cfg->{ids};
 
     foreach my $id (sort keys %{$running_objects}) {
-	my $running_object = $running_objects->{$id};
-	my $config_object = $config_objects->{$id};
-	foreach my $key (sort keys %{$running_object}) {
-	    $pending->{$id}->{$key} = $running_object->{$key};
-	    if(!keys %{$config_object}) {
-		$pending->{$id}->{state} = "deleted";
-	    } elsif (!defined($config_object->{$key})) {
-		$pending->{$id}->{"pending"}->{$key} = 'deleted';
-		$pending->{$id}->{state} = "changed";
-	    } elsif (PVE::Network::SDN::encode_value(undef, $key, $running_object->{$key})
-			 ne PVE::Network::SDN::encode_value(undef, $key, $config_object->{$key})) {
-		$pending->{$id}->{state} = "changed";
-	    }
-	}
-	$pending->{$id}->{"pending"} = {} if $pending->{$id}->{state} && !defined($pending->{$id}->{"pending"});
+        my $running_object = $running_objects->{$id};
+        my $config_object = $config_objects->{$id};
+        foreach my $key (sort keys %{$running_object}) {
+            $pending->{$id}->{$key} = $running_object->{$key};
+            if (!keys %{$config_object}) {
+                $pending->{$id}->{state} = "deleted";
+            } elsif (!defined($config_object->{$key})) {
+                $pending->{$id}->{"pending"}->{$key} = 'deleted';
+                $pending->{$id}->{state} = "changed";
+            } elsif (PVE::Network::SDN::encode_value(undef, $key, $running_object->{$key}) ne
+                PVE::Network::SDN::encode_value(undef, $key, $config_object->{$key})
+            ) {
+                $pending->{$id}->{state} = "changed";
+            }
+        }
+        $pending->{$id}->{"pending"} = {}
+            if $pending->{$id}->{state} && !defined($pending->{$id}->{"pending"});
     }
 
-   foreach my $id (sort keys %{$config_objects}) {
-	my $running_object = $running_objects->{$id};
-	my $config_object = $config_objects->{$id};
+    foreach my $id (sort keys %{$config_objects}) {
+        my $running_object = $running_objects->{$id};
+        my $config_object = $config_objects->{$id};
 
-	foreach my $key (sort keys %{$config_object}) {
-	    my $config_value = PVE::Network::SDN::encode_value(undef, $key, $config_object->{$key});
-	    my $running_value = PVE::Network::SDN::encode_value(undef, $key, $running_object->{$key});
-	    if($key eq 'type' || $key eq 'vnet') {
-		$pending->{$id}->{$key} = $config_value;
-	    } else {
-		$pending->{$id}->{"pending"}->{$key} = $config_value if !defined($running_value) || ($config_value ne $running_value);
-	    }
-	    if(!keys %{$running_object}) {
-		$pending->{$id}->{state} = "new";
-	    } elsif (!defined($running_value) && defined($config_value)) {
-		$pending->{$id}->{state} = "changed";
-	    }
-	}
-	$pending->{$id}->{"pending"} = {} if  $pending->{$id}->{state} && !defined($pending->{$id}->{"pending"});
-   }
+        foreach my $key (sort keys %{$config_object}) {
+            my $config_value = PVE::Network::SDN::encode_value(undef, $key, $config_object->{$key});
+            my $running_value =
+                PVE::Network::SDN::encode_value(undef, $key, $running_object->{$key});
+            if ($key eq 'type' || $key eq 'vnet') {
+                $pending->{$id}->{$key} = $config_value;
+            } else {
+                $pending->{$id}->{"pending"}->{$key} = $config_value
+                    if !defined($running_value) || ($config_value ne $running_value);
+            }
+            if (!keys %{$running_object}) {
+                $pending->{$id}->{state} = "new";
+            } elsif (!defined($running_value) && defined($config_value)) {
+                $pending->{$id}->{state} = "changed";
+            }
+        }
+        $pending->{$id}->{"pending"} = {}
+            if $pending->{$id}->{state} && !defined($pending->{$id}->{"pending"});
+    }
 
-   return {ids => $pending};
+    return { ids => $pending };
 
 }
 
@@ -144,9 +144,9 @@ sub commit_config {
     my $version = $cfg->{version};
 
     if ($version) {
-	$version++;
+        $version++;
     } else {
-	$version = 1;
+        $version = 1;
     }
 
     my $vnets_cfg = PVE::Network::SDN::Vnets::config();
@@ -159,7 +159,13 @@ sub commit_config {
     my $controllers = { ids => $controllers_cfg->{ids} };
     my $subnets = { ids => $subnets_cfg->{ids} };
 
-    $cfg = { version => $version, vnets => $vnets, zones => $zones, controllers => $controllers, subnets => $subnets };
+    $cfg = {
+        version => $version,
+        vnets => $vnets,
+        zones => $zones,
+        controllers => $controllers,
+        subnets => $subnets,
+    };
 
     cfs_write_file($running_cfg, $cfg);
 }
@@ -192,21 +198,27 @@ sub get_local_vnets {
 
     foreach my $vnetid (@vnetids) {
 
-	my $vnet = PVE::Network::SDN::Vnets::sdn_vnets_config($vnets_cfg, $vnetid);
-	my $zoneid = $vnet->{zone};
-	my $comments = $vnet->{alias};
+        my $vnet = PVE::Network::SDN::Vnets::sdn_vnets_config($vnets_cfg, $vnetid);
+        my $zoneid = $vnet->{zone};
+        my $comments = $vnet->{alias};
 
-	my $privs = [ 'SDN.Audit', 'SDN.Use' ];
+        my $privs = ['SDN.Audit', 'SDN.Use'];
 
-	next if !$zoneid;
-	next if !$rpcenv->check_sdn_bridge($authuser, $zoneid, $vnetid, $privs, 1);
+        next if !$zoneid;
+        next if !$rpcenv->check_sdn_bridge($authuser, $zoneid, $vnetid, $privs, 1);
 
-	my $zone_config = PVE::Network::SDN::Zones::sdn_zones_config($zones_cfg, $zoneid);
+        my $zone_config = PVE::Network::SDN::Zones::sdn_zones_config($zones_cfg, $zoneid);
 
-	next if defined($zone_config->{nodes}) && !$zone_config->{nodes}->{$nodename};
-	my $ipam = $zone_config->{ipam} ? 1 : 0;
-	my $vlanaware = $vnet->{vlanaware} ? 1 : 0;
-	$vnets->{$vnetid} = { type => 'vnet', active => '1', ipam => $ipam, vlanaware => $vlanaware, comments => $comments };
+        next if defined($zone_config->{nodes}) && !$zone_config->{nodes}->{$nodename};
+        my $ipam = $zone_config->{ipam} ? 1 : 0;
+        my $vlanaware = $vnet->{vlanaware} ? 1 : 0;
+        $vnets->{$vnetid} = {
+            type => 'vnet',
+            active => '1',
+            ipam => $ipam,
+            vlanaware => $vlanaware,
+            comments => $comments,
+        };
     }
 
     return $vnets;
@@ -215,13 +227,14 @@ sub get_local_vnets {
 sub generate_zone_config {
     my $raw_config = PVE::Network::SDN::Zones::generate_etc_network_config();
     if ($raw_config) {
-	eval {
-	    my $net_cfg = PVE::INotify::read_file('interfaces', 1);
-	    my $opts = $net_cfg->{data}->{options};
-	    log_warn("missing 'source /etc/network/interfaces.d/sdn' directive for SDN support!\n")
-		if ! grep { $_->[1] =~ m!^source /etc/network/interfaces.d/(:?sdn|\*)! } @$opts;
-	};
-	log_warn("Failed to read network interfaces definition - $@") if $@;
+        eval {
+            my $net_cfg = PVE::INotify::read_file('interfaces', 1);
+            my $opts = $net_cfg->{data}->{options};
+            log_warn(
+                "missing 'source /etc/network/interfaces.d/sdn' directive for SDN support!\n")
+                if !grep { $_->[1] =~ m!^source /etc/network/interfaces.d/(:?sdn|\*)! } @$opts;
+        };
+        log_warn("Failed to read network interfaces definition - $@") if $@;
     }
     PVE::Network::SDN::Zones::write_etc_network_config($raw_config);
 }
@@ -245,18 +258,17 @@ sub encode_value {
     my ($type, $key, $value) = @_;
 
     if ($key eq 'nodes' || $key eq 'exitnodes' || $key eq 'dhcp-range') {
-	if (ref($value) eq 'HASH') {
-	    return join(',', sort keys(%$value));
-	} elsif (ref($value) eq 'ARRAY') {
-	    return join(',', sort @$value);
-	} else {
-	    return $value;
-	}
+        if (ref($value) eq 'HASH') {
+            return join(',', sort keys(%$value));
+        } elsif (ref($value) eq 'ARRAY') {
+            return join(',', sort @$value);
+        } else {
+            return $value;
+        }
     }
 
     return $value;
 }
-
 
 #helpers
 sub api_request {
@@ -264,48 +276,48 @@ sub api_request {
 
     my $encoded_data = $data ? to_json($data) : undef;
 
-    my $req = HTTP::Request->new($method,$url, $headers, $encoded_data);
+    my $req = HTTP::Request->new($method, $url, $headers, $encoded_data);
 
     my $ua = LWP::UserAgent->new(protocols_allowed => ['http', 'https'], timeout => 30);
     my $datacenter_cfg = PVE::Cluster::cfs_read_file('datacenter.cfg');
     if (my $proxy = $datacenter_cfg->{http_proxy}) {
-	$ua->proxy(['http', 'https'], $proxy);
+        $ua->proxy(['http', 'https'], $proxy);
     } else {
-	$ua->env_proxy;
+        $ua->env_proxy;
     }
 
     if (defined($expected_fingerprint)) {
-	my $ssl_verify_callback = sub {
-	    my (undef, undef, undef, undef, $cert, $depth) = @_;
+        my $ssl_verify_callback = sub {
+            my (undef, undef, undef, undef, $cert, $depth) = @_;
 
-	    # we don't care about intermediate or root certificates, always return as valid as the
-	    # callback will be executed for all levels and all must be valid.
-	    return 1 if $depth != 0;
+            # we don't care about intermediate or root certificates, always return as valid as the
+            # callback will be executed for all levels and all must be valid.
+            return 1 if $depth != 0;
 
-	    my $fingerprint = Net::SSLeay::X509_get_fingerprint($cert, 'sha256');
+            my $fingerprint = Net::SSLeay::X509_get_fingerprint($cert, 'sha256');
 
-	    return $fingerprint eq $expected_fingerprint ? 1 : 0;
-	};
-	$ua->ssl_opts(
-	    verify_hostname => 0,
-	    SSL_verify_mode => SSL_VERIFY_PEER,
-	    SSL_verify_callback => $ssl_verify_callback,
-	);
+            return $fingerprint eq $expected_fingerprint ? 1 : 0;
+        };
+        $ua->ssl_opts(
+            verify_hostname => 0,
+            SSL_verify_mode => SSL_VERIFY_PEER,
+            SSL_verify_callback => $ssl_verify_callback,
+        );
     }
 
     my $response = $ua->request($req);
 
     if (!$response->is_success) {
-	my $msg = $response->message || 'unknown';
-	my $code = $response->code;
-	die "Invalid response from server: $code $msg\n";
+        my $msg = $response->message || 'unknown';
+        my $code = $response->code;
+        die "Invalid response from server: $code $msg\n";
     }
 
     my $raw = '';
     if (defined($response->decoded_content)) {
-	$raw = $response->decoded_content;
+        $raw = $response->decoded_content;
     } else {
-	$raw = $response->content;
+        $raw = $response->content;
     }
     return if $raw eq '';
 

@@ -18,37 +18,40 @@ sub type {
 }
 
 PVE::JSONSchema::register_format('pve-sdn-isis-net', \&pve_verify_sdn_isis_net);
+
 sub pve_verify_sdn_isis_net {
     my ($net) = @_;
 
     if ($net !~ m/^[a-fA-F0-9]{2}(\.[a-fA-F0-9]{4}){3,9}\.[a-fA-F0-9]{2}$/) {
-	die "value does not look like a valid isis net\n";
+        die "value does not look like a valid isis net\n";
     }
     return $net;
 }
 
 sub properties {
     return {
-	'isis-domain' => {
-	    description => "ISIS domain.",
-	    type => 'string'
-	},
-	'isis-ifaces' => {
-	    description => "ISIS interface.",
-	    type => 'string', format => 'pve-iface-list',
-	},
-	'isis-net' => {
-	    description => "ISIS network entity title.",
-	    type => 'string', format => 'pve-sdn-isis-net',
-	},
+        'isis-domain' => {
+            description => "ISIS domain.",
+            type => 'string',
+        },
+        'isis-ifaces' => {
+            description => "ISIS interface.",
+            type => 'string',
+            format => 'pve-iface-list',
+        },
+        'isis-net' => {
+            description => "ISIS network entity title.",
+            type => 'string',
+            format => 'pve-sdn-isis-net',
+        },
     };
 }
 
 sub options {
     return {
-	'isis-domain' => { optional => 0 },
-	'isis-net' => { optional => 0 },
-	'isis-ifaces' => { optional => 0 },
+        'isis-domain' => { optional => 0 },
+        'isis-net' => { optional => 0 },
+        'isis-ifaces' => { optional => 0 },
         'node' => { optional => 0 },
         'loopback' => { optional => 1 },
     };
@@ -67,21 +70,19 @@ sub generate_controller_config {
     return if $local_node ne $plugin_config->{node};
 
     my @router_config = (
-	"net $isis_net",
-	"redistribute ipv4 connected level-1",
-	"redistribute ipv6 connected level-1",
-	"log-adjacency-changes",
+        "net $isis_net",
+        "redistribute ipv4 connected level-1",
+        "redistribute ipv6 connected level-1",
+        "log-adjacency-changes",
     );
 
-    push(@{$config->{frr}->{router}->{"isis $isis_domain"}}, @router_config);
+    push(@{ $config->{frr}->{router}->{"isis $isis_domain"} }, @router_config);
 
-    my @iface_config = (
-	"ip router isis $isis_domain"
-    );
+    my @iface_config = ("ip router isis $isis_domain");
 
     my @ifaces = PVE::Tools::split_list($isis_ifaces);
     for my $iface (sort @ifaces) {
-	push(@{$config->{frr_interfaces}->{$iface}}, @iface_config);
+        push(@{ $config->{frr_interfaces}->{$iface} }, @iface_config);
     }
 
     return $config;
@@ -103,7 +104,7 @@ sub on_update_hook {
     # we can only have 1 bgp controller by node
     my $local_node = PVE::INotify::nodename();
     my $controllernb = 0;
-    foreach my $id (keys %{$controller_cfg->{ids}}) {
+    foreach my $id (keys %{ $controller_cfg->{ids} }) {
         next if $id eq $controllerid;
         my $controller = $controller_cfg->{ids}->{$id};
         next if $controller->{type} ne "isis";
@@ -129,5 +130,4 @@ sub reload_controller {
 }
 
 1;
-
 

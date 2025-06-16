@@ -14,22 +14,22 @@ sub type {
 
 sub properties {
     return {
-	url => {
-	    type => 'string',
-	},
-	token => {
-	    type => 'string',
-	},
-	section => {
-	    type => 'integer',
-	},
+        url => {
+            type => 'string',
+        },
+        token => {
+            type => 'string',
+        },
+        section => {
+            type => 'integer',
+        },
     };
 }
 
 sub options {
 
     return {
-        url => { optional => 0},
+        url => { optional => 0 },
         token => { optional => 0 },
         section => { optional => 0 },
         fingerprint => { optional => 1 },
@@ -56,14 +56,18 @@ sub add_subnet {
 
     #create subnet
     if (!$internalid) {
-	my $params = {
-	    subnet => $network,
-	    mask => $mask,
-	    sectionId => $section,
-	};
+        my $params = {
+            subnet => $network,
+            mask => $mask,
+            sectionId => $section,
+        };
 
-	eval { PVE::Network::SDN::api_request("POST", "$url/subnets/", $headers, $params, $fingerprint) };
-	die "error add subnet to ipam: $@" if $@ && !$noerr;
+        eval {
+            PVE::Network::SDN::api_request(
+                "POST", "$url/subnets/", $headers, $params, $fingerprint,
+            );
+        };
+        die "error add subnet to ipam: $@" if $@ && !$noerr;
     }
 }
 
@@ -86,12 +90,27 @@ sub del_subnet {
 
     return; #fixme: check that prefix is empty exluding gateway, before delete
 
-    eval { PVE::Network::SDN::api_request("DELETE", "$url/subnets/$internalid", $headers, undef, $fingerprint) };
+    eval {
+        PVE::Network::SDN::api_request(
+            "DELETE", "$url/subnets/$internalid", $headers, undef, $fingerprint,
+        );
+    };
     die "error deleting subnet from ipam: $@" if $@ && !$noerr;
 }
 
 sub add_ip {
-    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway, $noerr) = @_;
+    my (
+        $class,
+        $plugin_config,
+        $subnetid,
+        $subnet,
+        $ip,
+        $hostname,
+        $mac,
+        $description,
+        $is_gateway,
+        $noerr,
+    ) = @_;
 
     my $cidr = $subnet->{cidr};
     my $url = $plugin_config->{url};
@@ -102,29 +121,43 @@ sub add_ip {
     my $internalid = get_prefix_id($url, $cidr, $headers);
 
     my $params = {
-	ip => $ip,
-	subnetId => $internalid,
-	hostname => $hostname,
-	description => $description,
+        ip => $ip,
+        subnetId => $internalid,
+        hostname => $hostname,
+        description => $description,
     };
     $params->{is_gateway} = 1 if $is_gateway;
     $params->{mac} = $mac if $mac;
 
     eval {
-	PVE::Network::SDN::api_request("POST", "$url/addresses/", $headers, $params, $fingerprint);
+        PVE::Network::SDN::api_request(
+            "POST", "$url/addresses/", $headers, $params, $fingerprint,
+        );
     };
 
     if ($@) {
-	if($is_gateway) {
-	    die "error add subnet ip to ipam: ip $ip already exist: $@" if !is_ip_gateway($url, $ip, $headers) && !$noerr;
-	} else {
-	    die "error add subnet ip to ipam: ip $ip already exist: $@" if !$noerr;
-	}
+        if ($is_gateway) {
+            die "error add subnet ip to ipam: ip $ip already exist: $@"
+                if !is_ip_gateway($url, $ip, $headers) && !$noerr;
+        } else {
+            die "error add subnet ip to ipam: ip $ip already exist: $@" if !$noerr;
+        }
     }
 }
 
 sub update_ip {
-    my ($class, $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $description, $is_gateway, $noerr) = @_;
+    my (
+        $class,
+        $plugin_config,
+        $subnetid,
+        $subnet,
+        $ip,
+        $hostname,
+        $mac,
+        $description,
+        $is_gateway,
+        $noerr,
+    ) = @_;
 
     my $cidr = $subnet->{cidr};
     my $url = $plugin_config->{url};
@@ -136,18 +169,20 @@ sub update_ip {
     die "can't find ip addresse in ipam" if !$ip_id;
 
     my $params = {
-	hostname => $hostname,
-	description => $description,
+        hostname => $hostname,
+        description => $description,
     };
     $params->{is_gateway} = 1 if $is_gateway;
     $params->{mac} = $mac if $mac;
 
     eval {
-	PVE::Network::SDN::api_request("PATCH", "$url/addresses/$ip_id", $headers, $params,$fingerprint);
+        PVE::Network::SDN::api_request(
+            "PATCH", "$url/addresses/$ip_id", $headers, $params, $fingerprint,
+        );
     };
 
     if ($@) {
-	die "ipam: error update subnet ip $ip: $@" if !$noerr;
+        die "ipam: error update subnet ip $ip: $@" if !$noerr;
     }
 }
 
@@ -164,16 +199,22 @@ sub add_next_freeip {
     my $internalid = get_prefix_id($url, $cidr, $headers);
 
     my $params = {
-	hostname => $hostname,
-	description => $description,
+        hostname => $hostname,
+        description => $description,
     };
 
     $params->{mac} = $mac if $mac;
 
     my $ip = undef;
     eval {
-	my $result = PVE::Network::SDN::api_request("POST", "$url/addresses/first_free/$internalid/", $headers, $params, $fingerprint);
-	$ip = $result->{data};
+        my $result = PVE::Network::SDN::api_request(
+            "POST",
+            "$url/addresses/first_free/$internalid/",
+            $headers,
+            $params,
+            $fingerprint,
+        );
+        $ip = $result->{data};
     };
 
     if ($@) {
@@ -209,16 +250,17 @@ sub del_ip {
     return if !$ip_id;
 
     eval {
-	PVE::Network::SDN::api_request("DELETE", "$url/addresses/$ip_id", $headers, undef, $fingerprint);
+        PVE::Network::SDN::api_request(
+            "DELETE", "$url/addresses/$ip_id", $headers, undef, $fingerprint,
+        );
     };
     if ($@) {
-	die "error delete ip $ip: $@" if !$noerr;
+        die "error delete ip $ip: $@" if !$noerr;
     }
 }
 
 sub get_ips_from_mac {
     my ($class, $plugin_config, $mac, $zoneid) = @_;
-
 
     my $url = $plugin_config->{url};
     my $token = $plugin_config->{token};
@@ -228,20 +270,28 @@ sub get_ips_from_mac {
     my $ip4 = undef;
     my $ip6 = undef;
 
-    my $ips = eval { PVE::Network::SDN::api_request("GET", "$url/addresses/search_mac/$mac", $headers, undef, $fingerprint) };
+    my $ips = eval {
+        PVE::Network::SDN::api_request(
+            "GET",
+            "$url/addresses/search_mac/$mac",
+            $headers,
+            undef,
+            $fingerprint,
+        );
+    };
     return if $@;
 
     #fixme
     die "parsing of result not yet implemented";
 
     for my $ip (@$ips) {
-#        if ($ip->{family}->{value} == 4 && !$ip4) {
-#            ($ip4, undef) = split(/\//, $ip->{address});
-#        }
-#
-#        if ($ip->{family}->{value} == 6 && !$ip6) {
-#            ($ip6, undef) = split(/\//, $ip->{address});
-#        }
+        #        if ($ip->{family}->{value} == 4 && !$ip4) {
+        #            ($ip4, undef) = split(/\//, $ip->{address});
+        #        }
+        #
+        #        if ($ip->{family}->{value} == 6 && !$ip6) {
+        #            ($ip6, undef) = split(/\//, $ip->{address});
+        #        }
     }
 
     return ($ip4, $ip6);
@@ -257,10 +307,12 @@ sub verify_api {
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Token' => $token];
 
     eval {
-	PVE::Network::SDN::api_request("GET", "$url/sections/$sectionid", $headers, undef, $fingerprint);
+        PVE::Network::SDN::api_request(
+            "GET", "$url/sections/$sectionid", $headers, undef, $fingerprint,
+        );
     };
     if ($@) {
-	die "Can't connect to phpipam api: $@";
+        die "Can't connect to phpipam api: $@";
     }
 }
 
@@ -270,14 +322,13 @@ sub on_update_hook {
     PVE::Network::SDN::Ipams::PhpIpamPlugin::verify_api($class, $plugin_config);
 }
 
-
 #helpers
 
 sub get_prefix_id {
     my ($url, $cidr, $headers) = @_;
 
     my $result = PVE::Network::SDN::api_request("GET", "$url/subnets/cidr/$cidr", $headers);
-    my $data = @{$result->{data}}[0];
+    my $data = @{ $result->{data} }[0];
     my $internalid = $data->{id};
     return $internalid;
 }
@@ -285,7 +336,7 @@ sub get_prefix_id {
 sub get_ip_id {
     my ($url, $ip, $headers) = @_;
     my $result = PVE::Network::SDN::api_request("GET", "$url/addresses/search/$ip", $headers);
-    my $data = @{$result->{data}}[0];
+    my $data = @{ $result->{data} }[0];
     my $ip_id = $data->{id};
     return $ip_id;
 }
@@ -293,11 +344,10 @@ sub get_ip_id {
 sub is_ip_gateway {
     my ($url, $ip, $headers) = @_;
     my $result = PVE::Network::SDN::api_request("GET", "$url/addresses/search/$ip", $headers);
-    my $data = @{$result->{data}}[0];
+    my $data = @{ $result->{data} }[0];
     my $is_gateway = $data->{is_gateway};
     return $is_gateway;
 }
 
 1;
-
 

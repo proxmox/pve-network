@@ -34,56 +34,58 @@ my $api_sdn_controllers_config = sub {
     return $scfg;
 };
 
-__PACKAGE__->register_method ({
+__PACKAGE__->register_method({
     name => 'index',
     path => '',
     method => 'GET',
     description => "SDN controllers index.",
     permissions => {
-	description => "Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/controllers/<controller>'",
-	user => 'all',
+        description =>
+            "Only list entries where you have 'SDN.Audit' or 'SDN.Allocate' permissions on '/sdn/controllers/<controller>'",
+        user => 'all',
     },
     parameters => {
-    	additionalProperties => 0,
-	properties => {
-	    type => {
-		description => "Only list sdn controllers of specific type",
-		type => 'string',
-		enum => $sdn_controllers_type_enum,
-		optional => 1,
-	    },
-	    running => {
-		type => 'boolean',
-		optional => 1,
-		description => "Display running config.",
-	    },
-	    pending => {
-		type => 'boolean',
-		optional => 1,
-		description => "Display pending config.",
-	    },
-	},
+        additionalProperties => 0,
+        properties => {
+            type => {
+                description => "Only list sdn controllers of specific type",
+                type => 'string',
+                enum => $sdn_controllers_type_enum,
+                optional => 1,
+            },
+            running => {
+                type => 'boolean',
+                optional => 1,
+                description => "Display running config.",
+            },
+            pending => {
+                type => 'boolean',
+                optional => 1,
+                description => "Display pending config.",
+            },
+        },
     },
     returns => {
-	type => 'array',
-	items => {
-	    type => "object",
-	    properties => { controller => { type => 'string' },
-			    type => { type => 'string' },
-			    state => { type => 'string', optional => 1 },
-			    pending => { type => 'boolean', optional => 1 },
-	    },
-	},
-	links => [ { rel => 'child', href => "{controller}" } ],
+        type => 'array',
+        items => {
+            type => "object",
+            properties => {
+                controller => { type => 'string' },
+                type => { type => 'string' },
+                state => { type => 'string', optional => 1 },
+                pending => { type => 'boolean', optional => 1 },
+            },
+        },
+        links => [{ rel => 'child', href => "{controller}" }],
     },
     code => sub {
-	my ($param) = @_;
+        my ($param) = @_;
 
-	my $rpcenv = PVE::RPCEnvironment::get();
-	my $authuser = $rpcenv->get_user();
+        my $rpcenv = PVE::RPCEnvironment::get();
+        my $authuser = $rpcenv->get_user();
 
         my $cfg = {};
-        if($param->{pending}) {
+        if ($param->{pending}) {
             my $running_cfg = PVE::Network::SDN::running_config();
             my $config = PVE::Network::SDN::Controllers::config();
             $cfg = PVE::Network::SDN::pending_config($running_cfg, $config, 'controllers');
@@ -94,54 +96,55 @@ __PACKAGE__->register_method ({
             $cfg = PVE::Network::SDN::Controllers::config();
         }
 
-	my @sids = PVE::Network::SDN::Controllers::sdn_controllers_ids($cfg);
-	my $res = [];
-	foreach my $id (@sids) {
-	    my $privs = [ 'SDN.Audit', 'SDN.Allocate' ];
-	    next if !$rpcenv->check_any($authuser, "/sdn/controllers/$id", $privs, 1);
+        my @sids = PVE::Network::SDN::Controllers::sdn_controllers_ids($cfg);
+        my $res = [];
+        foreach my $id (@sids) {
+            my $privs = ['SDN.Audit', 'SDN.Allocate'];
+            next if !$rpcenv->check_any($authuser, "/sdn/controllers/$id", $privs, 1);
 
-	    my $scfg = &$api_sdn_controllers_config($cfg, $id);
-	    next if $param->{type} && $param->{type} ne $scfg->{type};
+            my $scfg = &$api_sdn_controllers_config($cfg, $id);
+            next if $param->{type} && $param->{type} ne $scfg->{type};
 
-	    my $plugin_config = $cfg->{ids}->{$id};
-	    my $plugin = PVE::Network::SDN::Controllers::Plugin->lookup($plugin_config->{type});
-	    push @$res, $scfg;
-	}
+            my $plugin_config = $cfg->{ids}->{$id};
+            my $plugin = PVE::Network::SDN::Controllers::Plugin->lookup($plugin_config->{type});
+            push @$res, $scfg;
+        }
 
-	return $res;
-    }});
+        return $res;
+    },
+});
 
-__PACKAGE__->register_method ({
+__PACKAGE__->register_method({
     name => 'read',
     path => '{controller}',
     method => 'GET',
     description => "Read sdn controller configuration.",
     permissions => {
-	check => ['perm', '/sdn/controllers/{controller}', ['SDN.Allocate']],
-   },
+        check => ['perm', '/sdn/controllers/{controller}', ['SDN.Allocate']],
+    },
 
     parameters => {
-    	additionalProperties => 0,
-	properties => {
-	    controller => get_standard_option('pve-sdn-controller-id'),
-	    running => {
-		type => 'boolean',
-		optional => 1,
-		description => "Display running config.",
-	    },
-	    pending => {
-		type => 'boolean',
-		optional => 1,
-		description => "Display pending config.",
-	    },
-	},
+        additionalProperties => 0,
+        properties => {
+            controller => get_standard_option('pve-sdn-controller-id'),
+            running => {
+                type => 'boolean',
+                optional => 1,
+                description => "Display running config.",
+            },
+            pending => {
+                type => 'boolean',
+                optional => 1,
+                description => "Display pending config.",
+            },
+        },
     },
     returns => { type => 'object' },
     code => sub {
-	my ($param) = @_;
+        my ($param) = @_;
 
         my $cfg = {};
-        if($param->{pending}) {
+        if ($param->{pending}) {
             my $running_cfg = PVE::Network::SDN::running_config();
             my $config = PVE::Network::SDN::Controllers::config();
             $cfg = PVE::Network::SDN::pending_config($running_cfg, $config, 'controllers');
@@ -152,146 +155,162 @@ __PACKAGE__->register_method ({
             $cfg = PVE::Network::SDN::Controllers::config();
         }
 
-	return &$api_sdn_controllers_config($cfg, $param->{controller});
-    }});
+        return &$api_sdn_controllers_config($cfg, $param->{controller});
+    },
+});
 
-__PACKAGE__->register_method ({
+__PACKAGE__->register_method({
     name => 'create',
     protected => 1,
     path => '',
     method => 'POST',
     description => "Create a new sdn controller object.",
     permissions => {
-	check => ['perm', '/sdn/controllers', ['SDN.Allocate']],
+        check => ['perm', '/sdn/controllers', ['SDN.Allocate']],
     },
     parameters => PVE::Network::SDN::Controllers::Plugin->createSchema(),
     returns => { type => 'null' },
     code => sub {
-	my ($param) = @_;
+        my ($param) = @_;
 
-	my $type = extract_param($param, 'type');
-	my $id = extract_param($param, 'controller');
+        my $type = extract_param($param, 'type');
+        my $id = extract_param($param, 'controller');
 
-	my $plugin = PVE::Network::SDN::Controllers::Plugin->lookup($type);
-	my $opts = $plugin->check_config($id, $param, 1, 1);
+        my $plugin = PVE::Network::SDN::Controllers::Plugin->lookup($type);
+        my $opts = $plugin->check_config($id, $param, 1, 1);
 
         # create /etc/pve/sdn directory
         PVE::Cluster::check_cfs_quorum();
         mkdir("/etc/pve/sdn");
 
         PVE::Network::SDN::lock_sdn_config(
-	    sub {
+            sub {
 
-		my $controller_cfg = PVE::Network::SDN::Controllers::config();
+                my $controller_cfg = PVE::Network::SDN::Controllers::config();
 
-		my $scfg = undef;
-		if ($scfg = PVE::Network::SDN::Controllers::sdn_controllers_config($controller_cfg, $id, 1)) {
-		    die "sdn controller object ID '$id' already defined\n";
-		}
+                my $scfg = undef;
+                if (
+                    $scfg = PVE::Network::SDN::Controllers::sdn_controllers_config(
+                        $controller_cfg, $id, 1,
+                    )
+                ) {
+                    die "sdn controller object ID '$id' already defined\n";
+                }
 
-		$controller_cfg->{ids}->{$id} = $opts;
-		$plugin->on_update_hook($id, $controller_cfg);
+                $controller_cfg->{ids}->{$id} = $opts;
+                $plugin->on_update_hook($id, $controller_cfg);
 
-		PVE::Network::SDN::Controllers::write_config($controller_cfg);
+                PVE::Network::SDN::Controllers::write_config($controller_cfg);
 
-	    }, "create sdn controller object failed");
+            },
+            "create sdn controller object failed",
+        );
 
-	return undef;
-    }});
+        return undef;
+    },
+});
 
-__PACKAGE__->register_method ({
+__PACKAGE__->register_method({
     name => 'update',
     protected => 1,
     path => '{controller}',
     method => 'PUT',
     description => "Update sdn controller object configuration.",
     permissions => {
-	check => ['perm', '/sdn/controllers', ['SDN.Allocate']],
+        check => ['perm', '/sdn/controllers', ['SDN.Allocate']],
     },
     parameters => PVE::Network::SDN::Controllers::Plugin->updateSchema(),
     returns => { type => 'null' },
     code => sub {
-	my ($param) = @_;
+        my ($param) = @_;
 
-	my $id = extract_param($param, 'controller');
-	my $digest = extract_param($param, 'digest');
-	my $delete = extract_param($param, 'delete');
+        my $id = extract_param($param, 'controller');
+        my $digest = extract_param($param, 'digest');
+        my $delete = extract_param($param, 'delete');
 
         PVE::Network::SDN::lock_sdn_config(
-	 sub {
+            sub {
 
-	    my $controller_cfg = PVE::Network::SDN::Controllers::config();
+                my $controller_cfg = PVE::Network::SDN::Controllers::config();
 
-	    PVE::SectionConfig::assert_if_modified($controller_cfg, $digest);
+                PVE::SectionConfig::assert_if_modified($controller_cfg, $digest);
 
-	    my $scfg = PVE::Network::SDN::Controllers::sdn_controllers_config($controller_cfg, $id);
+                my $scfg =
+                    PVE::Network::SDN::Controllers::sdn_controllers_config($controller_cfg, $id);
 
-	    my $plugin = PVE::Network::SDN::Controllers::Plugin->lookup($scfg->{type});
-	    my $opts = $plugin->check_config($id, $param, 0, 1);
+                my $plugin = PVE::Network::SDN::Controllers::Plugin->lookup($scfg->{type});
+                my $opts = $plugin->check_config($id, $param, 0, 1);
 
-	    if ($delete) {
-		$delete = [ PVE::Tools::split_list($delete) ];
-		my $options = $plugin->private()->{options}->{$scfg->{type}};
-		PVE::SectionConfig::delete_from_config($scfg, $options, $opts, $delete);
-	    }
+                if ($delete) {
+                    $delete = [PVE::Tools::split_list($delete)];
+                    my $options = $plugin->private()->{options}->{ $scfg->{type} };
+                    PVE::SectionConfig::delete_from_config($scfg, $options, $opts, $delete);
+                }
 
-	    for my $k (keys %{$opts}) {
-		$scfg->{$k} = $opts->{$k};
-	    }
+                for my $k (keys %{$opts}) {
+                    $scfg->{$k} = $opts->{$k};
+                }
 
-	    $plugin->on_update_hook($id, $controller_cfg);
+                $plugin->on_update_hook($id, $controller_cfg);
 
-	    PVE::Network::SDN::Controllers::write_config($controller_cfg);
+                PVE::Network::SDN::Controllers::write_config($controller_cfg);
 
+            },
+            "update sdn controller object failed",
+        );
 
-	    }, "update sdn controller object failed");
+        return undef;
+    },
+});
 
-	return undef;
-    }});
-
-__PACKAGE__->register_method ({
+__PACKAGE__->register_method({
     name => 'delete',
     protected => 1,
     path => '{controller}',
     method => 'DELETE',
     description => "Delete sdn controller object configuration.",
     permissions => {
-	check => ['perm', '/sdn/controllers', ['SDN.Allocate']],
+        check => ['perm', '/sdn/controllers', ['SDN.Allocate']],
     },
     parameters => {
-    	additionalProperties => 0,
-	properties => {
-	    controller => get_standard_option('pve-sdn-controller-id', {
-                completion => \&PVE::Network::SDN::Controllers::complete_sdn_controllers,
-            }),
-	},
+        additionalProperties => 0,
+        properties => {
+            controller => get_standard_option(
+                'pve-sdn-controller-id',
+                {
+                    completion => \&PVE::Network::SDN::Controllers::complete_sdn_controllers,
+                },
+            ),
+        },
     },
     returns => { type => 'null' },
     code => sub {
-	my ($param) = @_;
+        my ($param) = @_;
 
-	my $id = extract_param($param, 'controller');
+        my $id = extract_param($param, 'controller');
 
         PVE::Network::SDN::lock_sdn_config(
-	    sub {
+            sub {
 
-		my $cfg = PVE::Network::SDN::Controllers::config();
+                my $cfg = PVE::Network::SDN::Controllers::config();
 
-		my $scfg = PVE::Network::SDN::Controllers::sdn_controllers_config($cfg, $id);
+                my $scfg = PVE::Network::SDN::Controllers::sdn_controllers_config($cfg, $id);
 
-		my $plugin = PVE::Network::SDN::Controllers::Plugin->lookup($scfg->{type});
+                my $plugin = PVE::Network::SDN::Controllers::Plugin->lookup($scfg->{type});
 
-		my $zone_cfg = PVE::Network::SDN::Zones::config();
+                my $zone_cfg = PVE::Network::SDN::Zones::config();
 
-		$plugin->on_delete_hook($id, $zone_cfg);
+                $plugin->on_delete_hook($id, $zone_cfg);
 
-		delete $cfg->{ids}->{$id};
-		PVE::Network::SDN::Controllers::write_config($cfg);
+                delete $cfg->{ids}->{$id};
+                PVE::Network::SDN::Controllers::write_config($cfg);
 
-	    }, "delete sdn controller object failed");
+            },
+            "delete sdn controller object failed",
+        );
 
-
-	return undef;
-    }});
+        return undef;
+    },
+});
 
 1;

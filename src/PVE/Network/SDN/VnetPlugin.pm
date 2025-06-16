@@ -10,16 +10,23 @@ use PVE::JSONSchema qw(get_standard_option);
 use PVE::SectionConfig;
 use base qw(PVE::SectionConfig);
 
-PVE::Cluster::cfs_register_file('sdn/vnets.cfg',
-                                 sub { __PACKAGE__->parse_config(@_); },
-                                 sub { __PACKAGE__->write_config(@_); });
+PVE::Cluster::cfs_register_file(
+    'sdn/vnets.cfg',
+    sub { __PACKAGE__->parse_config(@_); },
+    sub { __PACKAGE__->write_config(@_); },
+);
 
-PVE::JSONSchema::register_standard_option('pve-sdn-vnet-id', {
-    description => "The SDN vnet object identifier.",
-    type => 'string', format => 'pve-sdn-vnet-id',
-});
+PVE::JSONSchema::register_standard_option(
+    'pve-sdn-vnet-id',
+    {
+        description => "The SDN vnet object identifier.",
+        type => 'string',
+        format => 'pve-sdn-vnet-id',
+    },
+);
 
 PVE::JSONSchema::register_format('pve-sdn-vnet-id', \&parse_sdn_vnet_id);
+
 sub parse_sdn_vnet_id {
     my ($id, $noerr) = @_;
 
@@ -34,8 +41,10 @@ sub parse_sdn_vnet_id {
 my $defaultData = {
 
     propertyList => {
-        vnet => get_standard_option('pve-sdn-vnet-id',
-            { completion => \&PVE::Network::SDN::Vnets::complete_sdn_vnet }),
+        vnet => get_standard_option(
+            'pve-sdn-vnet-id',
+            { completion => \&PVE::Network::SDN::Vnets::complete_sdn_vnet },
+        ),
     },
 };
 
@@ -49,43 +58,43 @@ sub private {
 
 sub properties {
     return {
-	zone => {
+        zone => {
             type => 'string',
             description => "zone id",
-	},
+        },
         type => {
             description => "Type",
             optional => 1,
         },
-	tag => {
+        tag => {
             type => 'integer',
             description => "vlan or vxlan id",
-	},
-	vlanaware => {
-	    type => 'boolean',
-	    description => 'Allow vm VLANs to pass through this vnet.',
-	},
+        },
+        vlanaware => {
+            type => 'boolean',
+            description => 'Allow vm VLANs to pass through this vnet.',
+        },
         alias => {
             type => 'string',
             description => "alias name of the vnet",
             pattern => qr/[\(\)-_.\w\d\s]{0,256}/i,
             maxLength => 256,
-	    optional => 1,
+            optional => 1,
         },
-	'isolate-ports' => {
-	    type => 'boolean',
-	    description => "If true, sets the isolated property for all members of this VNet",
-	}
+        'isolate-ports' => {
+            type => 'boolean',
+            description => "If true, sets the isolated property for all members of this VNet",
+        },
     };
 }
 
 sub options {
     return {
-        zone => { optional => 0},
-        tag => { optional => 1},
+        zone => { optional => 0 },
+        tag => { optional => 1 },
         alias => { optional => 1 },
         vlanaware => { optional => 1 },
-	'isolate-ports' => { optional => 1 },
+        'isolate-ports' => { optional => 1 },
     };
 }
 
@@ -94,7 +103,7 @@ sub on_delete_hook {
 
     #verify if subnets are associated
     my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid);
-    raise_param_exc({ vnet => "Can't delete vnet if subnets exists"}) if $subnets;
+    raise_param_exc({ vnet => "Can't delete vnet if subnets exists" }) if $subnets;
 }
 
 sub on_update_hook {
@@ -105,9 +114,10 @@ sub on_update_hook {
     my $vlanaware = $vnet->{vlanaware};
 
     #don't allow vlanaware change if subnets are defined
-    if($vnet->{vlanaware}) {
-	my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid);
-	raise_param_exc({ vlanaware => "vlanaware vnet is not compatible with subnets"}) if $subnets;
+    if ($vnet->{vlanaware}) {
+        my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid);
+        raise_param_exc({ vlanaware => "vlanaware vnet is not compatible with subnets" })
+            if $subnets;
     }
 }
 

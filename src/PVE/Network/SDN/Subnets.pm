@@ -25,13 +25,13 @@ sub sdn_subnets_config {
     die "sdn subnet '$id' does not exist\n" if (!$noerr && !$scfg);
 
     if ($scfg) {
-	$scfg->{id} = $id;
+        $scfg->{id} = $id;
 
-	my ($zone, $network, $mask) = split(/-/, $id);
-	$scfg->{cidr} = "$network/$mask";
-	$scfg->{zone} = $zone;
-	$scfg->{network} = $network;
-	$scfg->{mask} = $mask;
+        my ($zone, $network, $mask) = split(/-/, $id);
+        $scfg->{cidr} = "$network/$mask";
+        $scfg->{zone} = $zone;
+        $scfg->{network} = $network;
+        $scfg->{mask} = $mask;
     }
 
     return $scfg;
@@ -43,17 +43,17 @@ sub get_dhcp_ranges {
     my @dhcp_ranges = ();
 
     if ($subnet_config->{'dhcp-range'}) {
-	foreach my $element (@{$subnet_config->{'dhcp-range'}}) {
-	    my $dhcp_range = eval { parse_property_string('pve-sdn-dhcp-range', $element) };
+        foreach my $element (@{ $subnet_config->{'dhcp-range'} }) {
+            my $dhcp_range = eval { parse_property_string('pve-sdn-dhcp-range', $element) };
 
-	    if ($@ || !$dhcp_range) {
-		warn "Unable to parse dhcp-range string: $element\n";
-		warn "$@\n" if $@;
-		next;
-	    }
+            if ($@ || !$dhcp_range) {
+                warn "Unable to parse dhcp-range string: $element\n";
+                warn "$@\n" if $@;
+                next;
+            }
 
-	    push @dhcp_ranges, $dhcp_range;
-	}
+            push @dhcp_ranges, $dhcp_range;
+        }
     }
 
     return \@dhcp_ranges;
@@ -63,8 +63,8 @@ sub config {
     my ($running) = @_;
 
     if ($running) {
-	my $cfg = PVE::Network::SDN::running_config();
-	return $cfg->{subnets};
+        my $cfg = PVE::Network::SDN::running_config();
+        return $cfg->{subnets};
     }
 
     return cfs_read_file("sdn/subnets.cfg");
@@ -79,7 +79,7 @@ sub write_config {
 sub sdn_subnets_ids {
     my ($cfg) = @_;
 
-    return sort keys %{$cfg->{ids}};
+    return sort keys %{ $cfg->{ids} };
 }
 
 sub complete_sdn_subnet {
@@ -87,7 +87,7 @@ sub complete_sdn_subnet {
 
     my $cfg = PVE::Network::SDN::Subnets::config();
 
-    return  $cmdname eq 'add' ? [] : [ PVE::Network::SDN::Subnets::sdn_subnets_ids($cfg) ];
+    return $cmdname eq 'add' ? [] : [PVE::Network::SDN::Subnets::sdn_subnets_ids($cfg)];
 }
 
 sub get_subnet {
@@ -104,14 +104,14 @@ sub find_ip_subnet {
     my $subnetid = undef;
 
     foreach my $id (sort keys %{$subnets}) {
-	my $cidr = $subnets->{$id}->{cidr};
-	my $subnet_matcher = subnet_matcher($cidr);
-	next if !$subnet_matcher->($ip);
-	$subnet = $subnets->{$id};
-	$subnetid = $id;
-	last;
+        my $cidr = $subnets->{$id}->{cidr};
+        my $subnet_matcher = subnet_matcher($cidr);
+        next if !$subnet_matcher->($ip);
+        $subnet = $subnets->{$id};
+        $subnetid = $id;
+        last;
     }
-    die  "can't find any subnet for ip $ip" if !$subnet;
+    die "can't find any subnet for ip $ip" if !$subnet;
 
     return ($subnetid, $subnet);
 }
@@ -234,52 +234,53 @@ sub add_next_free_ip {
     #verify dns zones before ipam
     verify_dns_zone($dnszone, $dns) if !$skipdns;
 
-    if($ipamid) {
-	my $ipam_cfg = PVE::Network::SDN::Ipams::config();
-	my $plugin_config = $ipam_cfg->{ids}->{$ipamid};
-	my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
-	eval {
-	    if ($dhcprange) {
-		my $data = {
-		    mac => $mac,
-		    hostname => $hostname,
-		    vmid => $vmid,
-		};
+    if ($ipamid) {
+        my $ipam_cfg = PVE::Network::SDN::Ipams::config();
+        my $plugin_config = $ipam_cfg->{ids}->{$ipamid};
+        my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
+        eval {
+            if ($dhcprange) {
+                my $data = {
+                    mac => $mac,
+                    hostname => $hostname,
+                    vmid => $vmid,
+                };
 
-		my $dhcp_ranges = PVE::Network::SDN::Subnets::get_dhcp_ranges($subnet);
+                my $dhcp_ranges = PVE::Network::SDN::Subnets::get_dhcp_ranges($subnet);
 
-		foreach my $range (@$dhcp_ranges) {
-		    $ip = $plugin->add_range_next_freeip($plugin_config, $subnet, $range, $data);
-		    last if $ip;
-		}
-	    } else {
-		$ip = $plugin->add_next_freeip($plugin_config, $subnetid, $subnet, $hostname, $mac, $vmid);
-	    }
-	};
+                foreach my $range (@$dhcp_ranges) {
+                    $ip =
+                        $plugin->add_range_next_freeip($plugin_config, $subnet, $range, $data);
+                    last if $ip;
+                }
+            } else {
+                $ip = $plugin->add_next_freeip(
+                    $plugin_config, $subnetid, $subnet, $hostname, $mac, $vmid,
+                );
+            }
+        };
 
-	die $@ if $@;
+        die $@ if $@;
 
-	eval { PVE::Network::SDN::Ipams::add_cache_mac_ip($mac, $ip); };
-	warn $@ if $@;
+        eval { PVE::Network::SDN::Ipams::add_cache_mac_ip($mac, $ip); };
+        warn $@ if $@;
     }
 
     eval {
-	my $reversednszone = get_reversedns_zone($subnetid, $subnet, $reversedns, $ip);
+        my $reversednszone = get_reversedns_zone($subnetid, $subnet, $reversedns, $ip);
 
-	if(!$skipdns) {
-	    #add dns
-	    add_dns_record($dnszone, $dns, $hostname, $ip);
-	    #add reverse dns
-	    add_dns_ptr_record($reversednszone, $dnszone, $reversedns, $hostname, $ip);
-	}
+        if (!$skipdns) {
+            #add dns
+            add_dns_record($dnszone, $dns, $hostname, $ip);
+            #add reverse dns
+            add_dns_ptr_record($reversednszone, $dnszone, $reversedns, $hostname, $ip);
+        }
     };
     if ($@) {
-	#rollback
-	my $err = $@;
-	eval {
-	    PVE::Network::SDN::Subnets::del_ip($zone, $subnetid, $subnet, $ip, $hostname, $mac)
-	};
-	die $err;
+        #rollback
+        my $err = $@;
+        eval { PVE::Network::SDN::Subnets::del_ip($zone, $subnetid, $subnet, $ip, $hostname, $mac) };
+        die $err;
     }
     return $ip;
 }
@@ -287,7 +288,7 @@ sub add_next_free_ip {
 sub add_ip {
     my ($zone, $subnetid, $subnet, $ip, $hostname, $mac, $vmid, $is_gateway, $skipdns) = @_;
 
-    return if !$subnet || !$ip; 
+    return if !$subnet || !$ip;
 
     my $ipaddr = NetAddr::IP->new($ip);
     $ip = $ipaddr->canon();
@@ -302,48 +303,48 @@ sub add_ip {
     $hostname .= ".$dnszoneprefix" if $dnszoneprefix;
 
     #verify dns zones before ipam
-    if(!$skipdns) {
-	verify_dns_zone($dnszone, $dns);
-	verify_dns_zone($reversednszone, $reversedns);
+    if (!$skipdns) {
+        verify_dns_zone($dnszone, $dns);
+        verify_dns_zone($reversednszone, $reversedns);
     }
 
     if ($ipamid) {
 
-	my $ipam_cfg = PVE::Network::SDN::Ipams::config();
-	my $plugin_config = $ipam_cfg->{ids}->{$ipamid};
-	my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
+        my $ipam_cfg = PVE::Network::SDN::Ipams::config();
+        my $plugin_config = $ipam_cfg->{ids}->{$ipamid};
+        my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
 
-	eval {
-	    $plugin->add_ip($plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $vmid, $is_gateway);
-	};
-	die $@ if $@;
+        eval {
+            $plugin->add_ip(
+                $plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $vmid, $is_gateway,
+            );
+        };
+        die $@ if $@;
 
-	eval { PVE::Network::SDN::Ipams::add_cache_mac_ip($mac, $ip) if $mac; };
-	warn $@ if $@;
+        eval { PVE::Network::SDN::Ipams::add_cache_mac_ip($mac, $ip) if $mac; };
+        warn $@ if $@;
     }
 
     eval {
-	if(!$skipdns) {
-	    #add dns
-	    add_dns_record($dnszone, $dns, $hostname, $ip);
-	    #add reverse dns
-	    add_dns_ptr_record($reversednszone, $dnszone, $reversedns, $hostname, $ip);
-	}
+        if (!$skipdns) {
+            #add dns
+            add_dns_record($dnszone, $dns, $hostname, $ip);
+            #add reverse dns
+            add_dns_ptr_record($reversednszone, $dnszone, $reversedns, $hostname, $ip);
+        }
     };
     if ($@) {
-	#rollback
-	my $err = $@;
-	eval {
-	    PVE::Network::SDN::Subnets::del_ip($zone, $subnetid, $subnet, $ip, $hostname, $mac)
-	};
-	die $err;
+        #rollback
+        my $err = $@;
+        eval { PVE::Network::SDN::Subnets::del_ip($zone, $subnetid, $subnet, $ip, $hostname, $mac) };
+        die $err;
     }
 }
 
 sub update_ip {
     my ($zone, $subnetid, $subnet, $ip, $hostname, $oldhostname, $mac, $vmid, $skipdns) = @_;
 
-    return if !$subnet || !$ip; 
+    return if !$subnet || !$ip;
 
     my $ipaddr = NetAddr::IP->new($ip);
     $ip = $ipaddr->canon();
@@ -358,32 +359,32 @@ sub update_ip {
     $hostname .= ".$dnszoneprefix" if $dnszoneprefix;
 
     #verify dns zones before ipam
-    if(!$skipdns) {
-	verify_dns_zone($dnszone, $dns);
-	verify_dns_zone($reversednszone, $reversedns);
+    if (!$skipdns) {
+        verify_dns_zone($dnszone, $dns);
+        verify_dns_zone($reversednszone, $reversedns);
     }
 
     if ($ipamid) {
-	my $ipam_cfg = PVE::Network::SDN::Ipams::config();
-	my $plugin_config = $ipam_cfg->{ids}->{$ipamid};
-	my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
-	eval {
-	    $plugin->update_ip($plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $vmid);
-	};
-	die $@ if $@;
+        my $ipam_cfg = PVE::Network::SDN::Ipams::config();
+        my $plugin_config = $ipam_cfg->{ids}->{$ipamid};
+        my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
+        eval {
+            $plugin->update_ip($plugin_config, $subnetid, $subnet, $ip, $hostname, $mac, $vmid);
+        };
+        die $@ if $@;
     }
 
     return if $hostname eq $oldhostname;
 
     eval {
-	if(!$skipdns) {
-	    #add dns
-	    del_dns_record($dnszone, $dns, $oldhostname, $ip);
-	    add_dns_record($dnszone, $dns, $hostname, $ip);
-	    #add reverse dns
-	    del_dns_ptr_record($reversednszone, $reversedns, $ip);
-	    add_dns_ptr_record($reversednszone, $dnszone, $reversedns, $hostname, $ip);
-	}
+        if (!$skipdns) {
+            #add dns
+            del_dns_record($dnszone, $dns, $oldhostname, $ip);
+            add_dns_record($dnszone, $dns, $hostname, $ip);
+            #add reverse dns
+            del_dns_ptr_record($reversednszone, $reversedns, $ip);
+            add_dns_ptr_record($reversednszone, $dnszone, $reversedns, $hostname, $ip);
+        }
     };
 }
 
@@ -403,31 +404,31 @@ sub del_ip {
     my $dnszoneprefix = $subnet->{dnszoneprefix};
     $hostname .= ".$dnszoneprefix" if $dnszoneprefix;
 
-    if(!$skipdns) {
-	verify_dns_zone($dnszone, $dns);
-	verify_dns_zone($reversednszone, $reversedns);
+    if (!$skipdns) {
+        verify_dns_zone($dnszone, $dns);
+        verify_dns_zone($reversednszone, $reversedns);
     }
 
     if ($ipamid) {
-	my $ipam_cfg = PVE::Network::SDN::Ipams::config();
-	my $plugin_config = $ipam_cfg->{ids}->{$ipamid};
-	my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
-	$plugin->del_ip($plugin_config, $subnetid, $subnet, $ip);
+        my $ipam_cfg = PVE::Network::SDN::Ipams::config();
+        my $plugin_config = $ipam_cfg->{ids}->{$ipamid};
+        my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});
+        $plugin->del_ip($plugin_config, $subnetid, $subnet, $ip);
 
-	if ($mac) {
-	    eval { PVE::Network::SDN::Ipams::del_cache_mac_ip($mac, $ip) };
-	    warn $@ if $@;
-	}
+        if ($mac) {
+            eval { PVE::Network::SDN::Ipams::del_cache_mac_ip($mac, $ip) };
+            warn $@ if $@;
+        }
     }
 
     eval {
-	if(!$skipdns) {
-	    del_dns_record($dnszone, $dns, $hostname, $ip);
-	    del_dns_ptr_record($reversednszone, $reversedns, $ip);
-	}
+        if (!$skipdns) {
+            del_dns_record($dnszone, $dns, $hostname, $ip);
+            del_dns_ptr_record($reversednszone, $reversedns, $ip);
+        }
     };
     if ($@) {
-	warn $@;
+        warn $@;
     }
 }
 

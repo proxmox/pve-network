@@ -16,8 +16,7 @@ sub type {
 }
 
 sub properties {
-    return {
-    };
+    return {};
 }
 
 # Plugin implementation
@@ -30,17 +29,16 @@ sub generate_controller_zone_config {
     my ($class, $plugin_config, $controller, $controller_cfg, $id, $uplinks, $config) = @_;
 
     my $dpid = $plugin_config->{'dp-id'};
-    my $dphex = printf("%x",$dpid);
+    my $dphex = printf("%x", $dpid);
 
     my $zone_config = {
-				dp_id => $dphex,
-				hardware => "Open vSwitch",
-			   };
+        dp_id => $dphex,
+        hardware => "Open vSwitch",
+    };
 
     $config->{faucet}->{dps}->{$id} = $zone_config;
 
 }
-
 
 sub generate_controller_vnet_config {
     my ($class, $plugin_config, $controller, $zone, $zoneid, $vnetid, $config) = @_;
@@ -63,7 +61,7 @@ sub generate_controller_vnet_config {
 
     $config->{faucet}->{vlans}->{$vnetid} = $vlan_config;
 
-    push(@{$config->{faucet}->{routers}->{$zoneid}->{vlans}} , $vnetid);
+    push(@{ $config->{faucet}->{routers}->{$zoneid}->{vlans} }, $vnetid);
 
 }
 
@@ -77,7 +75,7 @@ sub write_controller_config {
 
     my $frr_config_file = "/etc/faucet/faucet.yaml";
 
-    my $writefh = IO::File->new($frr_config_file,">");
+    my $writefh = IO::File->new($frr_config_file, ">");
     print $writefh $rawconfig;
     $writefh->close();
 }

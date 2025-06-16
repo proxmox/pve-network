@@ -10,17 +10,23 @@ use PVE::Cluster;
 use PVE::JSONSchema qw(get_standard_option);
 use base qw(PVE::SectionConfig);
 
-PVE::Cluster::cfs_register_file('sdn/controllers.cfg',
+PVE::Cluster::cfs_register_file(
+    'sdn/controllers.cfg',
     sub { __PACKAGE__->parse_config(@_); },
-    sub { __PACKAGE__->write_config(@_); }
+    sub { __PACKAGE__->write_config(@_); },
 );
 
-PVE::JSONSchema::register_standard_option('pve-sdn-controller-id', {
-    description => "The SDN controller object identifier.",
-    type => 'string', format => 'pve-sdn-controller-id',
-});
+PVE::JSONSchema::register_standard_option(
+    'pve-sdn-controller-id',
+    {
+        description => "The SDN controller object identifier.",
+        type => 'string',
+        format => 'pve-sdn-controller-id',
+    },
+);
 
 PVE::JSONSchema::register_format('pve-sdn-controller-id', \&parse_sdn_controller_id);
+
 sub parse_sdn_controller_id {
     my ($id, $noerr) = @_;
 
@@ -35,13 +41,16 @@ sub parse_sdn_controller_id {
 my $defaultData = {
 
     propertyList => {
-	type => {
-	    description => "Plugin type.",
-	    type => 'string', format => 'pve-configid',
-	    type => 'string',
-	},
-        controller => get_standard_option('pve-sdn-controller-id',
-            { completion => \&PVE::Network::SDN::complete_sdn_controller }),
+        type => {
+            description => "Plugin type.",
+            type => 'string',
+            format => 'pve-configid',
+            type => 'string',
+        },
+        controller => get_standard_option(
+            'pve-sdn-controller-id',
+            { completion => \&PVE::Network::SDN::complete_sdn_controller },
+        ),
     },
 };
 
@@ -54,11 +63,11 @@ sub parse_section_header {
 
     if ($line =~ m/^(\S+):\s*(\S+)\s*$/) {
         my ($type, $id) = (lc($1), $2);
-	my $errmsg = undef; # set if you want to skip whole section
-	eval { PVE::JSONSchema::pve_verify_configid($type); };
-	$errmsg = $@ if $@;
-	my $config = {}; # to return additional attributes
-	return ($type, $id, $errmsg, $config);
+        my $errmsg = undef; # set if you want to skip whole section
+        eval { PVE::JSONSchema::pve_verify_configid($type); };
+        $errmsg = $@ if $@;
+        my $config = {}; # to return additional attributes
+        return ($type, $id, $errmsg, $config);
     }
     return undef;
 }
@@ -74,7 +83,6 @@ sub generate_controller_config {
 
     die "please implement inside plugin";
 }
-
 
 sub generate_controller_zone_config {
     my ($class, $plugin_config, $controller, $controller_cfg, $id, $uplinks, $config) = @_;
@@ -135,7 +143,11 @@ sub get_router_id {
     die "can't autofind a router-id value from ip or mac" if !$mac;
 
     my @mac_bytes = split(':', $mac);
-    return hex($mac_bytes[2]).".".hex($mac_bytes[3]).".".hex($mac_bytes[4]).".".hex($mac_bytes[5]);
+    return
+        hex($mac_bytes[2]) . "."
+        . hex($mac_bytes[3]) . "."
+        . hex($mac_bytes[4]) . "."
+        . hex($mac_bytes[5]);
 }
 
 1;

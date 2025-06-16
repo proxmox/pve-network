@@ -15,7 +15,6 @@ use PVE::Network::SDN::Dns::Plugin;
 PVE::Network::SDN::Dns::PowerdnsPlugin->register();
 PVE::Network::SDN::Dns::Plugin->init();
 
-
 sub sdn_dns_config {
     my ($cfg, $id, $noerr) = @_;
 
@@ -41,7 +40,7 @@ sub write_config {
 sub sdn_dns_ids {
     my ($cfg) = @_;
 
-    return keys %{$cfg->{ids}};
+    return keys %{ $cfg->{ids} };
 }
 
 sub complete_sdn_dns {
@@ -49,7 +48,7 @@ sub complete_sdn_dns {
 
     my $cfg = PVE::Network::SDN::Dns::config();
 
-    return  $cmdname eq 'add' ? [] : [ PVE::Network::SDN::Dns::sdn_dns_ids($cfg) ];
+    return $cmdname eq 'add' ? [] : [PVE::Network::SDN::Dns::sdn_dns_ids($cfg)];
 }
 
 1;
