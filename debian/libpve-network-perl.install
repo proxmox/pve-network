@@ -1,2 +1,2 @@
-lib/systemd/system/dnsmasq@.service.d/00-dnsmasq-after-networking.conf
+lib/systemd/system/dnsmasq@.service.d/00-dnsmasq-after-networking.conf /usr/lib/systemd/system/dnsmasq@.service.d/
 usr/share/perl5/PVE/Network
