@@ -65,12 +65,18 @@ sub add_ip_mapping {
 
         my $match = undef;
 
+        my $line_no = 0;
         while (my $line = <$in>) {
+            $line_no++;
             chomp($line);
-            my $parsed_ip4 = undef;
-            my $parsed_ip6 = undef;
             my ($parsed_mac, $parsed_ip1, $parsed_ip2) = split(/,/, $line);
 
+            if (!defined($parsed_mac)) {
+                warn "failed to parse MAC from $dhcpid ethers file on line $line_no: '$line'\n";
+                next;
+            }
+
+            my ($parsed_ip4, $parsed_ip6);
             if ($parsed_ip2) {
                 $parsed_ip4 = $parsed_ip1;
                 $parsed_ip6 = $parsed_ip2;
