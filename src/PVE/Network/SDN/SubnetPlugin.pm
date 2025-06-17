@@ -207,7 +207,6 @@ sub on_update_hook {
     my $dnszone = $zone->{dnszone};
     my $reversedns = $zone->{reversedns};
 
-    my $old_gateway = $old_subnet->{gateway} if $old_subnet;
     my $mac = undef;
 
     if ($vnetid) {
@@ -218,7 +217,7 @@ sub on_update_hook {
         $mac = $vnet->{mac};
     }
 
-    my $pointopoint = 1 if Net::IP::ip_is_ipv4($gateway) && $mask == 32;
+    my $pointopoint = Net::IP::ip_is_ipv4($gateway) && $mask == 32;
 
     #for /32 pointopoint, we allow gateway outside the subnet
     raise_param_exc({ gateway => "$gateway is not in subnet $cidr" })
@@ -227,7 +226,9 @@ sub on_update_hook {
     validate_dhcp_ranges($subnet);
 
     if ($ipam) {
+        my $old_gateway;
         if ($old_subnet) {
+            $old_gateway = $old_subnet->{gateway};
             PVE::Network::SDN::Subnets::update_subnet($zone, $subnetid, $subnet, $old_subnet);
         } else {
             PVE::Network::SDN::Subnets::add_subnet($zone, $subnetid, $subnet);
