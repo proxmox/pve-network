@@ -176,15 +176,13 @@ sub generate_controller_zone_config {
             my $zone = $subnet->{zone};
             my ($ip, $mask) = split(/\//, $cidr);
             $cidrs->{$ip} = $mask if $zone ne $id;
-
         }
 
         my @sorted_ip =
             map { $_->[0] }
             sort { $a->[1] <=> $b->[1] }
             map { [$_, eval { Net::IP->new($_)->intip }] }
-            keys %{$cidrs}
-            if $cidrs;
+            keys $cidrs->%*;
 
         foreach my $ip (@sorted_ip) {
             my $ipversion = Net::IP::ip_is_ipv4($ip) ? 'ip' : 'ipv6';
