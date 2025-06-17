@@ -3,17 +3,16 @@ package PVE::Network::SDN::Dhcp;
 use strict;
 use warnings;
 
-use PVE::Cluster qw(cfs_read_file);
+use PVE::Cluster;
 
 use PVE::Network::SDN;
 use PVE::Network::SDN::SubnetPlugin;
-use PVE::Network::SDN::Dhcp qw(config);
 use PVE::Network::SDN::Ipams;
-use PVE::Network::SDN::Subnets qw(sdn_subnets_config config get_dhcp_ranges);
+use PVE::Network::SDN::Subnets;
 use PVE::Network::SDN::Dhcp::Plugin;
 use PVE::Network::SDN::Dhcp::Dnsmasq;
 
-use PVE::INotify qw(nodename);
+use PVE::INotify;
 
 PVE::Network::SDN::Dhcp::Plugin->init();
 
