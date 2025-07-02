@@ -54,6 +54,14 @@ foreach my $test (@tests) {
         },
     );
 
+    my $pve_common_network;
+    $pve_common_network = Test::MockModule->new('PVE::Network');
+    $pve_common_network->mock(
+        is_ovs_bridge => sub {
+            return 1 if $interfaces_config->{ifaces}->{vmbr0}->{'type'} eq 'OVSBridge';
+        },
+    );
+
     my $mocked_pve_sdn_controllers;
     $mocked_pve_sdn_controllers = Test::MockModule->new('PVE::Network::SDN::Controllers');
     $mocked_pve_sdn_controllers->mock(
@@ -80,9 +88,6 @@ foreach my $test (@tests) {
         },
         is_vlanaware => sub {
             return $interfaces_config->{ifaces}->{vmbr0}->{'bridge_vlan_aware'};
-        },
-        is_ovs => sub {
-            return 1 if $interfaces_config->{ifaces}->{vmbr0}->{'type'} eq 'OVSBridge';
         },
         get_bridge_ifaces => sub {
             return ('eth0');

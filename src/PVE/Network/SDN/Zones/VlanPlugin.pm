@@ -2,6 +2,8 @@ package PVE::Network::SDN::Zones::VlanPlugin;
 
 use strict;
 use warnings;
+
+use PVE::Network;
 use PVE::Network::SDN::Zones::Plugin;
 use PVE::Exception qw(raise raise_param_exc);
 
@@ -66,7 +68,7 @@ sub generate_sdn_config {
     PVE::Network::SDN::Zones::Plugin::find_bridge($bridge);
 
     my $vlan_aware = PVE::Network::SDN::Zones::Plugin::is_vlanaware($bridge);
-    my $is_ovs = PVE::Network::SDN::Zones::Plugin::is_ovs($bridge);
+    my $is_ovs = PVE::Network::is_ovs_bridge($bridge);
 
     my $tag = $vnet->{tag};
     my $alias = $vnet->{alias};
@@ -162,7 +164,7 @@ sub status {
     }
 
     my $vlan_aware = PVE::Network::SDN::Zones::Plugin::is_vlanaware($bridge);
-    my $is_ovs = PVE::Network::SDN::Zones::Plugin::is_ovs($bridge);
+    my $is_ovs = PVE::Network::is_ovs_bridge($bridge);
 
     my $tag = $vnet->{tag};
     my $vnet_uplink = "ln_" . $vnetid;

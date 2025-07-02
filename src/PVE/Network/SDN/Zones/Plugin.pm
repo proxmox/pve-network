@@ -364,13 +364,6 @@ sub is_vlanaware {
     return PVE::Tools::file_read_firstline("/sys/class/net/$bridge/bridge/vlan_filtering");
 }
 
-sub is_ovs {
-    my ($bridge) = @_;
-
-    my $is_ovs = !-d "/sys/class/net/$bridge/brif";
-    return $is_ovs;
-}
-
 sub get_bridge_ifaces {
     my ($bridge) = @_;
 

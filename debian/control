@@ -16,7 +16,7 @@ Homepage: https://www.proxmox.com
 
 Package: libpve-network-perl
 Architecture: all
-Depends: libpve-common-perl (>= 5.0-45),
+Depends: libpve-common-perl (>= 9.0.2),
          pve-cluster (>= 8.0.10),
          libio-socket-ssl-perl,
          libnet-subnet-perl,
@@ -32,7 +32,7 @@ Description: Proxmox VE's SDN (Software Defined Network) stack
 
 Package: libpve-network-api-perl
 Architecture: all
-Depends: libpve-common-perl (>= 5.0-45),
+Depends: libpve-common-perl (>= 9.0.2),
          pve-firewall (>= 5.1.0~),
          pve-cluster (>= 8.0.9),
          libpve-network-perl (= ${binary:Version}),
