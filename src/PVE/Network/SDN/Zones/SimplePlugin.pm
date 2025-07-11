@@ -3,7 +3,7 @@ package PVE::Network::SDN::Zones::SimplePlugin;
 use strict;
 use warnings;
 use PVE::Network::SDN::Zones::Plugin;
-use PVE::Network::SDN::Dhcp::Plugin;
+use PVE::Network::SDN::Dhcp;
 use PVE::Exception qw(raise raise_param_exc);
 use PVE::Cluster;
 use PVE::Tools;
@@ -32,7 +32,7 @@ sub properties {
         dhcp => {
             description => 'Type of the DHCP backend for this zone',
             type => 'string',
-            enum => PVE::Network::SDN::Dhcp::Plugin->lookup_types(),
+            enum => PVE::Network::SDN::Dhcp->plugin_types(),
         },
     };
 }

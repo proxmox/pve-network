@@ -19,6 +19,10 @@ PVE::Network::SDN::Dhcp::Plugin->init();
 PVE::Network::SDN::Dhcp::Dnsmasq->register();
 PVE::Network::SDN::Dhcp::Dnsmasq->init();
 
+sub plugin_types {
+    return PVE::Network::SDN::Dhcp::Plugin->lookup_types();
+}
+
 sub add_mapping {
     my ($vnetid, $mac, $ip4, $ip6) = @_;
 
