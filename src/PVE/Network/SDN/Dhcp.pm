@@ -6,7 +6,6 @@ use warnings;
 use PVE::Cluster;
 
 use PVE::Network::SDN;
-use PVE::Network::SDN::SubnetPlugin;
 use PVE::Network::SDN::Ipams;
 use PVE::Network::SDN::Subnets;
 use PVE::Network::SDN::Dhcp::Plugin;
