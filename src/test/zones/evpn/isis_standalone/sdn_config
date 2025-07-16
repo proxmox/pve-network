@@ -1,0 +1,21 @@
+{
+    version => 1,
+    vnets => {
+    },
+    zones   => {
+    },
+    controllers  => {
+        ids => {
+            localhost => {
+                type => "isis",
+                'isis-domain' => 'isis1',
+                'isis-ifaces' => 'eth1,eth0',
+                'isis-net' => "47.0023.0000.0000.0000.0000.0000.0000.1900.0004.00",
+		loopback => 'dummy1',
+                node => "localhost",
+            },
+        },
+    },
+    subnets => {
+    },
+}
