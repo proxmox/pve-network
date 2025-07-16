@@ -72,45 +72,21 @@ sub parse_section_header {
     return undef;
 }
 
-sub generate_sdn_config {
-    my ($class, $plugin_config, $node, $data, $ctime) = @_;
-
-    die "please implement inside plugin";
-}
-
-sub generate_controller_config {
+sub generate_frr_config {
     my ($class, $plugin_config, $controller_cfg, $id, $uplinks, $config) = @_;
 
     die "please implement inside plugin";
 }
 
-sub generate_controller_zone_config {
+sub generate_zone_frr_config {
     my ($class, $plugin_config, $controller, $controller_cfg, $id, $uplinks, $config) = @_;
 
     die "please implement inside plugin";
 }
 
-sub generate_controller_vnet_config {
+sub generate_vnet_frr_config {
     my ($class, $plugin_config, $controller, $zoneid, $vnetid, $config) = @_;
 
-}
-
-sub generate_controller_rawconfig {
-    my ($class, $plugin_config, $config) = @_;
-
-    die "please implement inside plugin";
-}
-
-sub write_controller_config {
-    my ($class, $plugin_config, $config) = @_;
-
-    die "please implement inside plugin";
-}
-
-sub controller_reload {
-    my ($class) = @_;
-
-    die "please implement inside plugin";
 }
 
 sub on_delete_hook {

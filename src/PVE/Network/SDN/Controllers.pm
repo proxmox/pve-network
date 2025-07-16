@@ -80,12 +80,12 @@ sub read_etc_network_interfaces {
     return $interfaces_config;
 }
 
-sub generate_controller_config {
+sub generate_frr_config {
+    my ($frr_config, $sdn_config) = @_;
 
-    my $cfg = PVE::Network::SDN::running_config();
-    my $vnet_cfg = $cfg->{vnets};
-    my $zone_cfg = $cfg->{zones};
-    my $controller_cfg = $cfg->{controllers};
+    my $vnet_cfg = $sdn_config->{vnets};
+    my $zone_cfg = $sdn_config->{zones};
+    my $controller_cfg = $sdn_config->{controllers};
 
     return if !$vnet_cfg && !$zone_cfg && !$controller_cfg;
 
@@ -103,14 +103,10 @@ sub generate_controller_config {
         }
     }
 
-    # generate configuration
-    my $config = {};
-
     foreach my $id (sort keys %{ $controller_cfg->{ids} }) {
         my $plugin_config = $controller_cfg->{ids}->{$id};
         my $plugin = PVE::Network::SDN::Controllers::Plugin->lookup($plugin_config->{type});
-        $plugin->generate_controller_config($plugin_config, $controller_cfg, $id, $uplinks,
-            $config);
+        $plugin->generate_frr_config($plugin_config, $controller_cfg, $id, $uplinks, $frr_config);
     }
 
     foreach my $id (sort keys %{ $zone_cfg->{ids} }) {
@@ -121,8 +117,8 @@ sub generate_controller_config {
         if ($controller) {
             my $controller_plugin =
                 PVE::Network::SDN::Controllers::Plugin->lookup($controller->{type});
-            $controller_plugin->generate_controller_zone_config(
-                $plugin_config, $controller, $controller_cfg, $id, $uplinks, $config,
+            $controller_plugin->generate_zone_frr_config(
+                $plugin_config, $controller, $controller_cfg, $id, $uplinks, $frr_config,
             );
         }
     }
@@ -140,58 +136,11 @@ sub generate_controller_config {
         if ($controller) {
             my $controller_plugin =
                 PVE::Network::SDN::Controllers::Plugin->lookup($controller->{type});
-            $controller_plugin->generate_controller_vnet_config(
-                $plugin_config, $controller, $zone, $zoneid, $id, $config,
+            $controller_plugin->generate_vnet_frr_config(
+                $plugin_config, $controller, $zone, $zoneid, $id, $frr_config,
             );
         }
-    }
-
-    return $config;
-}
-
-sub reload_controller {
-
-    my $cfg = PVE::Network::SDN::running_config();
-    my $controller_cfg = $cfg->{controllers};
-
-    return if !$controller_cfg;
-
-    foreach my $id (keys %{ $controller_cfg->{ids} }) {
-        my $plugin_config = $controller_cfg->{ids}->{$id};
-        my $plugin = PVE::Network::SDN::Controllers::Plugin->lookup($plugin_config->{type});
-        $plugin->reload_controller();
-    }
-}
-
-sub generate_controller_rawconfig {
-    my ($config) = @_;
-
-    my $cfg = PVE::Network::SDN::running_config();
-    my $controller_cfg = $cfg->{controllers};
-    return if !$controller_cfg;
-
-    my $rawconfig = "";
-    foreach my $id (keys %{ $controller_cfg->{ids} }) {
-        my $plugin_config = $controller_cfg->{ids}->{$id};
-        my $plugin = PVE::Network::SDN::Controllers::Plugin->lookup($plugin_config->{type});
-        $rawconfig .= $plugin->generate_controller_rawconfig($plugin_config, $config);
-    }
-    return $rawconfig;
-}
-
-sub write_controller_config {
-    my ($config) = @_;
-
-    my $cfg = PVE::Network::SDN::running_config();
-    my $controller_cfg = $cfg->{controllers};
-    return if !$controller_cfg;
-
-    foreach my $id (keys %{ $controller_cfg->{ids} }) {
-        my $plugin_config = $controller_cfg->{ids}->{$id};
-        my $plugin = PVE::Network::SDN::Controllers::Plugin->lookup($plugin_config->{type});
-        $plugin->write_controller_config($plugin_config, $config);
     }
 }
 
 1;
-

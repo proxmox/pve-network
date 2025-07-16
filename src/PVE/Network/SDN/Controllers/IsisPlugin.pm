@@ -58,7 +58,7 @@ sub options {
 }
 
 # Plugin implementation
-sub generate_controller_config {
+sub generate_frr_config {
     my ($class, $plugin_config, $controller, $id, $uplinks, $config) = @_;
 
     my $isis_ifaces = $plugin_config->{'isis-ifaces'};
@@ -91,7 +91,7 @@ sub generate_controller_config {
     return $config;
 }
 
-sub generate_controller_zone_config {
+sub generate_zone_frr_config {
     my ($class, $plugin_config, $controller, $controller_cfg, $id, $uplinks, $config) = @_;
 
 }
@@ -117,20 +117,4 @@ sub on_update_hook {
     }
 }
 
-sub generate_controller_rawconfig {
-    my ($class, $plugin_config, $config) = @_;
-    return "";
-}
-
-sub write_controller_config {
-    my ($class, $plugin_config, $config) = @_;
-    return;
-}
-
-sub reload_controller {
-    my ($class) = @_;
-    return;
-}
-
 1;
-

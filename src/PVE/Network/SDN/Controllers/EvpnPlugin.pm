@@ -42,7 +42,7 @@ sub options {
 }
 
 # Plugin implementation
-sub generate_controller_config {
+sub generate_frr_config {
     my ($class, $plugin_config, $controller_cfg, $id, $uplinks, $config) = @_;
 
     my @peers;
@@ -121,7 +121,7 @@ sub generate_controller_config {
     return $config;
 }
 
-sub generate_controller_zone_config {
+sub generate_zone_frr_config {
     my ($class, $plugin_config, $controller, $controller_cfg, $id, $uplinks, $config) = @_;
 
     my $local_node = PVE::INotify::nodename();
@@ -346,7 +346,7 @@ sub generate_controller_zone_config {
     return $config;
 }
 
-sub generate_controller_vnet_config {
+sub generate_vnet_frr_config {
     my ($class, $plugin_config, $controller, $zone, $zoneid, $vnetid, $config) = @_;
 
     my $exitnodes = $zone->{'exitnodes'};
