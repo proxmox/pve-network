@@ -376,7 +376,7 @@ sub generate_dhcp_config {
 sub encode_value {
     my ($type, $key, $value) = @_;
 
-    if ($key eq 'nodes' || $key eq 'exitnodes' || $key eq 'dhcp-range') {
+    if ($key eq 'nodes' || $key eq 'exitnodes' || $key eq 'dhcp-range' || $key eq 'interfaces') {
         if (ref($value) eq 'HASH') {
             return join(',', sort keys(%$value));
         } elsif (ref($value) eq 'ARRAY') {

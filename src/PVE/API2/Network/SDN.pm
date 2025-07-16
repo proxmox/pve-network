@@ -17,6 +17,7 @@ use PVE::API2::Network::SDN::Vnets;
 use PVE::API2::Network::SDN::Zones;
 use PVE::API2::Network::SDN::Ipams;
 use PVE::API2::Network::SDN::Dns;
+use PVE::API2::Network::SDN::Fabrics;
 
 use base qw(PVE::RESTHandler);
 
@@ -43,6 +44,11 @@ __PACKAGE__->register_method({
 __PACKAGE__->register_method({
     subclass => "PVE::API2::Network::SDN::Dns",
     path => 'dns',
+});
+
+__PACKAGE__->register_method({
+    subclass => "PVE::API2::Network::SDN::Fabrics",
+    path => 'fabrics',
 });
 
 __PACKAGE__->register_method({
@@ -76,6 +82,7 @@ __PACKAGE__->register_method({
             { id => 'controllers' },
             { id => 'ipams' },
             { id => 'dns' },
+            { id => 'fabrics' },
         ];
 
         return $res;
