@@ -9,6 +9,7 @@ use PVE::Network::SDN;
 use PVE::Network::SDN::Fabrics;
 
 use PVE::API2::Network::SDN::Fabrics::Fabric;
+use PVE::API2::Network::SDN::Fabrics::Node;
 
 use PVE::RESTHandler;
 use base qw(PVE::RESTHandler);
@@ -16,6 +17,11 @@ use base qw(PVE::RESTHandler);
 __PACKAGE__->register_method({
     subclass => "PVE::API2::Network::SDN::Fabrics::Fabric",
     path => 'fabric',
+});
+
+__PACKAGE__->register_method({
+    subclass => "PVE::API2::Network::SDN::Fabrics::Node",
+    path => 'node',
 });
 
 __PACKAGE__->register_method({
@@ -43,7 +49,7 @@ __PACKAGE__->register_method({
         my ($param) = @_;
 
         my $res = [
-            { subdir => 'fabric' }, { subdir => 'all' },
+            { subdir => 'fabric' }, { subdir => 'node' }, { subdir => 'all' },
         ];
 
         return $res;
