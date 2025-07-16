@@ -177,11 +177,13 @@ sub commit_config {
     my $zones_cfg = PVE::Network::SDN::Zones::config();
     my $controllers_cfg = PVE::Network::SDN::Controllers::config();
     my $subnets_cfg = PVE::Network::SDN::Subnets::config();
+    my $fabrics_cfg = PVE::Network::SDN::Fabrics::config();
 
     my $vnets = { ids => $vnets_cfg->{ids} };
     my $zones = { ids => $zones_cfg->{ids} };
     my $controllers = { ids => $controllers_cfg->{ids} };
     my $subnets = { ids => $subnets_cfg->{ids} };
+    my $fabrics = { ids => $fabrics_cfg->to_sections() };
 
     $cfg = {
         version => $version,
@@ -189,6 +191,7 @@ sub commit_config {
         zones => $zones,
         controllers => $controllers,
         subnets => $subnets,
+        fabrics => $fabrics,
     };
 
     cfs_write_file($running_cfg, $cfg);
