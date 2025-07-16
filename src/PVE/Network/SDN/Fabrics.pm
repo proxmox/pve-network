@@ -8,6 +8,47 @@ use PVE::JSONSchema qw(get_standard_option);
 use PVE::INotify;
 use PVE::RS::SDN::Fabrics;
 
+PVE::JSONSchema::register_format(
+    'pve-sdn-fabric-id',
+    sub {
+        my ($id, $noerr) = @_;
+
+        if ($id !~ m/^[a-zA-Z0-9][a-zA-Z0-9-]{0,6}[a-zA-Z0-9]?$/i) {
+            return undef if $noerr;
+            die "Fabric ID '$id' contains illegal characters\n";
+        }
+
+        return $id;
+    },
+);
+
+PVE::JSONSchema::register_standard_option(
+    'pve-sdn-fabric-id',
+    {
+        description => "Identifier for SDN fabrics",
+        type => 'string',
+        format => 'pve-sdn-fabric-id',
+    },
+);
+
+PVE::JSONSchema::register_standard_option(
+    'pve-sdn-fabric-node-id',
+    {
+        description => "Identifier for nodes in an SDN fabric",
+        type => 'string',
+        format => 'pve-node',
+    },
+);
+
+PVE::JSONSchema::register_standard_option(
+    'pve-sdn-fabric-protocol',
+    {
+        description => "Type of configuration entry in an SDN Fabric section config",
+        type => 'string',
+        enum => ['openfabric', 'ospf'],
+    },
+);
+
 cfs_register_file(
     'sdn/fabrics.cfg', \&parse_fabrics_config, \&write_fabrics_config,
 );
@@ -77,6 +118,184 @@ sub generate_etc_network_config {
     my $fabric_config = PVE::Network::SDN::Fabrics::config(1);
 
     return $fabric_config->get_interfaces_etc_network_config($nodename);
+}
+
+sub node_properties {
+    my ($update) = @_;
+
+    my $properties = {
+        fabric_id => get_standard_option('pve-sdn-fabric-id'),
+        node_id => get_standard_option('pve-sdn-fabric-node-id'),
+        protocol => get_standard_option('pve-sdn-fabric-protocol'),
+        digest => get_standard_option('pve-config-digest'),
+        ip => {
+            type => 'string',
+            format => 'ipv4',
+            description => 'IPv4 address for this node',
+            optional => 1,
+        },
+        ip6 => {
+            type => 'string',
+            format => 'ipv6',
+            description => 'IPv6 address for this node',
+            optional => 1,
+        },
+        interfaces => {
+            # coerce this value into an array before parsing (oneOf workaround)
+            type => 'array',
+            'type-property' => 'protocol',
+            oneOf => [
+                {
+                    type => 'array',
+                    'instance-types' => ['openfabric'],
+                    items => {
+                        type => 'string',
+                        format => {
+                            name => {
+                                type => 'string',
+                                format => 'pve-iface',
+                                description => 'Name of the network interface',
+                            },
+                            hello_multiplier => {
+                                type => 'integer',
+                                description => 'The hello_multiplier property of the interface',
+                                optional => 1,
+                                minimum => 2,
+                                maximum => 100,
+                            },
+                            ip => {
+                                type => 'string',
+                                format => 'CIDRv4',
+                                description => 'IPv4 address for this node',
+                                optional => 1,
+                            },
+                            ip6 => {
+                                type => 'string',
+                                format => 'CIDRv6',
+                                description => 'IPv6 address for this node',
+                                optional => 1,
+                            },
+                        },
+                    },
+                    description => 'OpenFabric network interface',
+                    optional => 1,
+                },
+                {
+                    type => 'array',
+                    'instance-types' => ['ospf'],
+                    items => {
+                        type => 'string',
+                        format => {
+                            name => {
+                                type => 'string',
+                                format => 'pve-iface',
+                                description => 'Name of the network interface',
+                            },
+                            ip => {
+                                type => 'string',
+                                format => 'CIDRv4',
+                                description => 'IPv4 address for this node',
+                                optional => 1,
+                            },
+                        },
+                    },
+                    description => 'OSPF network interface',
+                    optional => 1,
+                },
+            ],
+        },
+    };
+
+    if ($update) {
+        $properties->{delete} = {
+            type => 'array',
+            items => {
+                type => 'string',
+                enum => ['interfaces', 'ip', 'ip6'],
+            },
+            optional => 1,
+        };
+    }
+
+    return $properties;
+}
+
+sub fabric_properties {
+    my ($update) = @_;
+
+    my $properties = {
+        id => get_standard_option('pve-sdn-fabric-id'),
+        protocol => get_standard_option('pve-sdn-fabric-protocol'),
+        digest => get_standard_option('pve-config-digest'),
+        ip_prefix => {
+            type => 'string',
+            format => 'CIDR',
+            description => 'The IP prefix for Node IPs',
+            optional => 1,
+        },
+        ip6_prefix => {
+            type => 'string',
+            format => 'CIDR',
+            description => 'The IP prefix for Node IPs',
+            optional => 1,
+        },
+        hello_interval => {
+            type => 'number',
+            'type-property' => 'protocol',
+            'instance-types' => ['openfabric'],
+            description => 'The hello_interval property for Openfabric',
+            optional => 1,
+            minimum => 1,
+            maximum => 600,
+        },
+        csnp_interval => {
+            type => 'number',
+            'type-property' => 'protocol',
+            'instance-types' => ['openfabric'],
+            description => 'The csnp_interval property for Openfabric',
+            optional => 1,
+            minimum => 1,
+            maximum => 600,
+        },
+        area => {
+            type => 'string',
+            'type-property' => 'protocol',
+            'instance-types' => ['ospf'],
+            description =>
+                'OSPF area. Either a IPv4 address or a 32-bit number. Gets validated in rust.',
+            optional => 1,
+        },
+    };
+
+    if ($update) {
+        $properties->{delete} = {
+            # coerce this value into an array before parsing (oneOf workaround)
+            type => 'array',
+            'type-property' => 'protocol',
+            oneOf => [
+                {
+                    type => 'array',
+                    'instance-types' => ['openfabric'],
+                    items => {
+                        type => 'string',
+                        enum => ['hello_interval', 'csnp_interval'],
+                    },
+                    optional => 1,
+                },
+                {
+                    type => 'array',
+                    'instance-types' => ['ospf'],
+                    items => {
+                        type => 'string',
+                        enum => ['area'],
+                    },
+                    optional => 1,
+                },
+            ],
+        };
+    }
+
+    return $properties;
 }
 
 1;
