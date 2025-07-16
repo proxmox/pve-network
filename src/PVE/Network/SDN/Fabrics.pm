@@ -72,4 +72,11 @@ sub generate_frr_raw_config {
     return \@raw_config;
 }
 
+sub generate_etc_network_config {
+    my $nodename = PVE::INotify::nodename();
+    my $fabric_config = PVE::Network::SDN::Fabrics::config(1);
+
+    return $fabric_config->get_interfaces_etc_network_config($nodename);
+}
+
 1;

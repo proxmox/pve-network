@@ -179,16 +179,6 @@ sub generate_etc_network_config {
     return $raw_network_config;
 }
 
-sub write_etc_network_config {
-    my ($rawconfig) = @_;
-
-    return if !$rawconfig;
-
-    my $writefh = IO::File->new($local_network_sdn_file, ">");
-    print $writefh $rawconfig;
-    $writefh->close();
-}
-
 sub read_etc_network_config_version {
     my $versionstr = PVE::Tools::file_read_firstline($local_network_sdn_file);
 

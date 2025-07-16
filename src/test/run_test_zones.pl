@@ -134,7 +134,7 @@ foreach my $test (@tests) {
     my $name = $test;
     my $expected = read_file("./$test/expected_sdn_interfaces");
 
-    my $result = eval { PVE::Network::SDN::Zones::generate_etc_network_config() };
+    my $result = eval { PVE::Network::SDN::generate_raw_etc_network_config() };
 
     if (my $err = $@) {
         diag("got unexpected error - $err");
