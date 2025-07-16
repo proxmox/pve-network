@@ -44,6 +44,71 @@ sub read_local_frr_config {
     }
 }
 
+my $FRR_CONFIG_FILE = "/etc/frr/frr.conf";
+
+=head3 apply()
+
+Tries to reload FRR with the frr-reload.py script from frr-pythontools. If that
+isn't installed or doesn't work it falls back to restarting the systemd frr
+service. If C<$force_restart> is set, then the FRR daemon will be restarted,
+without trying to reload it first.
+
+=cut
+
+sub apply {
+    my ($force_restart) = @_;
+
+    if (!-e $FRR_CONFIG_FILE) {
+        log_warn("$FRR_CONFIG_FILE is not present.");
+        return;
+    }
+
+    run_command(['systemctl', 'enable', '--now', 'frr'])
+        if !-e "/etc/systemd/system/multi-user.target.wants/frr.service";
+
+    if (!$force_restart) {
+        eval { reload() };
+        return if !$@;
+
+        warn "reloading frr configuration failed: $@";
+        warn "trying to restart frr instead";
+    }
+
+    eval { restart() };
+    warn "restarting frr failed: $@" if $@;
+}
+
+sub reload {
+    my $bin_path = "/usr/lib/frr/frr-reload.py";
+
+    if (!-e $bin_path) {
+        die "missing $bin_path. Please install the frr-pythontools package";
+    }
+
+    my $err = sub {
+        my $line = shift;
+        warn "$line \n";
+    };
+
+    run_command([$bin_path, '--stdout', '--reload', $FRR_CONFIG_FILE], errfunc => $err);
+}
+
+sub restart {
+    # script invoked by the frr systemd service
+    my $bin_path = "/usr/lib/frr/frrinit.sh";
+
+    if (!-e $bin_path) {
+        die "missing $bin_path. Please install the frr package";
+    }
+
+    my $err = sub {
+        my $line = shift;
+        warn "$line \n";
+    };
+
+    run_command(['systemctl', 'restart', 'frr'], errfunc => $err);
+}
+
 =head3 to_raw_config(\%frr_config)
 
 Converts a given C<\%frr_config> to the raw config format.
