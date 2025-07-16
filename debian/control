@@ -4,13 +4,15 @@ Priority: optional
 Maintainer: Proxmox Support Team <support@proxmox.com>
 Build-Depends: debhelper-compat (= 13),
                lintian,
-               libfile-slurp-perl <!nocheck>,
-               libnet-subnet-perl <!nocheck>,
-               libtest-mockmodule-perl <!nocheck>,
-               pve-cluster (>= 8.0.10) <!nocheck>,
-               pve-firewall (>= 5.1.0~) <!nocheck>,
-               pve-doc-generator (>= 5.3-3) <!nocheck>,
-               libpve-access-control <!nocheck>,
+               libfile-slurp-perl,
+               libnet-subnet-perl,
+               libpve-rs-perl,
+               libtest-mockmodule-perl,
+               perl,
+               pve-cluster (>= 8.0.10),
+               pve-firewall (>= 5.1.0~),
+               pve-doc-generator (>= 5.3-3),
+               libpve-access-control,
 Standards-Version: 4.6.1
 Homepage: https://www.proxmox.com
 
@@ -22,6 +24,7 @@ Depends: libpve-common-perl (>= 9.0.2),
          libnet-subnet-perl,
          libnet-ip-perl,
          libnetaddr-ip-perl,
+         libpve-rs-perl,
          ${misc:Depends},
          ${perl:Depends},
 Recommends: ifupdown2
