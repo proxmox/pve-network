@@ -80,9 +80,12 @@ sub generate_controller_config {
 
     my @iface_config = ("ip router isis $isis_domain");
 
+    my $altnames = PVE::Network::altname_mapping();
+
     my @ifaces = PVE::Tools::split_list($isis_ifaces);
     for my $iface (sort @ifaces) {
-        push(@{ $config->{frr_interfaces}->{$iface} }, @iface_config);
+        my $iface_name = $altnames->{$iface} // $iface;
+        push(@{ $config->{frr_interfaces}->{$iface_name} }, @iface_config);
     }
 
     return $config;
