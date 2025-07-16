@@ -42,7 +42,7 @@ Depends: libpve-common-perl (>= 9.0.2),
          ${misc:Depends},
          ${perl:Depends},
 Breaks: libpve-network-perl (<< 0.9.9~),
-Replaces: pve-cluster (<< 0.9.9~),
+Replaces: libpve-network-perl (<< 0.9.9~),
 Description: API endpoints for Proxmox VE's SDN stack
  This package contains the API endpoints for the Software Defined Network of
  Proxmox VE.
