@@ -1,0 +1,68 @@
+frr version 8.5.2
+frr defaults datacenter
+hostname localhost
+log syslog informational
+service integrated-vtysh-config
+!
+!
+vrf vrf_evpn
+ vni 100
+exit-vrf
+!
+router bgp 65000
+ bgp router-id 172.20.30.1
+ no bgp hard-administrative-reset
+ no bgp default ipv4-unicast
+ coalesce-time 1000
+ no bgp graceful-restart notification
+ neighbor VTEP peer-group
+ neighbor VTEP remote-as 65000
+ neighbor VTEP bfd
+ neighbor VTEP update-source dummy_test
+ neighbor 172.20.30.2 peer-group VTEP
+ neighbor 172.20.30.3 peer-group VTEP
+ !
+ address-family l2vpn evpn
+  neighbor VTEP activate
+  neighbor VTEP route-map MAP_VTEP_IN in
+  neighbor VTEP route-map MAP_VTEP_OUT out
+  advertise-all-vni
+ exit-address-family
+exit
+!
+router bgp 65000 vrf vrf_evpn
+ bgp router-id 172.20.30.1
+ no bgp hard-administrative-reset
+ no bgp graceful-restart notification
+exit
+!
+route-map MAP_VTEP_IN permit 1
+exit
+!
+route-map MAP_VTEP_OUT permit 1
+exit
+router ospf
+ ospf router-id 172.20.30.1
+exit
+!
+interface dummy_test
+ ip ospf area 0
+ ip ospf passive
+exit
+!
+interface ens19
+ ip ospf area 0
+exit
+!
+access-list pve_ospf_test_ips permit 172.20.30.0/24
+!
+route-map pve_ospf permit 100
+ match ip address pve_ospf_test_ips
+ set src 172.20.30.1
+exit
+!
+ip protocol ospf route-map pve_ospf
+!
+!
+line vty
+!

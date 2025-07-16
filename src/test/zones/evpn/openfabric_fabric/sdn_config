@@ -1,0 +1,79 @@
+{
+          'zones' => {
+                       'ids' => {
+                                  'evpn' => {
+                                              'type' => 'evpn',
+                                              'ipam' => 'pve',
+                                              'mac' => 'BC:24:11:3B:39:34',
+                                              'controller' => 'ctrl',
+                                              'vrf-vxlan' => 100
+                                            }
+                                }
+                     },
+          'vnets' => {
+                       'ids' => {
+                                  'vnet0' => {
+                                               'zone' => 'evpn',
+                                               'type' => 'vnet',
+                                               'tag' => 123456
+                                             }
+                                }
+                     },
+          'version' => 1,
+          'subnets' => {
+                         'ids' => {
+                                    'evpn-10.123.123.0-24' => {
+                                                                'vnet' => 'vnet0',
+                                                                'type' => 'subnet',
+                                                                'gateway' => '10.123.123.1'
+                                                              }
+                                  }
+                       },
+          'controllers' => {
+                             'ids' => {
+                                        'ctrl' => {
+                                                    'fabric' => 'test',
+                                                    'asn' => 65000,
+                                                    'type' => 'evpn'
+                                                  }
+                                      }
+                           },
+           'fabrics' => {
+                 'ids' => {
+                               'test' => {
+                                           'type' => 'openfabric_fabric',
+                                           'id' => 'test',
+                                           'hello_interval' => 1,
+                                           'ip_prefix' => '172.20.3.0/24',
+                                         },
+                               'test_localhost' => {
+                                                   'interfaces' => [
+                                                                    'name=ens20',
+                                                                    'name=ens21'
+                                                                  ],
+                                                   'id' => 'test_localhost',
+                                                   'type' => 'openfabric_node',
+                                                   'ip' => '172.20.3.1',
+                                                 },
+                               'test_pathfinder' => {
+                                                      'id' => 'test_pathfinder',
+                                                      'interfaces' => [
+                                                                       'name=ens20',
+                                                                       'name=ens21'
+                                                                     ],
+                                                      'ip' => '172.20.3.2',
+                                                      'type' => 'openfabric_node',
+                                                    },
+                               'test_raider' => {
+                                                  'ip' => '172.20.3.3',
+                                                  'type' => 'openfabric_node',
+                                                  'interfaces' => [
+                                                                   'name=ens21',
+                                                                   'name=ens20'
+                                                                 ],
+                                                  'id' => 'test_raider',
+                                                }
+                                     }
+              }
+        };
+

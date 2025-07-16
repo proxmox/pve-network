@@ -1,0 +1,53 @@
+#version:1
+
+auto vnet0
+iface vnet0
+	address 10.123.123.1/24
+	hwaddress BC:24:11:3B:39:34
+	bridge_ports vxlan_vnet0
+	bridge_stp off
+	bridge_fd 0
+	mtu 1450
+	ip-forward on
+	arp-accept on
+	vrf vrf_evpn
+
+auto vrf_evpn
+iface vrf_evpn
+	vrf-table auto
+	post-up ip route add vrf vrf_evpn unreachable default metric 4278198272
+
+auto vrfbr_evpn
+iface vrfbr_evpn
+	bridge-ports vrfvx_evpn
+	bridge_stp off
+	bridge_fd 0
+	mtu 1450
+	vrf vrf_evpn
+
+auto vrfvx_evpn
+iface vrfvx_evpn
+	vxlan-id 100
+	vxlan-local-tunnelip 172.20.30.1
+	bridge-learning off
+	bridge-arp-nd-suppress on
+	mtu 1450
+
+auto vxlan_vnet0
+iface vxlan_vnet0
+	vxlan-id 123456
+	vxlan-local-tunnelip 172.20.30.1
+	bridge-learning off
+	bridge-arp-nd-suppress on
+	mtu 1450
+
+auto dummy_test
+iface dummy_test inet static
+	address 172.20.30.1/32
+	link-type dummy
+	ip-forward 1
+
+auto ens19
+iface ens19 inet static
+	address 172.16.3.10/31
+	ip-forward 1

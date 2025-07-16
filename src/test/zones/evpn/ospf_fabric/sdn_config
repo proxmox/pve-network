@@ -1,0 +1,76 @@
+{
+          'zones' => {
+                       'ids' => {
+                                  'evpn' => {
+                                              'type' => 'evpn',
+                                              'ipam' => 'pve',
+                                              'mac' => 'BC:24:11:3B:39:34',
+                                              'controller' => 'ctrl',
+                                              'vrf-vxlan' => 100
+                                            }
+                                }
+                     },
+          'vnets' => {
+                       'ids' => {
+                                  'vnet0' => {
+                                               'zone' => 'evpn',
+                                               'type' => 'vnet',
+                                               'tag' => 123456
+                                             }
+                                }
+                     },
+          'version' => 1,
+          'subnets' => {
+                         'ids' => {
+                                    'evpn-10.123.123.0-24' => {
+                                                                'vnet' => 'vnet0',
+                                                                'type' => 'subnet',
+                                                                'gateway' => '10.123.123.1'
+                                                              }
+                                  }
+                       },
+          'controllers' => {
+                             'ids' => {
+                                        'ctrl' => {
+                                                    'fabric' => 'test',
+                                                    'asn' => 65000,
+                                                    'type' => 'evpn'
+                                                  }
+                                      }
+                           },
+           'fabrics' => {
+                  'ids' => {
+                                 'test_pathfinder' => {
+                                                     'id' => 'test_pathfinder',
+                                                     'interfaces' => [
+                                                                      'name=ens19,ip=172.16.3.20/31'
+                                                                    ],
+                                                     'ip' => '172.20.30.2',
+                                                     'type' => 'ospf_node'
+                                                   },
+                                 'test' => {
+                                          'ip_prefix' => '172.20.30.0/24',
+                                          'area' => '0',
+                                          'type' => 'ospf_fabric',
+                                          'id' => 'test',
+                                        },
+                                 'test_localhost' => {
+                                                  'id' => 'test_localhost',
+                                                  'interfaces' => [
+                                                                   'name=ens19,ip=172.16.3.10/31'
+                                                                 ],
+                                                  'ip' => '172.20.30.1',
+                                                  'type' => 'ospf_node'
+                                                },
+                                 'test_raider' => {
+                                                 'type' => 'ospf_node',
+                                                 'ip' => '172.20.30.3',
+                                                 'id' => 'test_raider',
+                                                 'interfaces' => [
+                                                                  'name=ens19,ip=172.16.3.30/31'
+                                                                ]
+                                               }
+                            }
+                }
+        };
+
