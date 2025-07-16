@@ -1,4 +1,4 @@
-SOURCES=Vnets.pm VnetPlugin.pm Zones.pm Controllers.pm Subnets.pm SubnetPlugin.pm Ipams.pm Dns.pm Dhcp.pm
+SOURCES=Vnets.pm VnetPlugin.pm Zones.pm Controllers.pm Subnets.pm SubnetPlugin.pm Ipams.pm Dns.pm Dhcp.pm Fabrics.pm
 
 
 PERL5DIR=${DESTDIR}/usr/share/perl5

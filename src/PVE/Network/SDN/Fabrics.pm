@@ -1,0 +1,47 @@
+package PVE::Network::SDN::Fabrics;
+
+use strict;
+use warnings;
+
+use PVE::Cluster qw(cfs_register_file cfs_read_file cfs_lock_file cfs_write_file);
+use PVE::JSONSchema qw(get_standard_option);
+use PVE::INotify;
+use PVE::RS::SDN::Fabrics;
+
+cfs_register_file(
+    'sdn/fabrics.cfg', \&parse_fabrics_config, \&write_fabrics_config,
+);
+
+sub parse_fabrics_config {
+    my ($filename, $raw) = @_;
+    return $raw // '';
+}
+
+sub write_fabrics_config {
+    my ($filename, $config) = @_;
+    return $config // '';
+}
+
+sub config {
+    my ($running) = @_;
+
+    if ($running) {
+        my $running_config = PVE::Network::SDN::running_config();
+
+        # if the config hasn't yet been applied after the introduction of
+        # fabrics then the key does not exist in the running config so we
+        # default to an empty hash
+        my $fabrics_config = $running_config->{fabrics}->{ids} // {};
+        return PVE::RS::SDN::Fabrics->running_config($fabrics_config);
+    }
+
+    my $fabrics_config = cfs_read_file("sdn/fabrics.cfg");
+    return PVE::RS::SDN::Fabrics->config($fabrics_config);
+}
+
+sub write_config {
+    my ($config) = @_;
+    cfs_write_file("sdn/fabrics.cfg", $config->to_raw(), 1);
+}
+
+1;
