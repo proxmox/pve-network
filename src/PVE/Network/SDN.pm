@@ -121,8 +121,9 @@ sub pending_config {
             if ($key eq 'type' || $key eq 'vnet') {
                 $pending->{$id}->{$key} = $config_value;
             } else {
-                $pending->{$id}->{"pending"}->{$key} = $config_value
-                    if !defined($running_value) || ($config_value ne $running_value);
+                $pending->{$id}->{"pending"}->{$key} = $config_object->{$key}
+                    if !defined($running_value)
+                    || ($config_value ne $running_value);
             }
             if (!keys %{$running_object}) {
                 $pending->{$id}->{state} = "new";
