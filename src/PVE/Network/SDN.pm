@@ -293,16 +293,32 @@ sub generate_frr_raw_config {
     return $raw_config;
 }
 
+=head3 get_frr_daemon_status(\%fabric_config)
+
+Returns a hash that indicates which FRR daemons, that are managed by SDN, should
+be enabled / disabled.
+
+=cut
+
+sub get_frr_daemon_status {
+    my ($fabric_config) = @_;
+
+    return PVE::Network::SDN::Fabrics::get_frr_daemon_status($fabric_config);
+}
+
 sub generate_frr_config {
     my ($apply) = @_;
 
     my $running_config = PVE::Network::SDN::running_config();
     my $fabric_config = PVE::Network::SDN::Fabrics::config(1);
 
+    my $daemon_status = PVE::Network::SDN::get_frr_daemon_status($fabric_config);
+    my $needs_restart = PVE::Network::SDN::Frr::set_daemon_status($daemon_status, 1);
+
     my $raw_config = PVE::Network::SDN::generate_frr_raw_config($running_config, $fabric_config);
     PVE::Network::SDN::Frr::write_raw_config($raw_config);
 
-    PVE::Network::SDN::Frr::apply() if $apply;
+    PVE::Network::SDN::Frr::apply($needs_restart) if $apply;
 }
 
 sub generate_dhcp_config {

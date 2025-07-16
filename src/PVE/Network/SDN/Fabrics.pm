@@ -44,6 +44,21 @@ sub write_config {
     cfs_write_file("sdn/fabrics.cfg", $config->to_raw(), 1);
 }
 
+sub get_frr_daemon_status {
+    my ($fabric_config) = @_;
+
+    my $daemon_status = {};
+    my $nodename = PVE::INotify::nodename();
+
+    my $enabled_daemons = $fabric_config->enabled_daemons($nodename);
+
+    for my $daemon (@$enabled_daemons) {
+        $daemon_status->{$daemon} = 1;
+    }
+
+    return $daemon_status;
+}
+
 sub generate_frr_raw_config {
     my ($fabric_config) = @_;
 

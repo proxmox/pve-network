@@ -109,6 +109,70 @@ sub restart {
     run_command(['systemctl', 'restart', 'frr'], errfunc => $err);
 }
 
+my $SDN_DAEMONS_DEFAULT = {
+    ospfd => 0,
+    fabricd => 0,
+};
+
+=head3 set_daemon_status(\%daemons, $set_default)
+
+Sets the status of all daemons supplied in C<\%daemons>. This only works for
+daemons managed by SDN, as indicated in the C<$SDN_DAEMONS_DEFAULT> constant. If
+a daemon is supplied that isn't managed by SDN then this command will fail. If
+C<$set_default> is set, then additionally all sdn-managed daemons that are
+missing in C<\%daemons> are reset to their default value. It returns whether the
+status of any daemons has changed, which indicates that a restart of the daemon
+is required, rather than only a reload.
+
+=cut
+
+sub set_daemon_status {
+    my ($daemon_status, $set_default) = @_;
+
+    my $daemons_file = "/etc/frr/daemons";
+    die "daemons file does not exist" if !-e $daemons_file;
+
+    for my $daemon (keys %$daemon_status) {
+        die "$daemon is not SDN managed" if !defined $SDN_DAEMONS_DEFAULT->{$daemon};
+    }
+
+    if ($set_default) {
+        for my $daemon (keys %$SDN_DAEMONS_DEFAULT) {
+            $daemon_status->{$daemon} = $SDN_DAEMONS_DEFAULT->{$daemon}
+                if !defined($daemon_status->{$daemon});
+        }
+    }
+
+    my $old_config = PVE::Tools::file_get_contents($daemons_file);
+    my $new_config = "";
+
+    my $changed = 0;
+
+    my @lines = split(/\n/, $old_config);
+
+    for my $line (@lines) {
+        if ($line =~ m/^([a-z_]+)=/) {
+            my $key = $1;
+            my $status = $daemon_status->{$key};
+
+            if (defined $status) {
+                my $value = $status ? "yes" : "no";
+                my $new_line = "$key=$value";
+
+                $changed = 1 if $new_line ne $line;
+
+                $line = $new_line;
+            }
+        }
+
+        $new_config .= "$line\n";
+    }
+
+    PVE::Tools::file_set_contents($daemons_file, $new_config);
+
+    return $changed;
+}
+
 =head3 to_raw_config(\%frr_config)
 
 Converts a given C<\%frr_config> to the raw config format.
