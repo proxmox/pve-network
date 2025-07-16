@@ -135,28 +135,63 @@ sub generate_sdn_config {
     die "missing vxlan tag" if !$tag;
     die "missing controller" if !$controller;
 
-    my @peers = PVE::Tools::split_list($controller->{'peers'});
-
+    my @peers;
     my $loopback = undef;
-    my $bgprouter = PVE::Network::SDN::Controllers::EvpnPlugin::find_bgp_controller(
-        $local_node, $controller_cfg,
-    );
-    my $isisrouter = PVE::Network::SDN::Controllers::EvpnPlugin::find_isis_controller(
-        $local_node, $controller_cfg,
-    );
-    if ($bgprouter->{loopback}) {
-        $loopback = $bgprouter->{loopback};
-    } elsif ($isisrouter->{loopback}) {
-        $loopback = $isisrouter->{loopback};
+    my $ifaceip = undef;
+    my $iface = undef;
+    my $routerid = undef;
+
+    if ($controller->{peers}) {
+        @peers = PVE::Tools::split_list($controller->{'peers'});
+
+        my $bgprouter = PVE::Network::SDN::Controllers::EvpnPlugin::find_bgp_controller(
+            $local_node, $controller_cfg,
+        );
+        my $isisrouter = PVE::Network::SDN::Controllers::EvpnPlugin::find_isis_controller(
+            $local_node, $controller_cfg,
+        );
+
+        if ($bgprouter->{loopback}) {
+            $loopback = $bgprouter->{loopback};
+        } elsif ($isisrouter->{loopback}) {
+            $loopback = $isisrouter->{loopback};
+        }
+
+        ($ifaceip, $iface) =
+            PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers, $loopback);
+    } elsif ($controller->{fabric}) {
+        my $config = PVE::Network::SDN::Fabrics::config(1);
+
+        my $fabric = eval { $config->get_fabric($controller->{fabric}) };
+        die "could not configure EVPN zone $plugin_config->{id}: $@" if $@;
+
+        my $nodes = $config->list_nodes_fabric($controller->{fabric});
+
+        my $current_node = eval { $config->get_node($controller->{fabric}, $local_node) };
+        die "could not configure EVPN zone $plugin_config->{id}: $@" if $@;
+
+        die "Node $local_node requires an IP in the fabric $fabric->{id} to configure the EVPN zone"
+            if !$current_node->{ip};
+
+        for my $node (values %$nodes) {
+            push @peers, $node->{ip} if $node->{ip};
+        }
+
+        $loopback = "dummy_$fabric->{id}";
+
+        $ifaceip = $current_node->{ip};
+        $routerid = $current_node->{ip};
+    } else {
+        die "neither fabric nor peers configured for EVPN controller $controller->{id}";
     }
 
-    my ($ifaceip, $iface) =
-        PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers, $loopback);
     my $is_evpn_gateway = $plugin_config->{'exitnodes'}->{$local_node};
     my $exitnodes_local_routing = $plugin_config->{'exitnodes-local-routing'};
 
     my $mtu = 1450;
-    $mtu = $interfaces_config->{$iface}->{mtu} - 50 if $interfaces_config->{$iface}->{mtu};
+    if ($iface) {
+        $mtu = $interfaces_config->{$iface}->{mtu} - 50 if $interfaces_config->{$iface}->{mtu};
+    }
     $mtu = $plugin_config->{mtu} if $plugin_config->{mtu};
 
     #vxlan interface

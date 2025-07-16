@@ -10,6 +10,7 @@ use PVE::RESTEnvironment qw(log_warn);
 
 use PVE::Network::SDN::Controllers::Plugin;
 use PVE::Network::SDN::Zones::Plugin;
+use PVE::Network::SDN::Fabrics;
 use Net::IP;
 
 use base('PVE::Network::SDN::Controllers::Plugin');
@@ -26,6 +27,11 @@ sub properties {
             minimum => 0,
             maximum => 4294967296,
         },
+        fabric => {
+            description => "SDN fabric to use as underlay for this EVPN controller.",
+            type => 'string',
+            format => 'pve-sdn-fabric-id',
+        },
         peers => {
             description => "peers address list.",
             type => 'string',
@@ -37,7 +43,8 @@ sub properties {
 sub options {
     return {
         'asn' => { optional => 0 },
-        'peers' => { optional => 0 },
+        'peers' => { optional => 1 },
+        'fabric' => { optional => 1 },
     };
 }
 
@@ -45,34 +52,78 @@ sub options {
 sub generate_frr_config {
     my ($class, $plugin_config, $controller_cfg, $id, $uplinks, $config) = @_;
 
-    my @peers;
-    @peers = PVE::Tools::split_list($plugin_config->{'peers'}) if $plugin_config->{'peers'};
-
     my $local_node = PVE::INotify::nodename();
 
+    my @peers;
     my $asn = $plugin_config->{asn};
     my $ebgp = undef;
     my $loopback = undef;
     my $autortas = undef;
+    my $ifaceip = undef;
+    my $routerid = undef;
+
     my $bgprouter = find_bgp_controller($local_node, $controller_cfg);
     my $isisrouter = find_isis_controller($local_node, $controller_cfg);
 
-    if ($bgprouter) {
-        $ebgp = 1 if $plugin_config->{'asn'} ne $bgprouter->{asn};
-        $loopback = $bgprouter->{loopback} if $bgprouter->{loopback};
-        $asn = $bgprouter->{asn} if $bgprouter->{asn};
-        $autortas = $plugin_config->{'asn'} if $ebgp;
-    } elsif ($isisrouter) {
-        $loopback = $isisrouter->{loopback} if $isisrouter->{loopback};
+    if ($plugin_config->{'fabric'}) {
+        my $config = PVE::Network::SDN::Fabrics::config(1);
+
+        my $fabric = eval { $config->get_fabric($plugin_config->{fabric}) };
+        if ($@) {
+            log_warn("could not configure EVPN controller $plugin_config->{id}: $@");
+            return;
+        }
+
+        my $nodes = $config->list_nodes_fabric($plugin_config->{fabric});
+
+        my $current_node = eval { $config->get_node($plugin_config->{fabric}, $local_node) };
+        if ($@) {
+            log_warn("could not configure EVPN controller $plugin_config->{id}: $@");
+            return;
+        }
+
+        if (!$current_node->{ip}) {
+            log_warn(
+                "Node $local_node requires an IP in the fabric $fabric->{id} to configure the EVPN controller"
+            );
+            return;
+        }
+
+        for my $node_id (sort keys %$nodes) {
+            my $node = $nodes->{$node_id};
+            push @peers, $node->{ip} if $node->{ip};
+        }
+
+        $loopback = "dummy_$fabric->{id}";
+
+        $ifaceip = $current_node->{ip};
+        $routerid = $current_node->{ip};
+
+    } elsif ($plugin_config->{'peers'}) {
+        @peers = PVE::Tools::split_list($plugin_config->{'peers'});
+
+        if ($bgprouter) {
+            $loopback = $bgprouter->{loopback} if $bgprouter->{loopback};
+        } elsif ($isisrouter) {
+            $loopback = $isisrouter->{loopback} if $isisrouter->{loopback};
+        }
+
+        ($ifaceip, my $interface) =
+            PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers, $loopback);
+        $routerid = PVE::Network::SDN::Controllers::Plugin::get_router_id($ifaceip, $interface);
+    } else {
+        log_warn("neither fabric nor peers configured for EVPN controller $plugin_config->{id}");
+        return;
     }
 
-    return if !$asn;
+    if ($bgprouter) {
+        $ebgp = 1 if $plugin_config->{'asn'} ne $bgprouter->{asn};
+        $asn = $bgprouter->{asn} if $bgprouter->{asn};
+        $autortas = $plugin_config->{'asn'} if $ebgp;
+    }
 
+    return if !$asn || !$routerid;
     my $bgp = $config->{frr}->{router}->{"bgp $asn"} //= {};
-
-    my ($ifaceip, $interface) =
-        PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers, $loopback);
-    my $routerid = PVE::Network::SDN::Controllers::Plugin::get_router_id($ifaceip, $interface);
 
     my $remoteas = $ebgp ? "external" : $asn;
 
@@ -137,28 +188,75 @@ sub generate_zone_frr_config {
         if $plugin_config->{'rt-import'};
 
     my $asn = $controller->{asn};
+
     my @peers;
-    @peers = PVE::Tools::split_list($controller->{'peers'}) if $controller->{'peers'};
     my $ebgp = undef;
     my $loopback = undef;
+    my $ifaceip = undef;
     my $autortas = undef;
+    my $routerid = undef;
+
     my $bgprouter = find_bgp_controller($local_node, $controller_cfg);
     my $isisrouter = find_isis_controller($local_node, $controller_cfg);
 
+    if ($controller->{fabric}) {
+        my $config = PVE::Network::SDN::Fabrics::config(1);
+
+        my $fabric = eval { $config->get_fabric($controller->{fabric}) };
+        if ($@) {
+            log_warn("could not configure EVPN controller $controller->{id}: $@");
+            return;
+        }
+
+        my $nodes = $config->list_nodes_fabric($controller->{fabric});
+
+        my $current_node = eval { $config->get_node($controller->{fabric}, $local_node) };
+        if ($@) {
+            log_warn("could not configure EVPN controller $controller->{id}: $@");
+            return;
+        }
+
+        if (!$current_node->{ip}) {
+            log_warn(
+                "Node $local_node requires an IP in the fabric $fabric->{id} to configure the EVPN controller"
+            );
+            return;
+        }
+
+        for my $node (values %$nodes) {
+            push @peers, $node->{ip} if $node->{ip};
+        }
+
+        $loopback = "dummy_$fabric->{id}";
+
+        $ifaceip = $current_node->{ip};
+        $routerid = $current_node->{ip};
+
+    } elsif ($controller->{peers}) {
+        @peers = PVE::Tools::split_list($controller->{'peers'}) if $controller->{'peers'};
+
+        if ($bgprouter) {
+            $loopback = $bgprouter->{loopback} if $bgprouter->{loopback};
+        } elsif ($isisrouter) {
+            $loopback = $isisrouter->{loopback} if $isisrouter->{loopback};
+        }
+
+        ($ifaceip, my $interface) =
+            PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers, $loopback);
+        $routerid = PVE::Network::SDN::Controllers::Plugin::get_router_id($ifaceip, $interface);
+
+    } else {
+        log_warn("neither fabric nor peers configured for EVPN controller $controller->{id}");
+        return;
+    }
+
     if ($bgprouter) {
         $ebgp = 1 if $controller->{'asn'} ne $bgprouter->{asn};
-        $loopback = $bgprouter->{loopback} if $bgprouter->{loopback};
         $asn = $bgprouter->{asn} if $bgprouter->{asn};
         $autortas = $controller->{'asn'} if $ebgp;
-    } elsif ($isisrouter) {
-        $loopback = $isisrouter->{loopback} if $isisrouter->{loopback};
     }
 
     return if !$vrf || !$vrfvxlan || !$asn;
-
-    my ($ifaceip, $interface) =
-        PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers, $loopback);
-    my $routerid = PVE::Network::SDN::Controllers::Plugin::get_router_id($ifaceip, $interface);
 
     my $is_gateway = $exitnodes->{$local_node};
 
@@ -392,6 +490,13 @@ sub on_update_hook {
         next if $controller->{type} ne "evpn";
         $controllernb++;
         die "only 1 global evpn controller can be defined" if $controllernb >= 1;
+    }
+
+    my $controller = $controller_cfg->{ids}->{$controllerid};
+    if ($controller->{type} eq 'evpn') {
+        die "must have exactly one of peers / fabric defined"
+            if ($controller->{peers} && $controller->{fabric})
+            || !($controller->{peers} || $controller->{fabric});
     }
 }
 

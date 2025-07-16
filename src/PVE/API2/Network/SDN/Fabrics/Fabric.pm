@@ -225,6 +225,18 @@ __PACKAGE__->register_method({
                     }
                 }
 
+                # check if this fabric is used in the evpn controller
+                my $controller_cfg = PVE::Network::SDN::Controllers::config();
+                for my $key (keys %{ $controller_cfg->{ids} }) {
+                    my $controller = $controller_cfg->{ids}->{$key};
+                    if (
+                        $controller->{type} eq "evpn"
+                        && $controller->{fabric} eq $id
+                    ) {
+                        die "this fabric is still used in the EVPN controller \"$key\"";
+                    }
+                }
+
                 my $digest = extract_param($param, 'digest');
                 PVE::Tools::assert_if_modified($config->digest(), $digest) if $digest;
 
