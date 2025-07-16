@@ -7,11 +7,17 @@ use PVE::Tools qw(extract_param);
 
 use PVE::Network::SDN;
 use PVE::Network::SDN::Fabrics;
+use PVE::API2::Network::SDN::Fabrics::FabricNode;
 
 use PVE::JSONSchema qw(get_standard_option);
 
 use PVE::RESTHandler;
 use base qw(PVE::RESTHandler);
+
+__PACKAGE__->register_method({
+    subclass => "PVE::API2::Network::SDN::Fabrics::FabricNode",
+    path => '{fabric_id}',
+});
 
 __PACKAGE__->register_method({
     name => 'list_nodes',

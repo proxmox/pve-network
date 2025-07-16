@@ -1,4 +1,4 @@
-SOURCES=Fabric.pm Node.pm
+SOURCES=Fabric.pm FabricNode.pm Node.pm
 
 
 PERL5DIR=${DESTDIR}/usr/share/perl5
