@@ -44,4 +44,17 @@ sub write_config {
     cfs_write_file("sdn/fabrics.cfg", $config->to_raw(), 1);
 }
 
+sub generate_frr_raw_config {
+    my ($fabric_config) = @_;
+
+    my @raw_config = ();
+
+    my $nodename = PVE::INotify::nodename();
+
+    my $frr_config = $fabric_config->get_frr_raw_config($nodename);
+    push @raw_config, @$frr_config if @$frr_config;
+
+    return \@raw_config;
+}
+
 1;

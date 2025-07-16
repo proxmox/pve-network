@@ -20,6 +20,8 @@ use PVE::Network::SDN::Zones;
 use PVE::Network::SDN::Controllers;
 use PVE::Network::SDN::Subnets;
 use PVE::Network::SDN::Dhcp;
+use PVE::Network::SDN::Frr;
+use PVE::Network::SDN::Fabrics;
 
 my $running_cfg = "sdn/.running-config";
 
@@ -240,13 +242,46 @@ sub generate_zone_config {
     PVE::Network::SDN::Zones::write_etc_network_config($raw_config);
 }
 
-sub generate_controller_config {
-    my ($reload) = @_;
+=head3 generate_frr_raw_config(\%running_config, \%fabric_config)
 
-    my $raw_config = PVE::Network::SDN::Controllers::generate_controller_config();
-    PVE::Network::SDN::Controllers::write_controller_config($raw_config);
+Generates the raw frr config (as documented in the C<PVE::Network::SDN::Frr>
+module) for all SDN plugins combined.
 
-    PVE::Network::SDN::Controllers::reload_controller() if $reload;
+If provided, uses the passed C<\%running_config> und C<\%fabric_config> to avoid
+re-parsing and re-reading both configurations. If not provided, this function
+will obtain them via the SDN and SDN::Fabrics modules and then generate the FRR
+configuration.
+
+=cut
+
+sub generate_frr_raw_config {
+    my ($running_config, $fabric_config) = @_;
+
+    $running_config = PVE::Network::SDN::running_config() if !$running_config;
+    $fabric_config = PVE::Network::SDN::Fabrics::config(1) if !$fabric_config;
+
+    my $frr_config = {};
+    PVE::Network::SDN::Controllers::generate_frr_config($frr_config, $running_config);
+    PVE::Network::SDN::Frr::append_local_config($frr_config);
+
+    my $raw_config = PVE::Network::SDN::Frr::to_raw_config($frr_config);
+
+    my $fabrics_config = PVE::Network::SDN::Fabrics::generate_frr_raw_config($fabric_config);
+    push @$raw_config, @$fabrics_config;
+
+    return $raw_config;
+}
+
+sub generate_frr_config {
+    my ($apply) = @_;
+
+    my $running_config = PVE::Network::SDN::running_config();
+    my $fabric_config = PVE::Network::SDN::Fabrics::config(1);
+
+    my $raw_config = PVE::Network::SDN::generate_frr_raw_config($running_config, $fabric_config);
+    PVE::Network::SDN::Frr::write_raw_config($raw_config);
+
+    PVE::Network::SDN::Frr::apply() if $apply;
 }
 
 sub generate_dhcp_config {

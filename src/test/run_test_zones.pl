@@ -145,18 +145,17 @@ foreach my $test (@tests) {
 
     if ($sdn_config->{controllers}) {
         my $expected = read_file("./$test/expected_controller_config");
-        my $controller_rawconfig = "";
+        my $config = "";
 
         eval {
-            my $config = PVE::Network::SDN::Controllers::generate_controller_config();
-            $controller_rawconfig =
-                PVE::Network::SDN::Controllers::generate_controller_rawconfig($config);
+            my $raw_config = PVE::Network::SDN::generate_frr_raw_config();
+            $config = PVE::Network::SDN::Frr::raw_config_to_string($raw_config);
         };
         if (my $err = $@) {
             diag("got unexpected error - $err");
             fail($name);
         } else {
-            is($controller_rawconfig, $expected, $name);
+            is($config, $expected, $name);
         }
     }
 }
