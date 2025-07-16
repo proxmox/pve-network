@@ -1,3 +1,17 @@
+libpve-network-perl (1.1.0) trixie; urgency=medium
+
+  * dhcp: fix internal issues with perl module usage depending on specific
+    ordering of the use statements, or otherwise fail to create the DHCP
+    section config.
+
+  * Add SDN fabrics implementation. Fabrics allow the user to easily use
+    dynamic routing protocols such as OpenFabric and OSPF in their clusters.
+    It also opens up the way for integrating existing features, such as Ceph
+    with the new SDN fabrics feature to enable users simple configuration of
+    e.g. full-mesh Ceph clusters via the Web UI.
+
+ -- Proxmox Support Team <support@proxmox.com>  Thu, 17 Jul 2025 00:36:12 +0200
+
 libpve-network-perl (1.0.1) trixie; urgency=medium
 
   * dhcp: avoid declaring variables in conditional statement.
