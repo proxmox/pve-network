@@ -31,6 +31,11 @@ sub properties {
             type => 'string',
             format => 'ip-list',
         },
+        fabric => {
+            description => "SDN fabric to use as underlay for this VXLAN zone.",
+            type => 'string',
+            format => 'pve-sdn-fabric-id',
+        },
         'vxlan-port' => {
             description => "Vxlan tunnel udp port (default 4789).",
             minimum => 1,
@@ -43,13 +48,14 @@ sub properties {
 sub options {
     return {
         nodes => { optional => 1 },
-        peers => { optional => 0 },
+        peers => { optional => 1 },
         'vxlan-port' => { optional => 1 },
         mtu => { optional => 1 },
         dns => { optional => 1 },
         reversedns => { optional => 1 },
         dnszone => { optional => 1 },
         ipam => { optional => 1 },
+        fabric => { optional => 1 },
     };
 }
 
@@ -72,17 +78,47 @@ sub generate_sdn_config {
     my $alias = $vnet->{alias};
     my $multicastaddress = $plugin_config->{'multicast-address'};
     my $vxlanport = $plugin_config->{'vxlan-port'};
-    my @peers;
-    @peers = PVE::Tools::split_list($plugin_config->{'peers'}) if $plugin_config->{'peers'};
     my $vxlan_iface = "vxlan_$vnetid";
 
     die "missing vxlan tag" if !$tag;
 
-    my ($ifaceip, $iface) =
-        PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers);
+    my @peers;
+    my $ifaceip;
+    my $iface;
+
+    if ($plugin_config->{peers}) {
+        @peers = PVE::Tools::split_list($plugin_config->{'peers'}) if $plugin_config->{'peers'};
+        ($ifaceip, $iface) =
+            PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers);
+    } elsif ($plugin_config->{fabric}) {
+        my $local_node = PVE::INotify::nodename();
+        my $config = PVE::Network::SDN::Fabrics::config(1);
+
+        my $fabric = eval { $config->get_fabric($plugin_config->{fabric}) };
+        die "could not configure VXLAN zone $plugin_config->{id}: $@" if $@;
+
+        my $nodes = $config->list_nodes_fabric($plugin_config->{fabric});
+
+        my $current_node = eval { $config->get_node($plugin_config->{fabric}, $local_node) };
+        die "could not configure VXLAN zone $plugin_config->{id}: $@" if $@;
+
+        die
+            "Node $local_node requires an IP in the fabric $fabric->{id} to configure the VXLAN zone $plugin_config->{id}"
+            if !$current_node->{ip};
+
+        for my $node (values %$nodes) {
+            push @peers, $node->{ip} if $node->{ip};
+        }
+
+        $ifaceip = $current_node->{ip};
+    } else {
+        die "neither peers nor fabric configured for VXLAN zone $plugin_config->{id}";
+    }
 
     my $mtu = 1450;
-    $mtu = $interfaces_config->{$iface}->{mtu} - 50 if $interfaces_config->{$iface}->{mtu};
+    if ($iface) {
+        $mtu = $interfaces_config->{$iface}->{mtu} - 50 if $interfaces_config->{$iface}->{mtu};
+    }
     $mtu = $plugin_config->{mtu} if $plugin_config->{mtu};
 
     #vxlan interface
@@ -112,6 +148,19 @@ sub generate_sdn_config {
     push(@{ $config->{$vnetid} }, @iface_config) if !$config->{$vnetid};
 
     return $config;
+}
+
+sub on_update_hook {
+    my ($class, $zoneid, $zone_cfg, $controller_cfg) = @_;
+
+    my $zone = $zone_cfg->{ids}->{$zoneid};
+
+    if (($zone->{peers} && $zone->{fabric}) || !($zone->{peers} || $zone->{fabric})) {
+        raise_param_exc({
+            peers => "must have exactly one of peers / fabric defined",
+            fabric => "must have exactly one of peers / fabric defined",
+        });
+    }
 }
 
 sub vnet_update_hook {

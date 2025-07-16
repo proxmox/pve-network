@@ -237,6 +237,15 @@ __PACKAGE__->register_method({
                     }
                 }
 
+                # check if this fabric is used in a vxlan zone
+                my $zone_cfg = PVE::Network::SDN::Zones::config();
+                for my $key (keys %{ $zone_cfg->{ids} }) {
+                    my $zone = $zone_cfg->{ids}->{$key};
+                    if ($zone->{type} eq "vxlan" && $zone->{fabric} eq $id) {
+                        die "this fabric is still used in the VXLAN zone \"$key\"";
+                    }
+                }
+
                 my $digest = extract_param($param, 'digest');
                 PVE::Tools::assert_if_modified($config->digest(), $digest) if $digest;
 
