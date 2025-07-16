@@ -84,6 +84,27 @@ sub running_config {
     return cfs_read_file($running_cfg);
 }
 
+=head3 running_config_has_frr(\%running_config)
+
+Determines whether C<\%running_config> contains any entities that generate an
+FRR configuration. This is used by pve-manager to determine whether a rewrite of
+the FRR configuration is required or not.
+
+If C<\%running_config> is not provided, it will query the current running
+configuration and then evaluate it.
+
+=cut
+
+sub running_config_has_frr {
+    my $running_config = PVE::Network::SDN::running_config();
+
+    # both can be empty if the SDN configuration was never applied
+    my $controllers = $running_config->{controllers}->{ids} // {};
+    my $fabrics = $running_config->{fabrics}->{ids} // {};
+
+    return %$controllers || %$fabrics;
+}
+
 sub pending_config {
     my ($running_cfg, $cfg, $type) = @_;
 
