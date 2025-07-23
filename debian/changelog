@@ -1,3 +1,9 @@
+libpve-network-perl (1.1.1) trixie; urgency=medium
+
+  * frr: early exit on apply when frr is not installed
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 23 Jul 2025 18:47:16 +0200
+
 libpve-network-perl (1.1.0) trixie; urgency=medium
 
   * dhcp: fix internal issues with perl module usage depending on specific
