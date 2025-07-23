@@ -21,14 +21,15 @@ Architecture: all
 Depends: libpve-common-perl (>= 9.0.2),
          pve-cluster (>= 8.0.10),
          libio-socket-ssl-perl,
+         ifupdown2,
          libnet-subnet-perl,
          libnet-ip-perl,
          libnetaddr-ip-perl,
          libpve-rs-perl (>= 0.10.3),
          ${misc:Depends},
          ${perl:Depends},
-Recommends: ifupdown2
-Suggests: frr-pythontools (>= 8.5.1~), dnsmasq,
+Recommends: frr-pythontools (>= 10.3.1-1+pve2~),
+Suggests: dnsmasq,
 Description: Proxmox VE's SDN (Software Defined Network) stack
  This package contains the perl side of the Software Defined Network
  implementation for Proxmox VE.
