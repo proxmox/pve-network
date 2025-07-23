@@ -130,7 +130,8 @@ sub set_daemon_status {
     my ($daemon_status, $set_default) = @_;
 
     my $daemons_file = "/etc/frr/daemons";
-    die "daemons file does not exist" if !-e $daemons_file;
+    die "/etc/frr/daemons file does not exist; is the frr package installed?\n"
+        if !-e $daemons_file;
 
     for my $daemon (keys %$daemon_status) {
         die "$daemon is not SDN managed" if !defined $SDN_DAEMONS_DEFAULT->{$daemon};

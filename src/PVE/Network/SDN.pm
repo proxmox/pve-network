@@ -355,6 +355,11 @@ sub get_frr_daemon_status {
 sub generate_frr_config {
     my ($apply) = @_;
 
+    if (!-d '/etc/frr') {
+        print "frr is not installed, not generating any frr configuration\n";
+        return;
+    }
+
     my $running_config = PVE::Network::SDN::running_config();
     my $fabric_config = PVE::Network::SDN::Fabrics::config(1);
 
