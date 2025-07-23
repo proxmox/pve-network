@@ -1,3 +1,10 @@
+libpve-network-perl (1.1.2) trixie; urgency=medium
+
+  * d/control: make ifupdown2 hard dependency, bump FRR to being recommended
+    for better out-of-the-box experience with SDN.
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 23 Jul 2025 19:00:55 +0200
+
 libpve-network-perl (1.1.1) trixie; urgency=medium
 
   * frr: early exit on apply when frr is not installed
