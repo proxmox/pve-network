@@ -8,12 +8,13 @@ use IO::Socket::SSL; # important for SSL_verify_callback
 use JSON qw(decode_json from_json to_json);
 use LWP::UserAgent;
 use Net::SSLeay;
+use UUID;
 
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 use PVE::INotify;
 use PVE::RESTEnvironment qw(log_warn);
 use PVE::RPCEnvironment;
-use PVE::Tools qw(extract_param dir_glob_regex run_command);
+use PVE::Tools qw(file_get_contents file_set_contents extract_param dir_glob_regex run_command);
 
 use PVE::Network::SDN::Vnets;
 use PVE::Network::SDN::Zones;
@@ -47,6 +48,8 @@ my $write_running_cfg = sub {
 };
 
 PVE::Cluster::cfs_register_file($running_cfg, $parse_running_cfg, $write_running_cfg);
+
+my $LOCK_TOKEN_FILE = "/etc/pve/sdn/.lock";
 
 # improve me : move status code inside plugins ?
 
@@ -197,14 +200,57 @@ sub commit_config {
     cfs_write_file($running_cfg, $cfg);
 }
 
+sub generate_lock_token {
+    my $str;
+    my $uuid;
+
+    UUID::generate_v7($uuid);
+    UUID::unparse($uuid, $str);
+
+    return $str;
+}
+
+sub create_global_lock {
+    my $token = generate_lock_token();
+    PVE::Tools::file_set_contents($LOCK_TOKEN_FILE, $token);
+    return $token;
+}
+
+sub delete_global_lock {
+    unlink $LOCK_TOKEN_FILE if -e $LOCK_TOKEN_FILE;
+}
+
 sub lock_sdn_config {
+    my ($code, $errmsg, $lock_token_user) = @_;
+
+    my $lock_wrapper = sub {
+        my $lock_token = undef;
+        if (-e $LOCK_TOKEN_FILE) {
+            $lock_token = PVE::Tools::file_get_contents($LOCK_TOKEN_FILE);
+        }
+
+        if (
+            defined($lock_token)
+            && (!defined($lock_token_user) || $lock_token ne $lock_token_user)
+        ) {
+            die "invalid lock token provided!";
+        }
+
+        return $code->();
+    };
+
+    return lock_sdn_domain($lock_wrapper, $errmsg);
+}
+
+sub lock_sdn_domain {
     my ($code, $errmsg) = @_;
 
-    cfs_lock_file($running_cfg, undef, $code);
-
-    if (my $err = $@) {
+    my $res = PVE::Cluster::cfs_lock_domain("sdn", undef, $code);
+    my $err = $@;
+    if ($err) {
         $errmsg ? die "$errmsg: $err" : die $err;
     }
+    return $res;
 }
 
 sub get_local_vnets {

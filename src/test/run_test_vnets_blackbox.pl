@@ -33,7 +33,10 @@ my $test_state = undef;
 
 sub clear_test_state {
     $test_state = {
-        locks => {},
+        locks => {
+            file => {},
+            domain => {},
+        },
         datacenter_config => {},
         subnets_config => {},
         controller_config => {},
@@ -57,13 +60,27 @@ clear_test_state();
 my $mocked_cfs_lock_file = sub {
     my ($filename, $timeout, $code, @param) = @_;
 
-    die "$filename already locked\n" if ($test_state->{locks}->{$filename});
+    die "$filename already locked\n" if $test_state->{locks}->{file}->{$filename};
 
-    $test_state->{locks}->{$filename} = 1;
+    $test_state->{locks}->{file}->{$filename} = 1;
 
     my $res = eval { $code->(@param); };
 
-    delete $test_state->{locks}->{$filename};
+    delete $test_state->{locks}->{file}->{$filename};
+
+    return $res;
+};
+
+my $mocked_cfs_lock_domain = sub {
+    my ($domain, $timeout, $code, @param) = @_;
+
+    die "domain '$domain' already locked\n" if $test_state->{locks}->{domain}->{$domain};
+
+    $test_state->{locks}->{domain}->{$domain} = 1;
+
+    my $res = eval { $code->(@param) };
+
+    delete $test_state->{locks}->{domain}->{$domain};
 
     return $res;
 };
@@ -224,6 +241,7 @@ $mocked_rpc_env_obj->mock(
 my $mocked_pve_cluster_obj = Test::MockModule->new('PVE::Cluster');
 $mocked_pve_cluster_obj->mock(
     check_cfs_quorum => sub { return 1; },
+    cfs_lock_domain => $mocked_cfs_lock_domain,
 );
 
 # ------- TEST FUNCTIONS --------------
