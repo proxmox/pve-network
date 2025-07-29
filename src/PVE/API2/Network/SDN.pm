@@ -9,7 +9,7 @@ use PVE::JSONSchema qw(get_standard_option);
 use PVE::RESTHandler;
 use PVE::RPCEnvironment;
 use PVE::SafeSyslog;
-use PVE::Tools qw(run_command);
+use PVE::Tools qw(run_command extract_param);
 use PVE::Network::SDN;
 
 use PVE::API2::Network::SDN::Controllers;
@@ -126,6 +126,16 @@ __PACKAGE__->register_method({
     },
     parameters => {
         additionalProperties => 0,
+        properties => {
+            'lock-token' => get_standard_option('pve-sdn-lock-token'),
+            'release-lock' => {
+                type => 'boolean',
+                optional => 1,
+                default => 1,
+                description =>
+                    'When lock-token has been provided and configuration successfully commited, release the lock automatically afterwards',
+            },
+        },
     },
     returns => {
         type => 'string',
@@ -136,10 +146,24 @@ __PACKAGE__->register_method({
         my $rpcenv = PVE::RPCEnvironment::get();
         my $authuser = $rpcenv->get_user();
 
-        my $previous_config_has_frr = PVE::Network::SDN::running_config_has_frr();
-        PVE::Network::SDN::commit_config();
+        my $lock_token = extract_param($param, 'lock-token');
+        my $release_lock = extract_param($param, 'release-lock');
 
-        my $new_config_has_frr = PVE::Network::SDN::running_config_has_frr();
+        my $previous_config_has_frr;
+        my $new_config_has_frr;
+
+        PVE::Network::SDN::lock_sdn_config(
+            sub {
+                $previous_config_has_frr = PVE::Network::SDN::running_config_has_frr();
+                PVE::Network::SDN::commit_config();
+                $new_config_has_frr = PVE::Network::SDN::running_config_has_frr();
+
+                PVE::Network::SDN::delete_global_lock() if $lock_token && $release_lock;
+            },
+            "could not commit SDN config",
+            $lock_token,
+        );
+
         my $skip_frr = !($previous_config_has_frr || $new_config_has_frr);
 
         my $code = sub {
