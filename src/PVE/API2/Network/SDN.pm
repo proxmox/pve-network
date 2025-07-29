@@ -197,7 +197,62 @@ __PACKAGE__->register_method({
     },
 });
 
-__PACKAGE__->register_method ({
+__PACKAGE__->register_method({
+    name => 'rollback',
+    protected => 1,
+    path => 'rollback',
+    method => 'POST',
+    description => "Rollback pending changes to SDN configuration",
+    permissions => {
+        check => ['perm', '/sdn', ['SDN.Allocate']],
+    },
+    parameters => {
+        additionalProperties => 0,
+        properties => {
+            'lock-token' => get_standard_option('pve-sdn-lock-token'),
+            'release-lock' => {
+                type => 'boolean',
+                optional => 1,
+                default => 1,
+                description =>
+                    'When lock-token has been provided and configuration successfully rollbacked, release the lock automatically afterwards',
+            },
+        },
+    },
+    returns => {
+        type => 'null',
+    },
+    code => sub {
+        my ($param) = @_;
+
+        my $lock_token = extract_param($param, 'lock-token');
+        my $release_lock = extract_param($param, 'release-lock');
+
+        my $rollback = sub {
+            my $running_config = PVE::Network::SDN::running_config();
+
+            PVE::Network::SDN::Zones::write_config($running_config->{zones});
+            PVE::Network::SDN::Vnets::write_config($running_config->{vnets});
+            PVE::Network::SDN::Subnets::write_config($running_config->{subnets});
+            PVE::Network::SDN::Controllers::write_config($running_config->{controllers});
+
+            # if the config hasn't yet been applied after the introduction of
+            # fabrics then the key does not exist in the running config so we
+            # default to an empty hash
+            my $fabrics_config = $running_config->{fabrics}->{ids} // {};
+            my $parsed_fabrics_config = PVE::RS::SDN::Fabrics->running_config($fabrics_config);
+            PVE::Network::SDN::Fabrics::write_config($parsed_fabrics_config);
+
+            PVE::Network::SDN::delete_global_lock() if $lock_token && $release_lock;
+        };
+
+        PVE::Network::SDN::lock_sdn_config(
+            $rollback, "could not rollback SDN configuration", $lock_token,
+        );
+    },
+});
+
+__PACKAGE__->register_method({
     name => 'reload',
     protected => 1,
     path => '',
