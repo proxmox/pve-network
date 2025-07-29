@@ -116,6 +116,88 @@ my $create_reload_network_worker = sub {
 };
 
 __PACKAGE__->register_method({
+    name => 'lock',
+    protected => 1,
+    path => 'lock',
+    method => 'POST',
+    description => "Acquire global lock for SDN configuration",
+    permissions => {
+        check => ['perm', '/sdn', ['SDN.Allocate']],
+    },
+    parameters => {
+        additionalProperties => 0,
+        properties => {
+            'allow-pending' => {
+                type => 'boolean',
+                optional => 1,
+                default => 0,
+                description =>
+                    'if true, allow acquiring lock even though there are pending changes',
+            },
+        },
+    },
+    returns => {
+        type => 'string',
+    },
+    code => sub {
+        my ($param) = @_;
+
+        return PVE::Network::SDN::lock_sdn_config(
+            sub {
+                die "configuration has pending changes"
+                    if !$param->{'allow-pending'} && PVE::Network::SDN::has_pending_changes();
+
+                return PVE::Network::SDN::create_global_lock();
+            },
+            "could not acquire lock for SDN config",
+        );
+    },
+});
+
+__PACKAGE__->register_method({
+    name => 'release_lock',
+    protected => 1,
+    path => 'lock',
+    method => 'DELETE',
+    description => "Release global lock for SDN configuration",
+    permissions => {
+        check => ['perm', '/sdn', ['SDN.Allocate']],
+    },
+    parameters => {
+        additionalProperties => 0,
+        properties => {
+            'lock-token' => get_standard_option('pve-sdn-lock-token'),
+            'force' => {
+                type => 'boolean',
+                optional => 1,
+                default => 0,
+                description => 'if true, allow releasing lock without providing the token',
+            },
+        },
+    },
+    returns => {
+        type => 'null',
+    },
+    code => sub {
+        my ($param) = @_;
+
+        my $code = sub {
+            PVE::Network::SDN::delete_global_lock();
+        };
+
+        if ($param->{force}) {
+            $code->();
+        } else {
+            PVE::Network::SDN::lock_sdn_config(
+                $code,
+                "could not release lock",
+                $param->{'lock-token'},
+            );
+        }
+    },
+});
+
+__PACKAGE__->register_method ({
     name => 'reload',
     protected => 1,
     path => '',

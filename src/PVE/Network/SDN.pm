@@ -209,6 +209,29 @@ sub commit_config {
     cfs_write_file($running_cfg, $cfg);
 }
 
+sub has_pending_changes {
+    my $running_cfg = PVE::Network::SDN::running_config();
+
+    # only use configuration files which get written by commit_config here
+    my $config_files = {
+        zones => PVE::Network::SDN::Zones::config(),
+        vnets => PVE::Network::SDN::Vnets::config(),
+        subnets => PVE::Network::SDN::Subnets::config(),
+        controllers => PVE::Network::SDN::Controllers::config(),
+    };
+
+    for my $config_file (keys %$config_files) {
+        my $config = $config_files->{$config_file};
+        my $pending_config = PVE::Network::SDN::pending_config($running_cfg, $config, $config_file);
+
+        for my $id (keys %{ $pending_config->{ids} }) {
+            return 1 if $pending_config->{ids}->{$id}->{pending};
+        }
+    }
+
+    return 0;
+}
+
 sub generate_lock_token {
     my $str;
     my $uuid;
