@@ -1,3 +1,19 @@
+libpve-network-perl (1.1.3) trixie; urgency=medium
+
+  * sdn: add global domain lock for configuration.
+
+  * api: add lock-token parameter to all api calls. It can be optionally
+    passed to ensure no other entity modified the SDN state through the API
+    during some operations that might need to be split over multiple API
+    calls, adding multiple pending changes before they get committed once when
+    all is prepared for the respective action.
+
+  * api: add lock and release endpoints for global configuration lock.
+
+  * api: add rollback endpoint for undoing any pending change.
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 29 Jul 2025 14:15:18 +0200
+
 libpve-network-perl (1.1.2) trixie; urgency=medium
 
   * d/control: make ifupdown2 hard dependency, bump FRR to being recommended
