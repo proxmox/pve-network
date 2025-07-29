@@ -128,6 +128,7 @@ sub node_properties {
         node_id => get_standard_option('pve-sdn-fabric-node-id'),
         protocol => get_standard_option('pve-sdn-fabric-protocol'),
         digest => get_standard_option('pve-config-digest'),
+        'lock-token' => get_standard_option('pve-sdn-lock-token'),
         ip => {
             type => 'string',
             format => 'ipv4',
@@ -227,6 +228,7 @@ sub fabric_properties {
         id => get_standard_option('pve-sdn-fabric-id'),
         protocol => get_standard_option('pve-sdn-fabric-protocol'),
         digest => get_standard_option('pve-config-digest'),
+        'lock-token' => get_standard_option('pve-sdn-lock-token'),
         ip_prefix => {
             type => 'string',
             format => 'CIDR',

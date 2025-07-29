@@ -207,13 +207,19 @@ __PACKAGE__->register_method({
     permissions => {
         check => ['perm', '/sdn/zones', ['SDN.Allocate']],
     },
-    parameters => PVE::Network::SDN::Zones::Plugin->createSchema(),
+    parameters => PVE::Network::SDN::Zones::Plugin->createSchema(
+        undef,
+        {
+            'lock-token' => get_standard_option('pve-sdn-lock-token'),
+        },
+    ),
     returns => { type => 'null' },
     code => sub {
         my ($param) = @_;
 
         my $type = extract_param($param, 'type');
         my $id = extract_param($param, 'zone');
+        my $lock_token = extract_param($param, 'lock-token');
 
         my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($type);
         my $opts = $plugin->check_config($id, $param, 1, 1);
@@ -256,6 +262,7 @@ __PACKAGE__->register_method({
 
             },
             "create sdn zone object failed",
+            $lock_token,
         );
 
         return;
@@ -271,7 +278,12 @@ __PACKAGE__->register_method({
     permissions => {
         check => ['perm', '/sdn/zones/{zone}', ['SDN.Allocate']],
     },
-    parameters => PVE::Network::SDN::Zones::Plugin->updateSchema(),
+    parameters => PVE::Network::SDN::Zones::Plugin->updateSchema(
+        undef,
+        {
+            'lock-token' => get_standard_option('pve-sdn-lock-token'),
+        },
+    ),
     returns => { type => 'null' },
     code => sub {
         my ($param) = @_;
@@ -279,6 +291,7 @@ __PACKAGE__->register_method({
         my $id = extract_param($param, 'zone');
         my $digest = extract_param($param, 'digest');
         my $delete = extract_param($param, 'delete');
+        my $lock_token = extract_param($param, 'lock-token');
 
         if ($delete) {
             $delete = [PVE::Tools::split_list($delete)];
@@ -344,6 +357,7 @@ __PACKAGE__->register_method({
 
             },
             "update sdn zone object failed",
+            $lock_token,
         );
 
         return;
@@ -368,6 +382,7 @@ __PACKAGE__->register_method({
                     completion => \&PVE::Network::SDN::Zones::complete_sdn_zones,
                 },
             ),
+            'lock-token' => get_standard_option('pve-sdn-lock-token'),
         },
     },
     returns => { type => 'null' },
@@ -375,6 +390,7 @@ __PACKAGE__->register_method({
         my ($param) = @_;
 
         my $id = extract_param($param, 'zone');
+        my $lock_token = extract_param($param, 'lock-token');
 
         PVE::Network::SDN::lock_sdn_config(
             sub {
@@ -391,6 +407,7 @@ __PACKAGE__->register_method({
                 PVE::Network::SDN::Zones::write_config($cfg);
             },
             "delete sdn zone object failed",
+            $lock_token,
         );
 
         return;

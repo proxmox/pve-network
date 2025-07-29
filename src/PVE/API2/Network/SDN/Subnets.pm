@@ -190,13 +190,19 @@ __PACKAGE__->register_method({
         description => "Require 'SDN.Allocate' permission on '/sdn/zones/<zone>/<vnet>'",
         user => 'all',
     },
-    parameters => PVE::Network::SDN::SubnetPlugin->createSchema(),
+    parameters => PVE::Network::SDN::SubnetPlugin->createSchema(
+        undef,
+        {
+            'lock-token' => get_standard_option('pve-sdn-lock-token'),
+        },
+    ),
     returns => { type => 'null' },
     code => sub {
         my ($param) = @_;
 
         my $type = extract_param($param, 'type');
         my $cidr = extract_param($param, 'subnet');
+        my $lock_token = extract_param($param, 'lock-token');
 
         my $vnet = $param->{vnet};
         my $privs = ['SDN.Allocate'];
@@ -234,6 +240,7 @@ __PACKAGE__->register_method({
 
             },
             "create sdn subnet object failed",
+            $lock_token,
         );
 
         return undef;
@@ -250,7 +257,12 @@ __PACKAGE__->register_method({
         description => "Require 'SDN.Allocate' permission on '/sdn/zones/<zone>/<vnet>'",
         user => 'all',
     },
-    parameters => PVE::Network::SDN::SubnetPlugin->updateSchema(),
+    parameters => PVE::Network::SDN::SubnetPlugin->updateSchema(
+        undef,
+        {
+            'lock-token' => get_standard_option('pve-sdn-lock-token'),
+        },
+    ),
     returns => { type => 'null' },
     code => sub {
         my ($param) = @_;
@@ -258,6 +270,7 @@ __PACKAGE__->register_method({
         my $id = extract_param($param, 'subnet');
         my $digest = extract_param($param, 'digest');
         my $delete = extract_param($param, 'delete');
+        my $lock_token = extract_param($param, 'lock-token');
 
         my $vnet = $param->{vnet};
 
@@ -295,6 +308,7 @@ __PACKAGE__->register_method({
 
             },
             "update sdn subnet object failed",
+            $lock_token,
         );
 
         return undef;
@@ -321,6 +335,7 @@ __PACKAGE__->register_method({
                     completion => \&PVE::Network::SDN::Subnets::complete_sdn_subnets,
                 },
             ),
+            'lock-token' => get_standard_option('pve-sdn-lock-token'),
         },
     },
     returns => { type => 'null' },
@@ -329,6 +344,8 @@ __PACKAGE__->register_method({
 
         my $id = extract_param($param, 'subnet');
         my $vnet = extract_param($param, 'vnet');
+        my $lock_token = extract_param($param, 'lock-token');
+
         my $privs = ['SDN.Allocate'];
         &$check_vnet_access($vnet, $privs);
 
@@ -354,6 +371,7 @@ __PACKAGE__->register_method({
 
             },
             "delete sdn subnet object failed",
+            $lock_token,
         );
 
         return undef;

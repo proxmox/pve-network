@@ -51,6 +51,15 @@ PVE::Cluster::cfs_register_file($running_cfg, $parse_running_cfg, $write_running
 
 my $LOCK_TOKEN_FILE = "/etc/pve/sdn/.lock";
 
+PVE::JSONSchema::register_standard_option(
+    'pve-sdn-lock-token',
+    {
+        type => 'string',
+        description => "the token for unlocking the global SDN configuration",
+        optional => 1,
+    },
+);
+
 # improve me : move status code inside plugins ?
 
 sub ifquery_check {

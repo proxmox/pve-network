@@ -168,13 +168,19 @@ __PACKAGE__->register_method({
     permissions => {
         check => ['perm', '/sdn/controllers', ['SDN.Allocate']],
     },
-    parameters => PVE::Network::SDN::Controllers::Plugin->createSchema(),
+    parameters => PVE::Network::SDN::Controllers::Plugin->createSchema(
+        undef,
+        {
+            'lock-token' => get_standard_option('pve-sdn-lock-token'),
+        },
+    ),
     returns => { type => 'null' },
     code => sub {
         my ($param) = @_;
 
         my $type = extract_param($param, 'type');
         my $id = extract_param($param, 'controller');
+        my $lock_token = extract_param($param, 'lock-token');
 
         my $plugin = PVE::Network::SDN::Controllers::Plugin->lookup($type);
         my $opts = $plugin->check_config($id, $param, 1, 1);
@@ -204,6 +210,7 @@ __PACKAGE__->register_method({
 
             },
             "create sdn controller object failed",
+            $lock_token,
         );
 
         return undef;
@@ -219,7 +226,12 @@ __PACKAGE__->register_method({
     permissions => {
         check => ['perm', '/sdn/controllers', ['SDN.Allocate']],
     },
-    parameters => PVE::Network::SDN::Controllers::Plugin->updateSchema(),
+    parameters => PVE::Network::SDN::Controllers::Plugin->updateSchema(
+        undef,
+        {
+            'lock-token' => get_standard_option('pve-sdn-lock-token'),
+        },
+    ),
     returns => { type => 'null' },
     code => sub {
         my ($param) = @_;
@@ -227,6 +239,7 @@ __PACKAGE__->register_method({
         my $id = extract_param($param, 'controller');
         my $digest = extract_param($param, 'digest');
         my $delete = extract_param($param, 'delete');
+        my $lock_token = extract_param($param, 'lock-token');
 
         PVE::Network::SDN::lock_sdn_config(
             sub {
@@ -257,6 +270,7 @@ __PACKAGE__->register_method({
 
             },
             "update sdn controller object failed",
+            $lock_token,
         );
 
         return undef;
@@ -281,6 +295,7 @@ __PACKAGE__->register_method({
                     completion => \&PVE::Network::SDN::Controllers::complete_sdn_controllers,
                 },
             ),
+            'lock-token' => get_standard_option('pve-sdn-lock-token'),
         },
     },
     returns => { type => 'null' },
@@ -288,6 +303,7 @@ __PACKAGE__->register_method({
         my ($param) = @_;
 
         my $id = extract_param($param, 'controller');
+        my $lock_token = extract_param($param, 'lock-token');
 
         PVE::Network::SDN::lock_sdn_config(
             sub {
@@ -307,6 +323,7 @@ __PACKAGE__->register_method({
 
             },
             "delete sdn controller object failed",
+            $lock_token,
         );
 
         return undef;

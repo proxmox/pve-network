@@ -153,6 +153,8 @@ __PACKAGE__->register_method({
     code => sub {
         my ($param) = @_;
 
+        my $lock_token = extract_param($param, 'lock-token');
+
         PVE::Network::SDN::lock_sdn_config(
             sub {
                 my $config = PVE::Network::SDN::Fabrics::config();
@@ -164,6 +166,7 @@ __PACKAGE__->register_method({
                 PVE::Network::SDN::Fabrics::write_config($config);
             },
             "adding node failed",
+            $lock_token,
         );
     },
 });
@@ -190,6 +193,8 @@ __PACKAGE__->register_method({
     code => sub {
         my ($param) = @_;
 
+        my $lock_token = extract_param($param, 'lock-token');
+
         PVE::Network::SDN::lock_sdn_config(
             sub {
                 my $fabric_id = extract_param($param, 'fabric_id');
@@ -204,6 +209,7 @@ __PACKAGE__->register_method({
                 PVE::Network::SDN::Fabrics::write_config($config);
             },
             "updating node failed",
+            $lock_token,
         );
     },
 });
@@ -233,6 +239,8 @@ __PACKAGE__->register_method({
     code => sub {
         my ($param) = @_;
 
+        my $lock_token = extract_param($param, 'lock-token');
+
         PVE::Network::SDN::lock_sdn_config(
             sub {
                 my $fabric_id = extract_param($param, 'fabric_id');
@@ -247,6 +255,7 @@ __PACKAGE__->register_method({
                 PVE::Network::SDN::Fabrics::write_config($config);
             },
             "deleting node failed",
+            $lock_token,
         );
     },
 });
