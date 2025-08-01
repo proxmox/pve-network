@@ -364,6 +364,8 @@ __PACKAGE__->register_method({
                     $entry->{ip} = $ip;
                     $entry->{vnet} = $vnet;
 
+                    $entry->{vmid} = int($entry->{vmid}) if defined($entry->{vmid});
+
                     push @$result, $entry;
                 }
             }
