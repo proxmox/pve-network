@@ -14,37 +14,11 @@ use Digest::SHA;
 use base('PVE::Network::SDN::Ipams::Plugin');
 
 my $ipamdb_file = "sdn/pve-ipam-state.json";
-my $ipamdb_file_legacy = "priv/ipam.db";
 
 PVE::Cluster::cfs_register_file(
     $ipamdb_file,
-    sub {
-        my ($filename, $data) = @_;
-        if (defined($data)) {
-            return PVE::Network::SDN::Ipams::PVEPlugin->parse_config($filename, $data);
-        } else {
-            # TODO: remove legacy state file handling with PVE 9+ after ensuring all call sites got
-            # switched over.
-            return cfs_read_file($ipamdb_file_legacy);
-        }
-    },
-    sub {
-        my ($filename, $data) = @_;
-        # TODO: remove below with PVE 9+, add a pve8to9 check to allow doing so.
-        if (-e $ipamdb_file_legacy && -e $ipamdb_file) {
-            # only clean-up if we succeeded to write the new path at least once
-            unlink $ipamdb_file_legacy
-                or $!{ENOENT}
-                or warn "failed to unlink legacy IPAM DB - $!\n";
-        }
-        return PVE::Network::SDN::Ipams::PVEPlugin->write_config($filename, $data);
-    },
-);
-
-PVE::Cluster::cfs_register_file(
-    $ipamdb_file_legacy,
     sub { PVE::Network::SDN::Ipams::PVEPlugin->parse_config(@_); },
-    undef, # no writer for legacy file, all must go to the new file.
+    sub { PVE::Network::SDN::Ipams::PVEPlugin->write_config(@_); },
 );
 
 sub type {
