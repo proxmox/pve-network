@@ -1,3 +1,11 @@
+libpve-network-perl (1.1.4) trixie; urgency=medium
+
+  * api: ipam status: ensure that guest ID is returned as an integer.
+
+  * ipam: remove fallback code for legacy ipam.db and mac cache.
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 01 Aug 2025 15:16:16 +0200
+
 libpve-network-perl (1.1.3) trixie; urgency=medium
 
   * sdn: add global domain lock for configuration.
