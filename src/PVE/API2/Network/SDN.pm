@@ -90,12 +90,10 @@ __PACKAGE__->register_method({
 });
 
 my $create_reload_network_worker = sub {
-    my ($nodename, $skip_frr) = @_;
+    my ($nodename, $regenerate_frr) = @_;
 
     my @command = ('pvesh', 'set', "/nodes/$nodename/network");
-    if ($skip_frr) {
-        push(@command, '--skip_frr');
-    }
+    push(@command, '--regenerate-frr') if $regenerate_frr;
 
     # FIXME: how to proxy to final node ?
     my $upid;
@@ -301,14 +299,14 @@ __PACKAGE__->register_method({
             $lock_token,
         );
 
-        my $skip_frr = !($previous_config_has_frr || $new_config_has_frr);
+        my $regenerate_frr = $previous_config_has_frr || $new_config_has_frr;
 
         my $code = sub {
             $rpcenv->{type} = 'priv'; # to start tasks in background
             PVE::Cluster::check_cfs_quorum();
             my $nodelist = PVE::Cluster::get_nodelist();
             for my $node (@$nodelist) {
-                my $pid = eval { $create_reload_network_worker->($node, $skip_frr) };
+                my $pid = eval { $create_reload_network_worker->($node, $regenerate_frr) };
                 warn $@ if $@;
             }
 
