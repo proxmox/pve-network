@@ -1,3 +1,9 @@
+libpve-network-perl (1.1.5) trixie; urgency=medium
+
+  * api: config reload: rename parameter from skip-frr to regenerate-frr
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 04 Aug 2025 18:03:42 +0200
+
 libpve-network-perl (1.1.4) trixie; urgency=medium
 
   * api: ipam status: ensure that guest ID is returned as an integer.
