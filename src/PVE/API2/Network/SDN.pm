@@ -93,7 +93,7 @@ my $create_reload_network_worker = sub {
     my ($nodename, $regenerate_frr) = @_;
 
     my @command = ('pvesh', 'set', "/nodes/$nodename/network");
-    push(@command, '--regenerate-frr') if $regenerate_frr;
+    push(@command, '--regenerate-frr', $regenerate_frr);
 
     # FIXME: how to proxy to final node ?
     my $upid;
@@ -299,7 +299,7 @@ __PACKAGE__->register_method({
             $lock_token,
         );
 
-        my $regenerate_frr = $previous_config_has_frr || $new_config_has_frr;
+        my $regenerate_frr = ($previous_config_has_frr || $new_config_has_frr) ? 1 : 0;
 
         my $code = sub {
             $rpcenv->{type} = 'priv'; # to start tasks in background
