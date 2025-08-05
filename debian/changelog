@@ -1,3 +1,10 @@
+libpve-network-perl (1.1.6) trixie; urgency=medium
+
+  * sdn api: always send regenerate-frr parameter explicitly when triggering
+    network reload on all nodes.
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 05 Aug 2025 12:11:57 +0200
+
 libpve-network-perl (1.1.5) trixie; urgency=medium
 
   * api: config reload: rename parameter from skip-frr to regenerate-frr
