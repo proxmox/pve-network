@@ -1,3 +1,15 @@
+libpve-network-perl (1.1.7) trixie; urgency=medium
+
+  * fix maximum value for ASN
+
+  * api: add state standard option
+
+  * sdn api: properly return null for rollback and lock endpoints
+
+  * api: update schema for various endpoints
+
+ -- Proxmox Support Team <support@proxmox.com>  Thu, 04 Sep 2025 14:22:03 +0200
+
 libpve-network-perl (1.1.6) trixie; urgency=medium
 
   * sdn api: always send regenerate-frr parameter explicitly when triggering
