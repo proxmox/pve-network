@@ -22,18 +22,21 @@ sub properties {
         'bgp-multipath-as-path-relax' => {
             type => 'boolean',
             optional => 1,
+            description =>
+                'Consider different AS paths of equal length for multipath computation.',
         },
         ebgp => {
             type => 'boolean',
             optional => 1,
-            description => "Enable ebgp. (remote-as external)",
+            description => "Enable eBGP (remote-as external).",
         },
         'ebgp-multihop' => {
             type => 'integer',
             optional => 1,
+            description => 'Set maximum amount of hops for eBGP peers.',
         },
         loopback => {
-            description => "source loopback interface.",
+            description => "Name of the loopback/dummy interface that provides the Router-IP.",
             type => 'string',
         },
         node => get_standard_option('pve-node'),

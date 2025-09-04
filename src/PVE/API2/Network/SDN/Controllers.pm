@@ -34,6 +34,67 @@ my $api_sdn_controllers_config = sub {
     return $scfg;
 };
 
+my $CONTROLLER_PROPERTIES = {
+    asn => {
+        type => 'integer',
+        description => 'The local ASN of the controller. BGP & EVPN only.',
+        optional => 1,
+        minimum => 0,
+        maximum => 4294967295,
+    },
+    node => {
+        type => 'string',
+        optional => 1,
+        description => 'Node(s) where this controller is active.',
+    },
+    peers => {
+        type => 'string',
+        optional => 1,
+        description => 'Comma-separated list of the peers IP addresses.',
+    },
+    'bgp-multipath-as-relax' => {
+        type => 'boolean',
+        optional => 1,
+        description =>
+            'Consider different AS paths of equal length for multipath computation. BGP only.',
+    },
+    ebgp => {
+        type => 'boolean',
+        optional => 1,
+        description => "Enable eBGP (remote-as external). BGP only.",
+    },
+    'ebgp-multihop' => {
+        type => 'integer',
+        optional => 1,
+        description =>
+            "Set maximum amount of hops for eBGP peers. Needs ebgp set to 1. BGP only.",
+    },
+    loopback => {
+        description =>
+            "Name of the loopback/dummy interface that provides the Router-IP. BGP only.",
+        optional => 1,
+        type => 'string',
+    },
+    'isis-domain' => {
+        description => "Name of the IS-IS domain. IS-IS only.",
+        optional => 1,
+        type => 'string',
+    },
+    'isis-ifaces' => {
+        description =>
+            "Comma-separated list of interfaces where IS-IS should be active. IS-IS only.",
+        optional => 1,
+        type => 'string',
+        format => 'pve-iface-list',
+    },
+    'isis-net' => {
+        description => "Network Entity title for this node in the IS-IS network. IS-IS only.",
+        optional => 1,
+        type => 'string',
+        format => 'pve-sdn-isis-net',
+    },
+};
+
 __PACKAGE__->register_method({
     name => 'index',
     path => '',
@@ -70,10 +131,29 @@ __PACKAGE__->register_method({
         items => {
             type => "object",
             properties => {
-                controller => { type => 'string' },
-                type => { type => 'string' },
-                state => { type => 'string', optional => 1 },
-                pending => { type => 'boolean', optional => 1 },
+                digest => {
+                    type => 'string',
+                    description => 'Digest of the controller section.',
+                    optional => 1,
+                },
+                state => get_standard_option('pve-sdn-config-state'),
+                controller => {
+                    type => 'string',
+                    description => 'Name of the controller.',
+                },
+                type => {
+                    type => 'string',
+                    description => 'Type of the controller',
+                    enum => PVE::Network::SDN::Controllers::Plugin->lookup_types(),
+                },
+                pending => {
+                    type => 'object',
+                    description =>
+                        'Changes that have not yet been applied to the running configuration.',
+                    optional => 1,
+                    properties => $CONTROLLER_PROPERTIES,
+                },
+                %$CONTROLLER_PROPERTIES,
             },
         },
         links => [{ rel => 'child', href => "{controller}" }],
@@ -139,7 +219,33 @@ __PACKAGE__->register_method({
             },
         },
     },
-    returns => { type => 'object' },
+    returns => {
+        properties => {
+            digest => {
+                type => 'string',
+                description => 'Digest of the controller section.',
+                optional => 1,
+            },
+            state => get_standard_option('pve-sdn-config-state'),
+            controller => {
+                type => 'string',
+                description => 'Name of the controller.',
+            },
+            type => {
+                type => 'string',
+                description => 'Type of the controller',
+                enum => PVE::Network::SDN::Controllers::Plugin->lookup_types(),
+            },
+            pending => {
+                type => 'object',
+                description =>
+                    'Changes that have not yet been applied to the running configuration.',
+                optional => 1,
+                properties => $CONTROLLER_PROPERTIES,
+            },
+            %$CONTROLLER_PROPERTIES,
+        },
+    },
     code => sub {
         my ($param) = @_;
 

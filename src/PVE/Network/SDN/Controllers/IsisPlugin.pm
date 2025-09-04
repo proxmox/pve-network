@@ -31,16 +31,16 @@ sub pve_verify_sdn_isis_net {
 sub properties {
     return {
         'isis-domain' => {
-            description => "ISIS domain.",
+            description => "Name of the IS-IS domain.",
             type => 'string',
         },
         'isis-ifaces' => {
-            description => "ISIS interface.",
+            description => "Comma-separated list of interfaces where IS-IS should be active.",
             type => 'string',
             format => 'pve-iface-list',
         },
         'isis-net' => {
-            description => "ISIS network entity title.",
+            description => "Network Entity title for this node in the IS-IS network.",
             type => 'string',
             format => 'pve-sdn-isis-net',
         },
