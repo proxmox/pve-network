@@ -192,6 +192,8 @@ __PACKAGE__->register_method({
                 $param->{'lock-token'},
             );
         }
+
+        return;
     },
 });
 
@@ -247,6 +249,8 @@ __PACKAGE__->register_method({
         PVE::Network::SDN::lock_sdn_config(
             $rollback, "could not rollback SDN configuration", $lock_token,
         );
+
+        return;
     },
 });
 
