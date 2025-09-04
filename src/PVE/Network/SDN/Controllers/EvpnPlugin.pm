@@ -25,7 +25,7 @@ sub properties {
             type => 'integer',
             description => "autonomous system number",
             minimum => 0,
-            maximum => 4294967296,
+            maximum => 2**32 - 1,
         },
         fabric => {
             description => "SDN fabric to use as underlay for this EVPN controller.",
