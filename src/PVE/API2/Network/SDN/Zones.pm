@@ -62,6 +62,148 @@ my $api_sdn_zones_config = sub {
     return $scfg;
 };
 
+my $ZONE_PROPERTIES = {
+    mtu => {
+        type => 'integer',
+        optional => 1,
+        description => 'MTU of the zone, will be used for the created VNet bridges.',
+    },
+    dns => {
+        type => 'string',
+        optional => 1,
+        description => 'ID of the DNS server for this zone.',
+    },
+    reversedns => {
+        type => 'string',
+        optional => 1,
+        description => 'ID of the reverse DNS server for this zone.',
+    },
+    dnszone => {
+        type => 'string',
+        optional => 1,
+        description => 'Domain name for this zone.',
+    },
+    ipam => {
+        type => 'string',
+        optional => 1,
+        description => 'ID of the IPAM for this zone.',
+    },
+    dhcp => {
+        type => 'string',
+        enum => ['dnsmasq'],
+        optional => 1,
+        description => 'Name of DHCP server backend for this zone.',
+    },
+    'rt-import' => {
+        type => 'string',
+        optional => 1,
+        description =>
+            'Comma-separated list of Route Targets that should be imported into the VRF of the zone. EVPN zone only.',
+        format => 'pve-sdn-bgp-rt-list',
+    },
+    'vrf-vxlan' => {
+        type => 'integer',
+        optional => 1,
+        description => 'VNI for the zone VRF. EVPN zone only.',
+        minimum => 1,
+        maximum => 16777215,
+    },
+    mac => {
+        type => 'string',
+        optional => 1,
+        description => 'MAC address of the anycast router for this zone.',
+    },
+    controller => {
+        type => 'string',
+        optional => 1,
+        description => 'ID of the controller for this zone. EVPN zone only.',
+    },
+    nodes => {
+        type => 'string',
+        optional => 1,
+        description => 'Nodes where this zone should be created.',
+    },
+    'exitnodes' => get_standard_option(
+        'pve-node-list',
+        {
+            description =>
+                "List of PVE Nodes that should act as exit node for this zone. EVPN zone only.",
+            optional => 1,
+        },
+    ),
+    'exitnodes-local-routing' => {
+        type => 'boolean',
+        description =>
+            "Create routes on the exit nodes, so they can connect to EVPN guests. EVPN zone only.",
+        optional => 1,
+    },
+    'exitnodes-primary' => get_standard_option(
+        'pve-node',
+        {
+            description => "Force traffic through this exitnode first. EVPN zone only.",
+            optional => 1,
+        },
+    ),
+    'advertise-subnets' => {
+        type => 'boolean',
+        description =>
+            "Advertise IP prefixes (Type-5 routes) instead of MAC/IP pairs (Type-2 routes). EVPN zone only.",
+        optional => 1,
+    },
+    'disable-arp-nd-suppression' => {
+        type => 'boolean',
+        description =>
+            "Suppress IPv4 ARP && IPv6 Neighbour Discovery messages. EVPN zone only.",
+        optional => 1,
+    },
+    'rt-import' => {
+        type => 'string',
+        description =>
+            "Route-Targets that should be imported into the VRF of this zone via BGP. EVPN zone only.",
+        optional => 1,
+        format => 'pve-sdn-bgp-rt-list',
+    },
+    tag => {
+        type => 'integer',
+        minimum => 0,
+        optional => 1,
+        description => "Service-VLAN Tag (outer VLAN). QinQ zone only",
+    },
+    'vlan-protocol' => {
+        type => 'string',
+        enum => ['802.1q', '802.1ad'],
+        default => '802.1q',
+        optional => 1,
+        description => "VLAN protocol for the creation of the QinQ zone. QinQ zone only.",
+    },
+    'peers' => {
+        description =>
+            "Comma-separated list of peers, that are part of the VXLAN zone. Usually the IPs of the nodes. VXLAN zone only.",
+        type => 'string',
+        format => 'ip-list',
+        optional => 1,
+    },
+    'vxlan-port' => {
+        description =>
+            "UDP port that should be used for the VXLAN tunnel (default 4789). VXLAN zone only.",
+        minimum => 1,
+        maximum => 65536,
+        type => 'integer',
+        optional => 1,
+        default => 4789,
+    },
+    'bridge' => {
+        type => 'string',
+        description => 'the bridge for which VLANs should be managed. VLAN & QinQ zone only.',
+        optional => 1,
+    },
+    'bridge-disable-mac-learning' => {
+        type => 'boolean',
+        description => "Disable auto mac learning. VLAN zone only.",
+        optional => 1,
+    },
+};
+
 __PACKAGE__->register_method({
     name => 'index',
     path => '',
@@ -98,17 +240,29 @@ __PACKAGE__->register_method({
         items => {
             type => "object",
             properties => {
-                zone => { type => 'string' },
-                type => { type => 'string' },
-                mtu => { type => 'integer', optional => 1 },
-                dns => { type => 'string', optional => 1 },
-                reversedns => { type => 'string', optional => 1 },
-                dnszone => { type => 'string', optional => 1 },
-                ipam => { type => 'string', optional => 1 },
-                dhcp => { type => 'string', optional => 1 },
-                pending => { type => 'boolean', optional => 1 },
-                state => { type => 'string', optional => 1 },
-                nodes => { type => 'string', optional => 1 },
+                digest => {
+                    type => 'string',
+                    description => 'Digest of the controller section.',
+                    optional => 1,
+                },
+                state => get_standard_option('pve-sdn-config-state'),
+                zone => {
+                    type => 'string',
+                    description => 'Name of the zone.',
+                },
+                type => {
+                    type => 'string',
+                    description => 'Type of the zone.',
+                    enum => PVE::Network::SDN::Zones::Plugin->lookup_types(),
+                },
+                pending => {
+                    type => 'object',
+                    description =>
+                        'Changes that have not yet been applied to the running configuration.',
+                    optional => 1,
+                    properties => $ZONE_PROPERTIES,
+                },
+                %$ZONE_PROPERTIES,
             },
         },
         links => [{ rel => 'child', href => "{zone}" }],
@@ -174,7 +328,33 @@ __PACKAGE__->register_method({
             },
         },
     },
-    returns => { type => 'object' },
+    returns => {
+        properties => {
+            digest => {
+                type => 'string',
+                description => 'Digest of the controller section.',
+                optional => 1,
+            },
+            state => get_standard_option('pve-sdn-config-state'),
+            zone => {
+                type => 'string',
+                description => 'Name of the zone.',
+            },
+            type => {
+                type => 'string',
+                description => 'Type of the zone.',
+                enum => PVE::Network::SDN::Zones::Plugin->lookup_types(),
+            },
+            pending => {
+                type => 'object',
+                description =>
+                    'Changes that have not yet been applied to the running configuration.',
+                optional => 1,
+                properties => $ZONE_PROPERTIES,
+            },
+            %$ZONE_PROPERTIES,
+        },
+    },
     code => sub {
         my ($param) = @_;
 

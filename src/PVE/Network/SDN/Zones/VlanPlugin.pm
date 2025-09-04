@@ -27,6 +27,7 @@ sub properties {
     return {
         'bridge' => {
             type => 'string',
+            description => 'The bridge for which VLANs should be managed.',
         },
         'bridge-disable-mac-learning' => {
             type => 'boolean',

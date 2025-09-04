@@ -27,20 +27,22 @@ sub type {
 sub properties {
     return {
         'peers' => {
-            description => "peers address list.",
+            description =>
+                "Comma-separated list of peers, that are part of the VXLAN zone. Usually the IPs of the nodes.",
             type => 'string',
             format => 'ip-list',
+        },
+        'vxlan-port' => {
+            description => "UDP port that should be used for the VXLAN tunnel (default 4789).",
+            minimum => 1,
+            maximum => 65536,
+            type => 'integer',
+            default => 4789,
         },
         fabric => {
             description => "SDN fabric to use as underlay for this VXLAN zone.",
             type => 'string',
             format => 'pve-sdn-fabric-id',
-        },
-        'vxlan-port' => {
-            description => "Vxlan tunnel udp port (default 4789).",
-            minimum => 1,
-            maximum => 65536,
-            type => 'integer',
         },
     };
 }

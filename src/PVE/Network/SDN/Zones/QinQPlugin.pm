@@ -18,11 +18,11 @@ sub properties {
         tag => {
             type => 'integer',
             minimum => 0,
-            description => "Service-VLAN Tag",
+            description => "Service-VLAN Tag (outer VLAN)",
         },
         mtu => {
             type => 'integer',
-            description => "MTU",
+            description => "MTU of the zone, will be used for the created VNet bridges.",
             optional => 1,
         },
         'vlan-protocol' => {
@@ -30,6 +30,8 @@ sub properties {
             enum => ['802.1q', '802.1ad'],
             default => '802.1q',
             optional => 1,
+            description =>
+                "Which VLAN protocol should be used for the creation of the QinQ zone.",
         },
     };
 }

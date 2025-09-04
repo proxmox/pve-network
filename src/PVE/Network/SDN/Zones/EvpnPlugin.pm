@@ -45,41 +45,47 @@ sub properties {
     return {
         'vrf-vxlan' => {
             type => 'integer',
-            description => "l3vni.",
+            description => "VNI for the zone VRF.",
+            minimum => 1,
+            maximum => 16777215,
         },
         'controller' => {
             type => 'string',
-            description => "Frr router name",
+            description => 'Controller for this zone.',
         },
         'mac' => {
             type => 'string',
-            description => "Anycast logical router mac address",
+            description => "Anycast logical router mac address.",
             optional => 1,
             format => 'mac-addr',
         },
         'exitnodes' => get_standard_option('pve-node-list'),
         'exitnodes-local-routing' => {
             type => 'boolean',
-            description => "Allow exitnodes to connect to evpn guests",
+            description => "Allow exitnodes to connect to EVPN guests.",
             optional => 1,
         },
         'exitnodes-primary' => get_standard_option(
             'pve-node',
-            { description => "Force traffic to this exitnode first." },
+            {
+                description => "Force traffic through this exitnode first.",
+            },
         ),
         'advertise-subnets' => {
             type => 'boolean',
-            description => "Advertise evpn subnets if you have silent hosts",
+            description =>
+                "Advertise IP prefixes (Type-5 routes) instead of MAC/IP pairs (Type-2 routes).",
             optional => 1,
         },
         'disable-arp-nd-suppression' => {
             type => 'boolean',
-            description => "Disable ipv4 arp && ipv6 neighbour discovery suppression",
+            description => "Suppress IPv4 ARP && IPv6 Neighbour Discovery messages.",
             optional => 1,
         },
         'rt-import' => {
             type => 'string',
-            description => "Route-Target import",
+            description =>
+                'List of Route Targets that should be imported into the VRF of the zone.',
             optional => 1,
             format => 'pve-sdn-bgp-rt-list',
         },
