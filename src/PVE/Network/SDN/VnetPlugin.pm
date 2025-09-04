@@ -60,30 +60,39 @@ sub properties {
     return {
         zone => {
             type => 'string',
-            description => "zone id",
+            description => 'Name of the zone this VNet belongs to.',
         },
         type => {
-            description => "Type",
+            type => 'string',
+            enum => ['vnet'],
+            description => 'Type of the VNet.',
             optional => 1,
         },
         tag => {
             type => 'integer',
-            description => "vlan or vxlan id",
+            description =>
+                'VLAN Tag (for VLAN or QinQ zones) or VXLAN VNI (for VXLAN or EVPN zones).',
+            optional => 1,
+            minimum => 1,
+            maximum => 16777215,
         },
         vlanaware => {
             type => 'boolean',
-            description => 'Allow vm VLANs to pass through this vnet.',
+            description => 'Allow VLANs to pass through this vnet.',
+            optional => 1,
         },
         alias => {
             type => 'string',
-            description => "alias name of the vnet",
+            description => "Alias name of the VNet.",
             pattern => qr/[\(\)-_.\w\d\s]{0,256}/i,
             maxLength => 256,
             optional => 1,
         },
         'isolate-ports' => {
             type => 'boolean',
-            description => "If true, sets the isolated property for all members of this VNet",
+            description =>
+                "If true, sets the isolated property for all interfaces on the bridge of this VNet.",
+            optional => 1,
         },
     };
 }

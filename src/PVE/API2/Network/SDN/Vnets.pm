@@ -74,6 +74,40 @@ my $check_vnet_access = sub {
     $rpcenv->check_any($authuser, "/sdn/zones/$zoneid/$vnet", $privs);
 };
 
+my $VNET_PROPERTIES = {
+    alias => {
+        type => 'string',
+        description => "Alias name of the VNet.",
+        pattern => qr/[\(\)-_.\w\d\s]{0,256}/i,
+        maxLength => 256,
+        optional => 1,
+    },
+    'isolate-ports' => {
+        type => 'boolean',
+        description =>
+            "If true, sets the isolated property for all interfaces on the bridge of this VNet.",
+        optional => 1,
+    },
+    tag => {
+        type => 'integer',
+        description =>
+            'VLAN Tag (for VLAN or QinQ zones) or VXLAN VNI (for VXLAN or EVPN zones).',
+        optional => 1,
+        minimum => 1,
+        maximum => 16777215,
+    },
+    vlanaware => {
+        type => 'boolean',
+        description => 'Allow VLANs to pass through this VNet.',
+        optional => 1,
+    },
+    zone => {
+        type => 'string',
+        description => 'Name of the zone this VNet belongs to.',
+        optional => 1,
+    },
+};
+
 __PACKAGE__->register_method({
     name => 'index',
     path => '',
@@ -103,7 +137,33 @@ __PACKAGE__->register_method({
         type => 'array',
         items => {
             type => "object",
-            properties => {},
+            properties => {
+                digest => {
+                    type => 'string',
+                    optional => 1,
+                    description => 'Digest of the VNet section.',
+                },
+                state => get_standard_option('pve-sdn-config-state'),
+                type => {
+                    type => 'string',
+                    enum => ['vnet'],
+                    optional => 0,
+                    description => 'Type of the VNet.',
+                },
+                vnet => {
+                    type => 'string',
+                    optional => 0,
+                    description => 'Name of the VNet.',
+                },
+                pending => {
+                    type => 'object',
+                    description =>
+                        'Changes that have not yet been applied to the running configuration.',
+                    optional => 1,
+                    properties => $VNET_PROPERTIES,
+                },
+                %$VNET_PROPERTIES,
+            },
         },
         links => [{ rel => 'child', href => "{vnet}" }],
     },
@@ -171,7 +231,35 @@ __PACKAGE__->register_method({
             },
         },
     },
-    returns => { type => 'object' },
+    returns => {
+        properties => {
+            digest => {
+                type => 'string',
+                optional => 1,
+                description => 'Digest of the VNet section.',
+            },
+            state => get_standard_option('pve-sdn-config-state'),
+            type => {
+                type => 'string',
+                enum => ['vnet'],
+                optional => 0,
+                description => 'Type of the VNet.',
+            },
+            vnet => {
+                type => 'string',
+                optional => 0,
+                description => 'Name of the VNet.',
+            },
+            pending => {
+                type => 'object',
+                description =>
+                    'Changes that have not yet been applied to the running configuration.',
+                optional => 1,
+                properties => $VNET_PROPERTIES,
+            },
+            %$VNET_PROPERTIES,
+        },
+    },
     code => sub {
         my ($param) = @_;
 
