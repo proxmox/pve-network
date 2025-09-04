@@ -29,7 +29,7 @@ $(BUILDDIR): src debian
 
 .PHONY: deb
 deb: $(DEBS)
-$(DEBS): $(BUILDDIR)
+$(DEBS) &: $(BUILDDIR)
 	cd $(BUILDDIR); dpkg-buildpackage -b -us -uc
 	lintian $(DEBS)
 
