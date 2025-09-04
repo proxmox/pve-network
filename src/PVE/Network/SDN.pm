@@ -60,6 +60,16 @@ PVE::JSONSchema::register_standard_option(
     },
 );
 
+PVE::JSONSchema::register_standard_option(
+    'pve-sdn-config-state',
+    {
+        type => 'string',
+        enum => ['new', 'changed', 'deleted'],
+        description => 'State of the SDN configuration object.',
+        optional => 1,
+    },
+);
+
 # improve me : move status code inside plugins ?
 
 sub ifquery_check {
