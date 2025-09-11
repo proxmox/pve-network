@@ -70,7 +70,7 @@ sub apply {
         eval { reload() };
         return if !$@;
 
-        warn "reloading frr configuration failed: $@";
+        log_warn("reloading frr configuration failed: $@");
         warn "trying to restart frr instead";
     }
 
