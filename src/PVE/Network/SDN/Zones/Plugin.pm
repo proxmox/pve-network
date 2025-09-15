@@ -346,7 +346,7 @@ sub get_bridge_ifaces {
     my $dir = "/sys/class/net/$bridge/brif";
     PVE::Tools::dir_glob_foreach(
         $dir,
-        '(((eth|bond)\d+|en[^.]+)(\.\d+)?)',
+        '(((eth|bond|nic|if)\d+|en[^.]+)(\.\d+)?)',
         sub {
             push @bridge_ifaces, $_[0];
         },
