@@ -1,3 +1,11 @@
+libpve-network-perl (1.1.8) trixie; urgency=medium
+
+  * frr: make warning when frr reload fails show up in the task log.
+
+  * fix #6806: sdn: allow nic* and if* interfaces as bridge ports.
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 16 Sep 2025 13:13:42 +0200
+
 libpve-network-perl (1.1.7) trixie; urgency=medium
 
   * fix maximum value for ASN
