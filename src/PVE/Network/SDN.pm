@@ -125,8 +125,9 @@ sub running_config_has_frr {
     # both can be empty if the SDN configuration was never applied
     my $controllers = $running_config->{controllers}->{ids} // {};
     my $fabrics = $running_config->{fabrics}->{ids} // {};
+    my $local_frr_config = PVE::Network::SDN::Frr::local_frr_config_exists();
 
-    return %$controllers || %$fabrics;
+    return %$controllers || %$fabrics || $local_frr_config;
 }
 
 sub pending_config {

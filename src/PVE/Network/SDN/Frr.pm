@@ -32,6 +32,22 @@ string that is a FRR configuration line.
 use PVE::RESTEnvironment qw(log_warn);
 use PVE::Tools qw(file_get_contents file_set_contents run_command);
 
+my $FRR_CONF_LOCAL_FILE = "/etc/frr/frr.conf.local";
+
+=head3 local_frr_config_exists
+
+Returns true if the `/etc/frr/frr.conf.local` file exists, otherwise false.
+
+=cut
+
+sub local_frr_config_exists {
+    if (-e $FRR_CONF_LOCAL_FILE) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
 =head3 read_local_frr_config
 
 Returns the contents of `/etc/frr/frr.conf.local` as a string if it exists, otherwise undef.
@@ -39,8 +55,8 @@ Returns the contents of `/etc/frr/frr.conf.local` as a string if it exists, othe
 =cut
 
 sub read_local_frr_config {
-    if (-e "/etc/frr/frr.conf.local") {
-        return file_get_contents("/etc/frr/frr.conf.local");
+    if (local_frr_config_exists()) {
+        return file_get_contents($FRR_CONF_LOCAL_FILE);
     }
 }
 
