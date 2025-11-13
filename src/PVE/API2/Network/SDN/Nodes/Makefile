@@ -1,4 +1,6 @@
 SOURCES=\
+	Fabric.pm\
+	Fabrics.pm\
 	Status.pm\
 	Zone.pm\
 	Zones.pm

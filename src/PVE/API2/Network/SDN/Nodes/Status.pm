@@ -3,12 +3,18 @@ package PVE::API2::Network::SDN::Nodes::Status;
 use strict;
 use warnings;
 
+use PVE::API2::Network::SDN::Nodes::Fabrics;
 use PVE::API2::Network::SDN::Nodes::Zones;
 
 use PVE::JSONSchema qw(get_standard_option);
 
 use PVE::RESTHandler;
 use base qw(PVE::RESTHandler);
+
+__PACKAGE__->register_method({
+    subclass => "PVE::API2::Network::SDN::Nodes::Fabrics",
+    path => 'fabrics',
+});
 
 __PACKAGE__->register_method({
     subclass => "PVE::API2::Network::SDN::Nodes::Zones",
@@ -40,7 +46,7 @@ __PACKAGE__->register_method({
         my ($param) = @_;
 
         my $result = [
-            { name => 'zones' },
+            { name => 'fabrics' }, { name => 'zones' },
         ];
         return $result;
     },
