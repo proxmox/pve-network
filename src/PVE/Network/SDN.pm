@@ -16,6 +16,8 @@ use PVE::RESTEnvironment qw(log_warn);
 use PVE::RPCEnvironment;
 use PVE::Tools qw(file_get_contents file_set_contents extract_param dir_glob_regex run_command);
 
+use PVE::RS::SDN::Fabrics;
+
 use PVE::Network::SDN::Vnets;
 use PVE::Network::SDN::Zones;
 use PVE::Network::SDN::Controllers;
@@ -97,9 +99,9 @@ sub ifquery_check {
 }
 
 sub status {
-
     my ($zone_status, $vnet_status) = PVE::Network::SDN::Zones::status();
-    return ($zone_status, $vnet_status);
+    my $fabric_status = PVE::RS::SDN::Fabrics::status();
+    return ($zone_status, $vnet_status, $fabric_status);
 }
 
 sub running_config {

@@ -56,7 +56,7 @@ __PACKAGE__->register_method({
 
         my $res = [];
 
-        my ($zone_status, $vnet_status) = PVE::Network::SDN::status();
+        my ($zone_status, $vnet_status) = PVE::Network::SDN::Zones::status();
 
         foreach my $id (sort keys %{$zone_status}) {
             my $item->{zone} = $id;
