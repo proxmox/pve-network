@@ -1,24 +1,17 @@
-package PVE::API2::Network::SDN::Zones::Status;
+package PVE::API2::Network::SDN::Nodes::Zones;
 
-use strict;
-use warnings;
-
-use File::Path;
-use File::Basename;
-use PVE::Tools;
+use PVE::API2::Network::SDN::Nodes::Zone;
 use PVE::INotify;
-use PVE::Cluster;
-use PVE::API2::Network::SDN::Zones::Content;
-use PVE::RESTHandler;
-use PVE::RPCEnvironment;
 use PVE::JSONSchema qw(get_standard_option);
-use PVE::Exception qw(raise_param_exc);
+use PVE::Network::SDN;
+use PVE::RPCEnvironment;
 
+use PVE::RESTHandler;
 use base qw(PVE::RESTHandler);
 
 __PACKAGE__->register_method({
-    subclass => "PVE::API2::Network::SDN::Zones::Content",
-    path => '{zone}/content',
+    subclass => "PVE::API2::Network::SDN::Nodes::Zone",
+    path => '{zone}',
 });
 
 __PACKAGE__->register_method({
@@ -70,41 +63,6 @@ __PACKAGE__->register_method({
             $item->{status} = $zone_status->{$id}->{'status'};
             push @$res, $item;
         }
-
-        return $res;
-    },
-});
-
-__PACKAGE__->register_method({
-    name => 'diridx',
-    path => '{zone}',
-    method => 'GET',
-    description => "",
-    permissions => {
-        check => ['perm', '/sdn/zones/{zone}', ['SDN.Audit'], any => 1],
-    },
-    parameters => {
-        additionalProperties => 0,
-        properties => {
-            node => get_standard_option('pve-node'),
-            zone => get_standard_option('pve-sdn-zone-id'),
-        },
-    },
-    returns => {
-        type => 'array',
-        items => {
-            type => "object",
-            properties => {
-                subdir => { type => 'string' },
-            },
-        },
-        links => [{ rel => 'child', href => "{subdir}" }],
-    },
-    code => sub {
-        my ($param) = @_;
-        my $res = [
-            { subdir => 'content' },
-        ];
 
         return $res;
     },
