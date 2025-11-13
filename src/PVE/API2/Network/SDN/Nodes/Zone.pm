@@ -297,4 +297,83 @@ __PACKAGE__->register_method({
     },
 });
 
+__PACKAGE__->register_method({
+    name => 'ip-vrf',
+    path => 'ip-vrf',
+    proxyto => 'node',
+    method => 'GET',
+    protected => 1,
+    description => "Get the IP VRF of an EVPN zone.",
+    permissions => {
+        check => ['perm', '/sdn/zones/{zone}', ['SDN.Audit']],
+    },
+    parameters => {
+        additionalProperties => 0,
+        properties => {
+            zone => {
+                type => 'string',
+                description => 'Name of an EVPN zone.',
+            },
+            node => get_standard_option('pve-node'),
+        },
+    },
+    returns => {
+        description => 'All entries in the VRF table of zone {zone} of the node.'
+            . 'This does not include /32 routes for guests on this host,'
+            . 'since they are handled via the respective vnet bridge directly.',
+        type => 'array',
+        items => {
+            type => 'object',
+            properties => {
+                ip => {
+                    type => 'string',
+                    format => 'CIDR',
+                    description => 'The CIDR of the route table entry.',
+                },
+                metric => {
+                    type => 'integer',
+                    description => 'This route\'s metric.',
+                },
+                protocol => {
+                    type => 'string',
+                    description => 'The protocol where this route was learned from (e.g. BGP).',
+                },
+                'nexthops' => {
+                    type => 'array',
+                    description => 'A list of nexthops for the route table entry.',
+                    items => {
+                        type => 'string',
+                        description => 'the interface name or ip address of the next hop',
+                    },
+                },
+            },
+        },
+    },
+    code => sub {
+        my ($param) = @_;
+
+        my $zone_id = extract_param($param, 'zone');
+        my $zone = PVE::Network::SDN::Zones::get_zone($zone_id, 1);
+
+        raise_param_exc({
+            zone => "zone does not exist",
+        })
+            if !$zone;
+
+        raise_param_exc({
+            zone => "zone is not an EVPN zone",
+        })
+            if $zone->{type} ne 'evpn';
+
+        my $node_id = extract_param($param, 'node');
+
+        raise_param_exc({
+            zone => "zone does not exist on node $node_id",
+        })
+            if defined($zone->{nodes}) && !grep { $_ eq $node_id } $zone->{nodes}->@*;
+
+        return PVE::RS::SDN::Fabrics::l3vpn_routes($zone_id);
+    },
+});
+
 1;
