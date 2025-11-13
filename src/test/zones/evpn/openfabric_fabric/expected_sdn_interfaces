@@ -48,9 +48,11 @@ iface dummy_test inet static
 	ip-forward 1
 
 auto ens20
-iface ens20
+iface ens20 inet static
+	address 172.20.3.1/32
 	ip-forward 1
 
 auto ens21
-iface ens21
+iface ens21 inet static
+	address 172.20.3.1/32
 	ip-forward 1
