@@ -40,7 +40,7 @@ __PACKAGE__->register_method({
     code => sub {
         my ($param) = @_;
         my $res = [
-            { subdir => 'routes' },
+            { subdir => 'neighbors' }, { subdir => 'routes' },
         ];
 
         return $res;
@@ -89,6 +89,52 @@ __PACKAGE__->register_method({
 
         my $fabric_id = extract_param($param, 'fabric');
         return PVE::RS::SDN::Fabrics::routes($fabric_id);
+    },
+});
+
+__PACKAGE__->register_method({
+    name => 'neighbors',
+    path => 'neighbors',
+    method => 'GET',
+    description => "Get all neighbors for a fabric.",
+    permissions => {
+        check => ['perm', '/sdn/fabrics/{fabric}', ['SDN.Audit']],
+    },
+    protected => 1,
+    proxyto => 'node',
+    parameters => {
+        additionalProperties => 0,
+        properties => {
+            node => get_standard_option('pve-node'),
+            fabric => get_standard_option('pve-sdn-fabric-id'),
+        },
+    },
+    returns => {
+        type => 'array',
+        items => {
+            type => "object",
+            properties => {
+                neighbor => {
+                    description => "The IP or hostname of the neighbor.",
+                    type => 'string',
+                },
+                status => {
+                    description => "The status of the neighbor, as returned by FRR.",
+                    type => 'string',
+                },
+                uptime => {
+                    description =>
+                        "The uptime of this neighbor, as returned by FRR (e.g. 8h24m12s).",
+                    type => 'string',
+                },
+            },
+        },
+    },
+    code => sub {
+        my ($param) = @_;
+
+        my $fabric_id = extract_param($param, 'fabric');
+        return PVE::RS::SDN::Fabrics::neighbors($fabric_id);
     },
 });
 
