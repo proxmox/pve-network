@@ -254,7 +254,9 @@ sub status {
         next
             if defined($zone_cfg->{ids}->{$id}->{nodes})
             && !$zone_cfg->{ids}->{$id}->{nodes}->{$nodename};
+
         $zone_status->{$id}->{status} = $err_config ? 'pending' : 'available';
+        $zone_status->{$id}->{'zone-type'} = $zone_cfg->{ids}->{$id}->{type};
     }
 
     foreach my $id (sort keys %{ $vnet_cfg->{ids} }) {
