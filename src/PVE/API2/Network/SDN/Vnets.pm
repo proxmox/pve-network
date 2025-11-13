@@ -63,7 +63,7 @@ my $api_sdn_vnets_deleted_config = sub {
     }
 };
 
-my $check_vnet_access = sub {
+our $check_vnet_access = sub {
     my ($vnet, $privs) = @_;
 
     my $cfg = PVE::Network::SDN::Vnets::config();

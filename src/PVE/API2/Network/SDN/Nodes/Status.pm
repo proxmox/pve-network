@@ -5,6 +5,7 @@ use warnings;
 
 use PVE::API2::Network::SDN::Nodes::Fabrics;
 use PVE::API2::Network::SDN::Nodes::Zones;
+use PVE::API2::Network::SDN::Nodes::Vnets;
 
 use PVE::JSONSchema qw(get_standard_option);
 
@@ -19,6 +20,11 @@ __PACKAGE__->register_method({
 __PACKAGE__->register_method({
     subclass => "PVE::API2::Network::SDN::Nodes::Zones",
     path => 'zones',
+});
+
+__PACKAGE__->register_method({
+    subclass => "PVE::API2::Network::SDN::Nodes::Vnets",
+    path => 'vnets',
 });
 
 __PACKAGE__->register_method({
@@ -46,7 +52,7 @@ __PACKAGE__->register_method({
         my ($param) = @_;
 
         my $result = [
-            { name => 'fabrics' }, { name => 'zones' },
+            { name => 'fabrics' }, { name => 'vnets' }, { name => 'zones' },
         ];
         return $result;
     },

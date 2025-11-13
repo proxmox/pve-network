@@ -2,6 +2,8 @@ SOURCES=\
 	Fabric.pm\
 	Fabrics.pm\
 	Status.pm\
+	Vnet.pm\
+	Vnets.pm\
 	Zone.pm\
 	Zones.pm
 
