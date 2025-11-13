@@ -138,3 +138,50 @@ __PACKAGE__->register_method({
     },
 });
 
+__PACKAGE__->register_method({
+    name => 'interfaces',
+    path => 'interfaces',
+    method => 'GET',
+    description => "Get all interfaces for a fabric.",
+    protected => 1,
+    permissions => {
+        check => ['perm', '/sdn/fabrics/{fabric}', ['SDN.Audit']],
+    },
+    proxyto => 'node',
+    parameters => {
+        additionalProperties => 0,
+        properties => {
+            node => get_standard_option('pve-node'),
+            fabric => get_standard_option('pve-sdn-fabric-id'),
+        },
+    },
+    returns => {
+        type => 'array',
+        items => {
+            type => "object",
+            properties => {
+                name => {
+                    description => "The name of the network interface.",
+                    type => 'string',
+                },
+                type => {
+                    description =>
+                        "The type of this interface in the fabric (e.g. Point-to-Point, Broadcast, ..).",
+                    type => 'string',
+                },
+                state => {
+                    description => "The current state of the interface.",
+                    type => 'string',
+                },
+            },
+        },
+    },
+    code => sub {
+        my ($param) = @_;
+
+        my $fabric_id = extract_param($param, 'fabric');
+        return PVE::RS::SDN::Fabrics::interfaces($fabric_id);
+    },
+});
+
+1;
