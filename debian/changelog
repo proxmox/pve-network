@@ -1,3 +1,15 @@
+libpve-network-perl (1.2.0) trixie; urgency=medium
+
+  * api: nodes:
+    - vnets: add mac-vrf endpoint for evpn vnets
+    - zones: add ip vrf endpoint for evpn zones
+    - zones: add bridge status
+    - fabrics: add endpoint for querying interface status
+    - fabrics: add endpoint for querying neighbor information
+    - fabrics: add endpoint for querying route status
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 14 Nov 2025 01:45:41 +0100
+
 libpve-network-perl (1.1.8) trixie; urgency=medium
 
   * frr: make warning when frr reload fails show up in the task log.
