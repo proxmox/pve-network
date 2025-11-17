@@ -1,3 +1,11 @@
+libpve-network-perl (1.2.1) trixie; urgency=medium
+
+  * api: zone vNet list: return full device name of firewall bridge ports, not
+    just the numeric index. E.g., instead of returning "0" before one now gets
+    "net0" returned, allowing easier association with the guest config.
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 17 Nov 2025 15:23:08 +0100
+
 libpve-network-perl (1.2.0) trixie; urgency=medium
 
   * api: nodes:
