@@ -180,7 +180,7 @@ __PACKAGE__->register_method({
                             index => {
                                 description =>
                                     'The index of the guests network device that this interface belongs to.',
-                                type => 'number',
+                                type => 'string',
                                 optional => 1,
                             },
                             primary_vlan => {
@@ -271,7 +271,7 @@ __PACKAGE__->register_method({
 
                 if ($ifname =~ m/^(?:fwpr(\d+)p(\d+)|veth(\d+)i(\d+)|tap(\d+)i(\d+))$/) {
                     $port->{vmid} = $1;
-                    $port->{index} = $2;
+                    $port->{index} = "net$2";
                 }
 
                 if ($result->{$master}->{vlan_filtering} == 1) {
