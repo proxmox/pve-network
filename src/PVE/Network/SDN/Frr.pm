@@ -36,16 +36,12 @@ my $FRR_CONF_LOCAL_FILE = "/etc/frr/frr.conf.local";
 
 =head3 local_frr_config_exists
 
-Returns true if the `/etc/frr/frr.conf.local` file exists, otherwise false.
+Checks if the `/etc/frr/frr.conf.local` file exists.
 
 =cut
 
 sub local_frr_config_exists {
-    if (-e $FRR_CONF_LOCAL_FILE) {
-        return 1;
-    } else {
-        return 0;
-    }
+    return -e $FRR_CONF_LOCAL_FILE;
 }
 
 =head3 read_local_frr_config
@@ -58,6 +54,7 @@ sub read_local_frr_config {
     if (local_frr_config_exists()) {
         return file_get_contents($FRR_CONF_LOCAL_FILE);
     }
+    return; # undef
 }
 
 my $FRR_CONFIG_FILE = "/etc/frr/frr.conf";
