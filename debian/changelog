@@ -1,3 +1,9 @@
+libpve-network-perl (1.2.3) trixie; urgency=medium
+
+  * api: sdn: fix null vmid for tap/veth ports on bridges api call.
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 18 Nov 2025 15:17:35 +0100
+
 libpve-network-perl (1.2.2) trixie; urgency=medium
 
   * sdn: include existence of the local frr.conf.local file to decide when we
