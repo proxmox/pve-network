@@ -1,3 +1,12 @@
+libpve-network-perl (1.2.2) trixie; urgency=medium
+
+  * sdn: include existence of the local frr.conf.local file to decide when we
+    have to write out the frr config. This way it's possible to have a custom
+    config in the frr.conf.local file without any SDN objects configured and
+    still be able to apply the config.
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 18 Nov 2025 13:14:05 +0100
+
 libpve-network-perl (1.2.1) trixie; urgency=medium
 
   * api: zone vNet list: return full device name of firewall bridge ports, not
