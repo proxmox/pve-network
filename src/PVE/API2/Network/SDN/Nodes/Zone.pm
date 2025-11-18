@@ -269,7 +269,13 @@ __PACKAGE__->register_method({
                     name => $ifname,
                 };
 
-                if ($ifname =~ m/^(?:fwpr(\d+)p(\d+)|veth(\d+)i(\d+)|tap(\d+)i(\d+))$/) {
+                if ($ifname =~ m/^fwpr(\d+)p(\d+)$/) {
+                    $port->{vmid} = $1;
+                    $port->{index} = "net$2";
+                } elsif ($ifname =~ m/^veth(\d+)i(\d+)$/) {
+                    $port->{vmid} = $1;
+                    $port->{index} = "net$2";
+                } elsif ($ifname =~ m/^tap(\d+)i(\d+)$/) {
                     $port->{vmid} = $1;
                     $port->{index} = "net$2";
                 }
