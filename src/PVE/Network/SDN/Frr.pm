@@ -225,7 +225,7 @@ sub raw_config_to_string {
     my $nodename = PVE::INotify::nodename();
 
     my @final_config = (
-        "frr version 10.3.1",
+        "frr version 10.4.1",
         "frr defaults datacenter",
         "hostname $nodename",
         "log syslog informational",
