@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use PVE::Tools qw(run_command);
+use PVE::IPRoute2;
 use PVE::JSONSchema;
 use PVE::Cluster;
 use PVE::Network;
@@ -341,18 +342,7 @@ sub is_vlanaware {
 
 sub get_bridge_ifaces {
     my ($bridge) = @_;
-
-    my @bridge_ifaces = ();
-    my $dir = "/sys/class/net/$bridge/brif";
-    PVE::Tools::dir_glob_foreach(
-        $dir,
-        '(((eth|bond|nic|if)\d+|en[^.]+)(\.\d+)?)',
-        sub {
-            push @bridge_ifaces, $_[0];
-        },
-    );
-
-    return @bridge_ifaces;
+    return PVE::IPRoute2::get_physical_bridge_ports($bridge);
 }
 
 sub datacenter_config {
