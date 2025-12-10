@@ -374,17 +374,7 @@ sub is_ovs {
 sub get_bridge_ifaces {
     my ($bridge) = @_;
 
-    my @bridge_ifaces = ();
-    my $dir = "/sys/class/net/$bridge/brif";
-    PVE::Tools::dir_glob_foreach(
-        $dir,
-        '(((eth|bond)\d+|en[^.]+)(\.\d+)?)',
-        sub {
-            push @bridge_ifaces, $_[0];
-        },
-    );
-
-    return @bridge_ifaces;
+    return PVE::Network::get_physical_bridge_ports($bridge);
 }
 
 sub datacenter_config {
