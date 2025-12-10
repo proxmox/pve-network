@@ -1,3 +1,9 @@
+libpve-network-perl (1.2.4) trixie; urgency=medium
+
+  * fix #6806: vlan: qinq: fix bridge port detection.
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 10 Dec 2025 20:47:02 +0100
+
 libpve-network-perl (1.2.3) trixie; urgency=medium
 
   * api: sdn: fix null vmid for tap/veth ports on bridges api call.
