@@ -5,7 +5,7 @@ Maintainer: Proxmox Support Team <support@proxmox.com>
 Build-Depends: debhelper-compat (= 13),
                lintian,
                libfile-slurp-perl,
-               libpve-common-perl,
+               libpve-common-perl (>= 9.1.1),
                libnet-subnet-perl,
                libpve-rs-perl (>= 0.11.1),
                libtest-mockmodule-perl,
@@ -19,7 +19,7 @@ Homepage: https://www.proxmox.com
 
 Package: libpve-network-perl
 Architecture: all
-Depends: libpve-common-perl (>= 9.0.14),
+Depends: libpve-common-perl (>= 9.1.1),
          pve-cluster (>= 8.0.10),
          libio-socket-ssl-perl,
          ifupdown2,
