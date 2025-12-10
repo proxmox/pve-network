@@ -1,3 +1,12 @@
+libpve-network-perl (0.11.3) bookworm; urgency=medium
+
+  * api: controller: iterate over keys instead of whole map to avoid adding
+    unnecessary data to the configuration.
+
+  * fix #6806: vlan: qinq: fix bridge port detection.
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 10 Dec 2025 20:42:00 +0100
+
 libpve-network-perl (0.11.2) bookworm; urgency=medium
 
   * frr: remove filtering outfunc of frr-reload command, new FRR 10.2 behavior
