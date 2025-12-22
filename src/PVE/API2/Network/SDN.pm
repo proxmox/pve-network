@@ -272,7 +272,7 @@ __PACKAGE__->register_method({
                 optional => 1,
                 default => 1,
                 description =>
-                    'When lock-token has been provided and configuration successfully commited, release the lock automatically afterwards',
+                    'When lock-token has been provided and configuration successfully committed, release the lock automatically afterwards',
             },
         },
     },
