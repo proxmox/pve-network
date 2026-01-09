@@ -166,7 +166,7 @@ sub update_ip {
     my $headers = ['Content-Type' => 'application/json; charset=UTF-8', 'Token' => $token];
 
     my $ip_id = get_ip_id($url, $ip, $headers);
-    die "can't find ip address in ipam" if !$ip_id;
+    die "can't find ip address in ipam\n" if !$ip_id;
 
     my $params = {
         hostname => $hostname,
