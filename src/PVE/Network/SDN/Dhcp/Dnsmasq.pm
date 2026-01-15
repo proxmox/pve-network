@@ -138,14 +138,18 @@ sub add_ip_mapping {
 sub configure_subnet {
     my ($class, $config, $dhcpid, $vnetid, $subnet_config) = @_;
 
-    die "No gateway defined for subnet $subnet_config->{id}"
-        if !$subnet_config->{gateway};
-
     my $tag = $subnet_config->{id};
 
     my ($zone, $network, $mask) = split(/-/, $tag);
+    my $is_ipv4 = Net::IP::ip_is_ipv4($network);
 
-    if (Net::IP::ip_is_ipv4($network)) {
+    # only die for IPv6 for now, since dnsmasq segfaults for IPv4 subnets
+    # without any gateway if no dhcp-range statement is configured (see #5949)
+    # TODO: enable check for IPv4 again as soon as fix is available.
+    die "No gateway configured for subnet $subnet_config->{id}"
+        if !$subnet_config->{gateway} && !$is_ipv4;
+
+    if ($is_ipv4) {
         $mask = (2**$mask - 1) << (32 - $mask);
         $mask = join('.', unpack("C4", pack("N", $mask)));
     }
@@ -155,7 +159,7 @@ sub configure_subnet {
     my $option_string;
     if (ip_is_ipv6($subnet_config->{network})) {
         $option_string = 'option6';
-    } else {
+    } elsif ($subnet_config->{gateway}) {
         $option_string = 'option';
         push @{$config}, "dhcp-option=tag:$tag,$option_string:router,$subnet_config->{gateway}";
     }
