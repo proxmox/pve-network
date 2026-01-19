@@ -462,7 +462,12 @@ sub generate_vnet_frr_config {
     foreach my $subnetid (sort keys %{$subnets}) {
         my $subnet = $subnets->{$subnetid};
         my $cidr = $subnet->{cidr};
-        push @controller_config, "ip route $cidr 10.255.255.2 xvrf_$zoneid";
+        my ($ip) = split(/\//, $cidr, 2);
+        if (Net::IP::ip_is_ipv6($ip)) {
+            push @controller_config, "ipv6 route $cidr fe80::2 xvrf_$zoneid";
+        } else {
+            push @controller_config, "ip route $cidr 10.255.255.2 xvrf_$zoneid";
+        }
     }
     push(@{ $config->{frr_ip_protocol} }, @controller_config);
 }

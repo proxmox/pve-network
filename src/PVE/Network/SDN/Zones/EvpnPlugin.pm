@@ -327,6 +327,7 @@ sub generate_sdn_config {
             @iface_config = ();
             push @iface_config, "link-type veth";
             push @iface_config, "address 10.255.255.1/30";
+            push @iface_config, "address fe80::1/126" if $ipv6;
             push @iface_config, "veth-peer-name $iface_xvrfp";
             push @iface_config, "mtu " . ($mtu + 50) if $mtu;
             push(@{ $config->{$iface_xvrf} }, @iface_config) if !$config->{$iface_xvrf};
@@ -334,6 +335,7 @@ sub generate_sdn_config {
             @iface_config = ();
             push @iface_config, "link-type veth";
             push @iface_config, "address 10.255.255.2/30";
+            push @iface_config, "address fe80::2/126" if $ipv6;
             push @iface_config, "veth-peer-name $iface_xvrf";
             push @iface_config, "vrf $vrf_iface";
             push @iface_config, "mtu " . ($mtu + 50) if $mtu;
