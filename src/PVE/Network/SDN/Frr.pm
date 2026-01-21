@@ -239,7 +239,7 @@ sub raw_config_to_string {
         "!", "line vty", "!",
     );
 
-    return join("\n", @final_config);
+    return join("\n", @final_config) . "\n";
 }
 
 =head3 raw_config_to_string(\@raw_config)
