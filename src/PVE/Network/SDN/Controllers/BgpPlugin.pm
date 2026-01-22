@@ -113,7 +113,7 @@ sub generate_frr_config {
     # address-family unicast
     if (@peers) {
         my $ipversion = Net::IP::ip_is_ipv6($ifaceip) ? "ipv6" : "ipv4";
-        my $mask = Net::IP::ip_is_ipv6($ifaceip) ? "/128" : "32";
+        my $mask = Net::IP::ip_is_ipv6($ifaceip) ? "128" : "32";
 
         push(@{ $bgp->{"address-family"}->{"$ipversion unicast"} }, "network $ifaceip/$mask")
             if $loopback;
