@@ -1,3 +1,18 @@
+libpve-network-perl (1.2.5) trixie; urgency=medium
+
+  * sdn: ipams: php plugin: add newline after error message to avoid including
+    the code context.
+
+  * fix #5949: avoid dnsmasq segfault when subnet has no gateway.
+
+  * sdn: add missing new-line at the end of frr config and update tests.
+
+  * sdn: evpn: fix IPv6 exit-node local routing.
+
+  * sdn: bgp: fix invalid double slash in ipv6 network.
+
+ -- Proxmox Support Team <support@proxmox.com>  Thu, 29 Jan 2026 18:41:16 +0100
+
 libpve-network-perl (1.2.4) trixie; urgency=medium
 
   * fix #6806: vlan: qinq: fix bridge port detection.
