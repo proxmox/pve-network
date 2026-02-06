@@ -23,23 +23,10 @@ PVE::JSONSchema::register_standard_option(
     {
         description => "The SDN dns object identifier.",
         type => 'string',
-        format => 'pve-sdn-dns-id',
         pattern => '[a-zA-Z][a-zA-Z0-9]*[a-zA-Z0-9]',
         minLength => 2,
     },
 );
-
-PVE::JSONSchema::register_format('pve-sdn-dns-id', \&parse_sdn_dns_id);
-
-sub parse_sdn_dns_id {
-    my ($id, $noerr) = @_;
-
-    if ($id !~ m/^[a-z][a-z0-9]*[a-z0-9]$/i) {
-        return undef if $noerr;
-        die "dns ID '$id' contains illegal characters\n";
-    }
-    return $id;
-}
 
 my $defaultData = {
 

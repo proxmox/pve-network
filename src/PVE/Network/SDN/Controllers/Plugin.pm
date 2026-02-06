@@ -21,25 +21,11 @@ PVE::JSONSchema::register_standard_option(
     {
         description => "The SDN controller object identifier.",
         type => 'string',
-        format => 'pve-sdn-controller-id',
         minLength => 2,
         maxLength => 64,
         pattern => '[a-zA-Z][a-zA-Z0-9_-]*[a-zA-Z0-9]',
     },
 );
-
-PVE::JSONSchema::register_format('pve-sdn-controller-id', \&parse_sdn_controller_id);
-
-sub parse_sdn_controller_id {
-    my ($id, $noerr) = @_;
-
-    if ($id !~ m/^[a-z][a-z0-9_-]*[a-z0-9]$/i) {
-        return undef if $noerr;
-        die "controller ID '$id' contains illegal characters\n";
-    }
-    die "controller ID '$id' can't be more length than 64 characters\n" if length($id) > 64;
-    return $id;
-}
 
 my $defaultData = {
 

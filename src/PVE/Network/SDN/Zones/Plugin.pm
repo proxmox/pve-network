@@ -23,25 +23,11 @@ PVE::JSONSchema::register_standard_option(
     {
         description => "The SDN zone object identifier.",
         type => 'string',
-        format => 'pve-sdn-zone-id',
         pattern => '[a-zA-Z][a-zA-Z0-9]*[a-zA-Z0-9]',
         minLength => 2,
         maxLength => 8,
     },
 );
-
-PVE::JSONSchema::register_format('pve-sdn-zone-id', \&parse_sdn_zone_id);
-
-sub parse_sdn_zone_id {
-    my ($id, $noerr) = @_;
-
-    if ($id !~ m/^[a-z][a-z0-9]*[a-z0-9]$/i) {
-        return undef if $noerr;
-        die "zone ID '$id' contains illegal characters\n";
-    }
-    die "zone ID '$id' can't be more length than 8 characters\n" if length($id) > 8;
-    return $id;
-}
 
 my $defaultData = {
 
