@@ -25,6 +25,8 @@ PVE::JSONSchema::register_standard_option(
         description => "The SDN ipam object identifier.",
         type => 'string',
         format => 'pve-sdn-ipam-id',
+        pattern => '[a-zA-Z][a-zA-Z0-9]*[a-zA-Z0-9]',
+        minLength => 2,
     },
 );
 

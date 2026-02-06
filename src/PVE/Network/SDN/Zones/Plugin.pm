@@ -24,6 +24,9 @@ PVE::JSONSchema::register_standard_option(
         description => "The SDN zone object identifier.",
         type => 'string',
         format => 'pve-sdn-zone-id',
+        pattern => '[a-zA-Z][a-zA-Z0-9]*[a-zA-Z0-9]',
+        minLength => 2,
+        maxLength => 8,
     },
 );
 

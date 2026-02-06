@@ -24,6 +24,8 @@ PVE::JSONSchema::register_standard_option(
         description => "The SDN dns object identifier.",
         type => 'string',
         format => 'pve-sdn-dns-id',
+        pattern => '[a-zA-Z][a-zA-Z0-9]*[a-zA-Z0-9]',
+        minLength => 2,
     },
 );
 

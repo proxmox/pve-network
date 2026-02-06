@@ -29,6 +29,9 @@ PVE::JSONSchema::register_standard_option(
         description => "Identifier for SDN fabrics",
         type => 'string',
         format => 'pve-sdn-fabric-id',
+        pattern => '[a-zA-Z0-9][a-zA-Z0-9-]{0,6}[a-zA-Z0-9]',
+        minLength => 2,
+        maxLength => 8,
     },
 );
 

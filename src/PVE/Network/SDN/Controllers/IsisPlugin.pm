@@ -43,6 +43,9 @@ sub properties {
             description => "Network Entity title for this node in the IS-IS network.",
             type => 'string',
             format => 'pve-sdn-isis-net',
+            pattern => '[a-fA-F0-9]{2}(\.[a-fA-F0-9]{4}){3,9}\.[a-fA-F0-9]{2}',
+            minLength => 20,
+            maxLength => 50,
         },
     };
 }

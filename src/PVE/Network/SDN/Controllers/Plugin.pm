@@ -22,6 +22,9 @@ PVE::JSONSchema::register_standard_option(
         description => "The SDN controller object identifier.",
         type => 'string',
         format => 'pve-sdn-controller-id',
+        minLength => 2,
+        maxLength => 64,
+        pattern => '[a-zA-Z][a-zA-Z0-9_-]*[a-zA-Z0-9]',
     },
 );
 
