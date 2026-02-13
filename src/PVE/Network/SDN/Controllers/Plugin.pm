@@ -105,7 +105,9 @@ sub on_update_hook {
 
 sub read_iface_mac {
     my ($iface) = @_;
-    return PVE::Tools::file_read_firstline("/sys/class/net/$iface/master/address");
+    my $mac = PVE::Tools::file_read_firstline("/sys/class/net/$iface/master/address");
+    return $mac if $mac;
+    return PVE::Tools::file_read_firstline("/sys/class/net/$iface/address");
 }
 
 sub get_router_id {
