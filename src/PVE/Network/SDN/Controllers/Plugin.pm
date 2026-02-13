@@ -118,6 +118,11 @@ sub get_router_id {
 
     die "can't autofind a router-id value from ip or mac" if !$mac;
 
+    if ($mac eq '00:00:00:00:00:00') {
+        die "Interface $iface has a zero MAC address. Cannot derive a BGP router-id. "
+            . "Please use a dummy interface or assign an IPv4 address to $iface.\n";
+    }
+
     my @mac_bytes = split(':', $mac);
     return
         hex($mac_bytes[2]) . "."
