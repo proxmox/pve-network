@@ -4,29 +4,11 @@ hostname localhost
 log syslog informational
 service integrated-vtysh-config
 !
-!
 vrf vrf_myzone
  vni 1000
  vni 1005
  ip route 192.0.2.0/24 null0
 exit-vrf
-!
-vrf vrf_yourzone
- ip route 198.51.100.0/24 null0
-exit-vrf
-!
-interface ens19
- no ip ospf passive
-!
-interface eth0
- ip router isis isis1
-!
-interface eth1
- ip router isis isis1
- isis circuit-type level-2-only
-!
-interface iface2
- ip ospf area 0
 !
 router bgp 65000
  bgp router-id 192.168.0.1
@@ -74,40 +56,15 @@ router bgp 65000 vrf vrf_myzone
  no bgp hard-administrative-reset
  no bgp graceful-restart notification
  bgp disable-ebgp-connected-route-check
- !
  address-family ipv4 unicast
   redistribute kernel
  exit-address-family
- !
  address-family ipv6 unicast
   redistribute kernel
  exit-address-family
- !
  address-family l2vpn evpn
   redistribute kernel
  exit-address-family
-exit
-!
-router bgp 65000 vrf vrf_yourzone
- bgp router-id 172.31.2.1
- no bgp hard-administrative-reset
- no bgp graceful-restart notification
- !
- address-family ipv4 unicast
-  redistribute kernel
- exit-address-family
- !
- address-family ipv6 unicast
-  redistribute kernel
- exit-address-family
- !
- address-family l2vpn evpn
-  redistribute kernel
- exit-address-family
-exit
-!
-router eigrp 1
- network 10.0.0.0/8
 exit
 !
 router isis isis1
@@ -117,34 +74,62 @@ router isis isis1
  log-adjacency-changes
 exit
 !
+interface eth0
+ ip router isis isis1
+exit
+!
+interface eth1
+ ip router isis isis1
+ isis circuit-type level-2-only
+exit
+!
+ip prefix-list loopbacks_ips seq 10 permit 0.0.0.0/0 le 32
+ip prefix-list PL_ALLOW seq 10 permit 10.0.0.0/8 le 24
+ip prefix-list loopbacks_ips seq 5 deny 8.8.8.0/0 le 32
+ipv6 prefix-list PL_ALLOW_6 seq 10 permit fd80:: le 64
+bgp community-list standard CL_LOCAL permit 65000:200
+interface iface2
+ ip ospf area 0
+exit
+!
+interface ens19
+ no ip ospf passive
+exit
+!
 router ospf
  passive-interface default
 exit
 !
+router bgp 65000 vrf vrf_yourzone
+ bgp router-id 172.31.2.1
+ no bgp hard-administrative-reset
+ no bgp graceful-restart notification
+ address-family ipv4 unicast
+  redistribute kernel
+ exit-address-family
+ address-family ipv6 unicast
+  redistribute kernel
+ exit-address-family
+ address-family l2vpn evpn
+  redistribute kernel
+ exit-address-family
+exit
+!
+router eigrp 1
+ network 10.0.0.0/8
+exit
+!
+vrf vrf_yourzone
+ ip route 198.51.100.0/24 null0
+access-list filter seq 5 permit ip host 10.0.20.2 232.1.1.0 0.0.0.128
 access-list filter seq 10 deny ip 10.0.20.0 0.0.0.255 232.1.1.0 0.0.0.255
 access-list filter seq 15 permit ip any any
-access-list filter seq 5 permit ip host 10.0.20.2 232.1.1.0 0.0.0.128
-!
-ip prefix-list PL_ALLOW seq 10 permit 10.0.0.0/8 le 24
-ip prefix-list loopbacks_ips seq 10 permit 0.0.0.0/0 le 32
-ip prefix-list loopbacks_ips seq 5 deny 8.8.8.0/0 le 32
-!
-ipv6 prefix-list PL_ALLOW_6 seq 10 permit fd80:: le 64
-!
-bgp community-list standard CL_LOCAL permit 65000:200
-!
 route-map CUSTOM_MAP permit 1
  match ip address prefix-list PL_ALLOW
 exit
 !
-route-map MAP_VTEP_IN permit 1
-exit
-!
 route-map MAP_VTEP_IN permit 2
  set community 65000:200
-exit
-!
-route-map MAP_VTEP_OUT permit 1
 exit
 !
 route-map MAP_VTEP_OUT permit 2
@@ -155,16 +140,11 @@ route-map MAP_VTEP_OUT permit 3
  match ip next-hop LOCAL
 exit
 !
-route-map correct_src permit 1
- match ip address prefix-list loopbacks_ips
- set src 192.168.0.1
-exit
-!
 route-map correct_src deny 2
  match ip next-hop NOT_LOCAL
 exit
 !
-ip protocol bgp route-map correct_src
+!
 router ospf
  ospf router-id 172.20.30.1
 exit
@@ -180,13 +160,25 @@ exit
 !
 access-list pve_ospf_test_ips permit 172.20.30.0/24
 !
+route-map MAP_VTEP_IN permit 1
+exit
+!
+route-map MAP_VTEP_OUT permit 1
+exit
+!
+route-map correct_src permit 1
+ match ip address prefix-list loopbacks_ips
+ set src 192.168.0.1
+exit
+!
 route-map pve_ospf permit 100
  match ip address pve_ospf_test_ips
  set src 172.20.30.1
 exit
 !
-ip protocol ospf route-map pve_ospf
+ip protocol bgp route-map correct_src
 !
+ip protocol ospf route-map pve_ospf
 !
 line vty
 !
