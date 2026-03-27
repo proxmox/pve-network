@@ -102,10 +102,16 @@ sub get_frr_daemon_status {
 }
 
 sub generate_etc_network_config {
-    my $nodename = PVE::INotify::nodename();
-    my $fabric_config = PVE::Network::SDN::Fabrics::config(1);
+    my ($running_cfg) = @_;
 
-    return $fabric_config->get_interfaces_etc_network_config($nodename);
+    my $nodename = PVE::INotify::nodename();
+    # if the config hasn't yet been applied after the introduction of
+    # fabrics then the key does not exist in the running config so we
+    # default to an empty hash
+    my $fabrics_config = $running_cfg->{fabrics}->{ids} // {};
+    my $fabric_object = PVE::RS::SDN::Fabrics->running_config($fabrics_config);
+
+    return $fabric_object->get_interfaces_etc_network_config($nodename);
 }
 
 sub node_properties {

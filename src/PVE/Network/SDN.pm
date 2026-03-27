@@ -26,7 +26,7 @@ use PVE::Network::SDN::Dhcp;
 use PVE::Network::SDN::Frr;
 use PVE::Network::SDN::Fabrics;
 
-my $running_cfg = "sdn/.running-config";
+my $RUNNING_CFG_FILENAME = "sdn/.running-config";
 
 my $parse_running_cfg = sub {
     my ($filename, $raw) = @_;
@@ -49,7 +49,7 @@ my $write_running_cfg = sub {
     return $json;
 };
 
-PVE::Cluster::cfs_register_file($running_cfg, $parse_running_cfg, $write_running_cfg);
+PVE::Cluster::cfs_register_file($RUNNING_CFG_FILENAME, $parse_running_cfg, $write_running_cfg);
 
 my $LOCK_TOKEN_FILE = "/etc/pve/sdn/.lock";
 
@@ -105,7 +105,7 @@ sub status {
 }
 
 sub running_config {
-    return cfs_read_file($running_cfg);
+    return cfs_read_file($RUNNING_CFG_FILENAME);
 }
 
 =head3 running_config_has_frr(\%running_config)
@@ -187,13 +187,17 @@ sub pending_config {
 
 }
 
-sub commit_config {
+sub compile_running_cfg {
+    my ($skip_version_bump) = @_;
+    $skip_version_bump = $skip_version_bump // 0;
 
-    my $cfg = cfs_read_file($running_cfg);
+    my $cfg = cfs_read_file($RUNNING_CFG_FILENAME);
     my $version = $cfg->{version};
 
     if ($version) {
-        $version++;
+        if (!$skip_version_bump) {
+            $version++;
+        }
     } else {
         $version = 1;
     }
@@ -219,7 +223,13 @@ sub commit_config {
         fabrics => $fabrics,
     };
 
-    cfs_write_file($running_cfg, $cfg);
+    return $cfg;
+}
+
+sub commit_config {
+    my $cfg = compile_running_cfg();
+
+    cfs_write_file($RUNNING_CFG_FILENAME, $cfg);
 }
 
 sub has_pending_changes {
@@ -342,20 +352,21 @@ sub get_local_vnets {
     return $vnets;
 }
 
-=head3 generate_raw_etc_network_config()
+=head3 generate_raw_etc_network_config(\%running_cfg)
 
 Generate the /etc/network/interfaces.d/sdn config file from the Zones
-and Fabrics configuration and return it as a String.
+and Fabrics running configuration passed and return it as a String.
 
 =cut
 
 sub generate_raw_etc_network_config {
+    my ($running_cfg) = @_;
     my $raw_config = "";
 
-    my $zone_config = PVE::Network::SDN::Zones::generate_etc_network_config();
+    my $zone_config = PVE::Network::SDN::Zones::generate_etc_network_config($running_cfg);
     $raw_config .= $zone_config if $zone_config;
 
-    my $fabric_config = PVE::Network::SDN::Fabrics::generate_etc_network_config();
+    my $fabric_config = PVE::Network::SDN::Fabrics::generate_etc_network_config($running_cfg);
     $raw_config .= $fabric_config if $fabric_config;
 
     return $raw_config;
@@ -396,7 +407,8 @@ interfaces files (/etc/network/interfaces.d/sdn).
 =cut
 
 sub generate_etc_network_config {
-    my $raw_config = PVE::Network::SDN::generate_raw_etc_network_config();
+    my $running_cfg = PVE::Network::SDN::running_config();
+    my $raw_config = PVE::Network::SDN::generate_raw_etc_network_config($running_cfg);
     PVE::Network::SDN::write_raw_etc_network_config($raw_config);
 }
 

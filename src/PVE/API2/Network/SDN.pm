@@ -3,6 +3,9 @@ package PVE::API2::Network::SDN;
 use strict;
 use warnings;
 
+use Encode qw(decode);
+use JSON qw(from_json);
+
 use PVE::Cluster qw(cfs_lock_file cfs_read_file cfs_write_file);
 use PVE::Exception qw(raise_param_exc);
 use PVE::JSONSchema qw(get_standard_option);
@@ -11,6 +14,7 @@ use PVE::RPCEnvironment;
 use PVE::SafeSyslog;
 use PVE::Tools qw(run_command extract_param);
 use PVE::Network::SDN;
+use PVE::File;
 
 use PVE::API2::Network::SDN::Controllers;
 use PVE::API2::Network::SDN::Vnets;
@@ -322,6 +326,90 @@ __PACKAGE__->register_method({
 
         return $rpcenv->fork_worker('reloadnetworkall', undef, $authuser, $code);
 
+    },
+});
+
+sub get_diff {
+    my ($filename_one, $filename_two) = @_;
+
+    my $diff = '';
+
+    my $cmd = ['/usr/bin/diff', '-b', '-N', '-u', $filename_one, $filename_two];
+    PVE::Tools::run_command(
+        $cmd,
+        noerr => 1,
+        outfunc => sub {
+            my ($line) = @_;
+            $diff .= decode('UTF-8', $line) . "\n";
+        },
+    );
+
+    $diff = undef if !$diff;
+
+    return $diff;
+}
+
+__PACKAGE__->register_method({
+    name => 'dry-run',
+    path => 'dry-run',
+    method => 'GET',
+    permissions => {
+        check => ['perm', '/nodes/{node}', ['Sys.Audit']],
+    },
+    description =>
+        "Dry-run the SDN apply action and return the difference between the current configuration and the pending configuration",
+    protected => 1,
+    proxyto => 'node',
+    parameters => {
+        additionalProperties => 0,
+        properties => {
+            node => get_standard_option('pve-node'),
+        },
+    },
+
+    returns => {
+        type => 'object',
+        properties => {
+            "frr-diff" => {
+                type => 'string',
+                optional => 1,
+                description =>
+                    'The difference between the current and pending FRR configuration.',
+            },
+            "interfaces-diff" => {
+                type => 'string',
+                optional => 1,
+                description =>
+                    'The difference between the current and pending /etc/network/interfaces.d/sdn configuration.',
+            },
+        },
+    },
+    code => sub {
+        my ($param) = @_;
+
+        # compile running config and skip version bump
+        my $running_cfg = PVE::Network::SDN::compile_running_cfg(1);
+
+        my $fabric_cfg = PVE::Network::SDN::Fabrics::config(0);
+        my $frr_cfg = PVE::Network::SDN::generate_frr_raw_config($running_cfg, $fabric_cfg);
+        my $new_cfg_frr = PVE::Network::SDN::Frr::raw_config_to_string($frr_cfg);
+
+        my $new_interfaces_cfg =
+            PVE::Network::SDN::generate_raw_etc_network_config($running_cfg);
+
+        my ($frr_tmp_filename, $frr_tmp_fh) = PVE::File::tempfile_contents($new_cfg_frr, 700);
+
+        my ($interfaces_tmp_filename, $interfaces_tmp_fh) =
+            PVE::File::tempfile_contents($new_interfaces_cfg, 700);
+
+        my $return_value = {};
+        $return_value->{"frr-diff"} = get_diff('/etc/frr/frr.conf', $frr_tmp_filename);
+        $return_value->{"interfaces-diff"} =
+            get_diff('/etc/network/interfaces.d/sdn', $interfaces_tmp_filename);
+
+        close($frr_tmp_fh);
+        close($interfaces_tmp_fh);
+        return $return_value;
     },
 });
 

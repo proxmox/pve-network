@@ -9,7 +9,8 @@ use PVE::Network::SDN::Controllers;
 use Data::Dumper;
 
 PVE::Network::SDN::commit_config();
-my $network_config = PVE::Network::SDN::Zones::generate_etc_network_config();
+my $running_cfg = PVE::Network::SDN::running_config();
+my $network_config = PVE::Network::SDN::Zones::generate_etc_network_config($running_cfg);
 
 PVE::Network::SDN::Zones::write_etc_network_config($network_config);
 print "/etc/network/interfaces.d/sdn\n";

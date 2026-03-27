@@ -107,8 +107,7 @@ sub get_vnets {
 }
 
 sub generate_etc_network_config {
-
-    my $cfg = PVE::Network::SDN::running_config();
+    my ($cfg) = @_;
 
     my $version = $cfg->{version};
     my $vnet_cfg = $cfg->{vnets};
