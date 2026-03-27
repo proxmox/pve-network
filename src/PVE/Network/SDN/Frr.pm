@@ -206,7 +206,6 @@ sub raw_config_to_string {
         "hostname $nodename",
         "log syslog informational",
         "service integrated-vtysh-config",
-        "!",
     );
 
     push @final_config, @$raw_config;

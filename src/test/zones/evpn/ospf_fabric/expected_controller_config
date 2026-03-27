@@ -4,7 +4,6 @@ hostname localhost
 log syslog informational
 service integrated-vtysh-config
 !
-!
 vrf vrf_evpn
  vni 100
 exit-vrf
@@ -62,7 +61,6 @@ route-map pve_ospf permit 100
 exit
 !
 ip protocol ospf route-map pve_ospf
-!
 !
 line vty
 !

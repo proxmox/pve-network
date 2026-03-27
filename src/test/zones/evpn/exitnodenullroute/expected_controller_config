@@ -4,7 +4,6 @@ hostname localhost
 log syslog informational
 service integrated-vtysh-config
 !
-!
 vrf vrf_myzone
  vni 1000
  ip route 10.0.0.0/24 null0
