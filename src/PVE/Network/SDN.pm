@@ -419,15 +419,15 @@ sub generate_frr_raw_config {
     $fabric_config = PVE::Network::SDN::Fabrics::config(1) if !$fabric_config;
 
     my $frr_config = {};
+
     PVE::Network::SDN::Controllers::generate_frr_config($frr_config, $running_config);
     PVE::Network::SDN::Frr::append_local_config($frr_config);
 
-    my $raw_config = PVE::Network::SDN::Frr::to_raw_config($frr_config);
+    my $nodename = PVE::INotify::nodename();
 
-    my $fabrics_config = PVE::Network::SDN::Fabrics::generate_frr_raw_config($fabric_config);
-    push @$raw_config, @$fabrics_config;
-
-    return $raw_config;
+    return PVE::RS::SDN::get_frr_raw_config(
+        $frr_config->{'frr'}, $fabric_config, $nodename,
+    );
 }
 
 =head3 get_frr_daemon_status(\%fabric_config)

@@ -69,23 +69,27 @@ sub generate_frr_config {
     return if !$isis_ifaces || !$isis_net || !$isis_domain;
     return if $local_node ne $plugin_config->{node};
 
-    my @router_config = (
-        "net $isis_net",
-        "redistribute ipv4 connected level-1",
-        "redistribute ipv6 connected level-1",
-        "log-adjacency-changes",
-    );
+    # Configure IS-IS router
+    my $isis_router = $config->{frr}->{isis}->{router}->{$isis_domain} //= {};
 
-    push(@{ $config->{frr}->{router}->{"isis $isis_domain"} }, @router_config);
+    $isis_router->{net} = $isis_net;
+    $isis_router->{log_adjacency_changes} = 1;
+    $isis_router->{redistribute} = {
+        ipv4_connected => "level-1",
+        ipv6_connected => "level-1",
+    };
 
-    my @iface_config = ("ip router isis $isis_domain");
-
+    # Configure interfaces
     my $altnames = PVE::Network::altname_mapping();
-
     my @ifaces = PVE::Tools::split_list($isis_ifaces);
+
+    $config->{frr}->{isis}->{interfaces} //= {};
     for my $iface (sort @ifaces) {
         my $iface_name = $altnames->{$iface} // $iface;
-        push(@{ $config->{frr_interfaces}->{$iface_name} }, @iface_config);
+        $config->{frr}->{isis}->{interfaces}->{$iface_name} //= {};
+        $config->{frr}->{isis}->{interfaces}->{$iface_name}->{domain} = $isis_domain;
+        $config->{frr}->{isis}->{interfaces}->{$iface_name}->{is_ipv4} = 1;
+        $config->{frr}->{isis}->{interfaces}->{$iface_name}->{is_ipv6} = 0;
     }
 
     return $config;

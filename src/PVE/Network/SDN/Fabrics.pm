@@ -6,6 +6,7 @@ use warnings;
 use PVE::Cluster qw(cfs_register_file cfs_read_file cfs_lock_file cfs_write_file);
 use PVE::JSONSchema qw(get_standard_option);
 use PVE::INotify;
+use PVE::RS::SDN;
 use PVE::RS::SDN::Fabrics;
 
 PVE::JSONSchema::register_format(
@@ -98,19 +99,6 @@ sub get_frr_daemon_status {
     }
 
     return $daemon_status;
-}
-
-sub generate_frr_raw_config {
-    my ($fabric_config) = @_;
-
-    my @raw_config = ();
-
-    my $nodename = PVE::INotify::nodename();
-
-    my $frr_config = $fabric_config->get_frr_raw_config($nodename);
-    push @raw_config, @$frr_config if @$frr_config;
-
-    return \@raw_config;
 }
 
 sub generate_etc_network_config {

@@ -55,15 +55,15 @@ sub generate_frr_config {
     my $local_node = PVE::INotify::nodename();
 
     my @peers;
-    my $asn = $plugin_config->{asn};
+    my $asn = int($plugin_config->{asn});
     my $ebgp = undef;
     my $loopback = undef;
     my $autortas = undef;
     my $ifaceip = undef;
     my $routerid = undef;
 
-    my $bgprouter = find_bgp_controller($local_node, $controller_cfg);
-    my $isisrouter = find_isis_controller($local_node, $controller_cfg);
+    my $bgp_controller = find_bgp_controller($local_node, $controller_cfg);
+    my $isis_controller = find_isis_controller($local_node, $controller_cfg);
 
     if ($plugin_config->{'fabric'}) {
         my $config = PVE::Network::SDN::Fabrics::config(1);
@@ -102,10 +102,10 @@ sub generate_frr_config {
     } elsif ($plugin_config->{'peers'}) {
         @peers = PVE::Tools::split_list($plugin_config->{'peers'});
 
-        if ($bgprouter) {
-            $loopback = $bgprouter->{loopback} if $bgprouter->{loopback};
-        } elsif ($isisrouter) {
-            $loopback = $isisrouter->{loopback} if $isisrouter->{loopback};
+        if ($bgp_controller) {
+            $loopback = $bgp_controller->{loopback} if $bgp_controller->{loopback};
+        } elsif ($isis_controller) {
+            $loopback = $isis_controller->{loopback} if $isis_controller->{loopback};
         }
 
         ($ifaceip, my $interface) =
@@ -116,58 +116,60 @@ sub generate_frr_config {
         return;
     }
 
-    if ($bgprouter) {
-        $ebgp = 1 if $plugin_config->{'asn'} ne $bgprouter->{asn};
-        $asn = $bgprouter->{asn} if $bgprouter->{asn};
+    if ($bgp_controller) {
+        $ebgp = 1 if $plugin_config->{'asn'} ne $bgp_controller->{asn};
+        $asn = int($bgp_controller->{asn}) if $bgp_controller->{asn};
         $autortas = $plugin_config->{'asn'} if $ebgp;
     }
 
     return if !$asn || !$routerid;
-    my $bgp = $config->{frr}->{router}->{"bgp $asn"} //= {};
 
-    my $remoteas = $ebgp ? "external" : $asn;
+    my $bgp_router = $config->{frr}->{bgp}->{vrf_router}->{'default'} //= {};
 
-    #global options
-    my @controller_config = (
-        "bgp router-id $routerid",
-        "no bgp hard-administrative-reset",
-        "no bgp default ipv4-unicast",
-        "coalesce-time 1000",
-        "no bgp graceful-restart notification",
-    );
-
-    push(@{ $bgp->{""} }, @controller_config) if keys %{$bgp} == 0;
-
-    @controller_config = ();
-
-    #VTEP neighbors
-    push @controller_config, "neighbor VTEP peer-group";
-    push @controller_config, "neighbor VTEP remote-as $remoteas";
-    push @controller_config, "neighbor VTEP bfd";
-
-    push @controller_config, "neighbor VTEP ebgp-multihop 10" if $ebgp && $loopback;
-    push @controller_config, "neighbor VTEP update-source $loopback" if $loopback;
-
-    # VTEP peers
-    foreach my $address (@peers) {
-        next if $address eq $ifaceip;
-        push @controller_config, "neighbor $address peer-group VTEP";
+    # Initialize router if not already configured
+    if (!keys %{$bgp_router}) {
+        $bgp_router->{asn} = $asn;
+        $bgp_router->{router_id} = $routerid;
+        $bgp_router->{default_ipv4_unicast} = 0;
+        $bgp_router->{hard_administrative_reset} = 0;
+        $bgp_router->{graceful_restart_notification} = 0;
+        $bgp_router->{coalesce_time} = 1000;
+        $bgp_router->{neighbor_groups} = [];
+        $bgp_router->{address_families} = {};
     }
 
-    push(@{ $bgp->{""} }, @controller_config);
+    # Build VTEP neighbor group
+    my @vtep_ips = grep { $_ ne $ifaceip } @peers;
 
-    # address-family l2vpn
-    @controller_config = ();
-    push @controller_config, "neighbor VTEP activate";
-    push @controller_config, "neighbor VTEP route-map MAP_VTEP_IN in";
-    push @controller_config, "neighbor VTEP route-map MAP_VTEP_OUT out";
-    push @controller_config, "advertise-all-vni";
-    push @controller_config, "autort as $autortas" if $autortas;
-    push(@{ $bgp->{"address-family"}->{"l2vpn evpn"} }, @controller_config);
+    my $neighbor_group = {
+        name => "VTEP",
+        bfd => 1,
+        remote_as => $ebgp ? "external" : $asn,
+        ips => \@vtep_ips,
+        interfaces => [],
+    };
+    $neighbor_group->{ebgp_multihop} = 10 if $ebgp && $loopback;
+    $neighbor_group->{update_source} = $loopback if $loopback;
 
-    my $routemap = { rule => undef, action => "permit" };
-    push(@{ $config->{frr_routemap}->{'MAP_VTEP_IN'} }, $routemap);
-    push(@{ $config->{frr_routemap}->{'MAP_VTEP_OUT'} }, $routemap);
+    push @{ $bgp_router->{neighbor_groups} }, $neighbor_group;
+
+    # Configure l2vpn evpn address family
+    $bgp_router->{address_families}->{l2vpn_evpn} //= {
+        neighbors => [{
+            name => "VTEP",
+            route_map_in => 'MAP_VTEP_IN',
+            route_map_out => 'MAP_VTEP_OUT',
+        }],
+        advertise_all_vni => 1,
+    };
+
+    $bgp_router->{address_families}->{l2vpn_evpn}->{autort_as} = $autortas if $autortas;
+
+    my $routemap_in = { seq => 1, action => "permit" };
+    my $routemap_out = { seq => 1, action => "permit" };
+
+    push($config->{frr}->{routemaps}->{'MAP_VTEP_IN'}->@*, $routemap_in);
+    push($config->{frr}->{routemaps}->{'MAP_VTEP_OUT'}->@*, $routemap_out);
 
     return $config;
 }
@@ -260,11 +262,19 @@ sub generate_zone_frr_config {
 
     my $is_gateway = $exitnodes->{$local_node};
 
-    # vrf
-    my @controller_config = ();
-    push @controller_config, "vni $vrfvxlan";
-    #avoid to routes between nodes through the exit nodes
-    #null routes subnets of other zones
+    # Configure VRF
+    my $vrf_router = $config->{frr}->{bgp}->{vrf_router}->{$vrf} //= {};
+    $vrf_router->{asn} = $asn;
+    $vrf_router->{router_id} = $routerid;
+    $vrf_router->{hard_administrative_reset} = 0;
+    $vrf_router->{graceful_restart_notification} = 0;
+
+    my $bgp_vrf = $config->{frr}->{bgp}->{vrfs}->{$vrf} //= {};
+
+    $bgp_vrf->{vni} = $vrfvxlan;
+    $bgp_vrf->{ip_routes} = [];
+
+    # Add null routes for other zones to avoid routing between nodes through exit nodes
     if ($is_gateway) {
         my $subnets = PVE::Network::SDN::Vnets::get_subnets();
         my $cidrs = {};
@@ -283,162 +293,135 @@ sub generate_zone_frr_config {
             keys $cidrs->%*;
 
         foreach my $ip (@sorted_ip) {
-            my $ipversion = Net::IP::ip_is_ipv4($ip) ? 'ip' : 'ipv6';
-            push @controller_config, "$ipversion route $ip/$cidrs->{$ip} null0";
+            my $is_ipv6 = Net::IP::ip_is_ipv6($ip);
+            push @{ $bgp_vrf->{ip_routes} },
+                {
+                    is_ipv6 => $is_ipv6,
+                    prefix => "$ip/$cidrs->{$ip}",
+                    via => "null0",
+                };
         }
     }
 
-    push(@{ $config->{frr}->{vrf}->{"$vrf"} }, @controller_config);
+    # Configure VRF BGP router
+    $vrf_router->{neighbor_groups} = [];
+    $vrf_router->{address_families} = {};
 
-    #main vrf router
-    @controller_config = ();
-    push @controller_config, "bgp router-id $routerid";
-    push @controller_config, "no bgp hard-administrative-reset";
-    push @controller_config, "no bgp graceful-restart notification";
-
-    #    push @controller_config, "!";
-    push(@{ $config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{""} }, @controller_config);
-
+    # Configure L2VPN EVPN address family with route targets
     if ($autortas) {
-        push(
-            @{
-                $config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}
-                    ->{"l2vpn evpn"}
-            },
-            "route-target import $autortas:$vrfvxlan",
-        );
-        push(
-            @{
-                $config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}
-                    ->{"l2vpn evpn"}
-            },
-            "route-target export $autortas:$vrfvxlan",
-        );
+        $vrf_router->{address_families}->{l2vpn_evpn} //= {};
+        $vrf_router->{address_families}->{l2vpn_evpn}->{route_targets} = {
+            import => ["$autortas:$vrfvxlan"],
+            export => ["$autortas:$vrfvxlan"],
+        };
     }
 
     if ($is_gateway) {
-
-        $config->{frr_prefix_list}->{'only_default'}->{1} = "permit 0.0.0.0/0";
-        $config->{frr_prefix_list_v6}->{'only_default_v6'}->{1} = "permit ::/0";
+        push(
+            @{ $config->{frr}->{prefix_lists}->{only_default} },
+            { seq => 1, action => 'permit', network => '0.0.0.0/0', is_ipv6 => 0 },
+        ) if !defined($config->{frr}->{prefix_lists}->{only_default});
+        push(
+            @{ $config->{frr}->{prefix_lists}->{only_default_v6} },
+            { seq => 1, action => 'permit', network => '::/0', is_ipv6 => 1 },
+        ) if !defined($config->{frr}->{prefix_lists}->{only_default_v6});
 
         if (!$exitnodes_primary || $exitnodes_primary eq $local_node) {
-            #filter default route coming from other exit nodes on primary node or both nodes if no primary is defined.
-            my $routemap_config_v6 = ();
-            push @{$routemap_config_v6}, "match ipv6 address prefix-list only_default_v6";
-            my $routemap_v6 = { rule => $routemap_config_v6, action => "deny" };
-            unshift(@{ $config->{frr_routemap}->{'MAP_VTEP_IN'} }, $routemap_v6);
+            # Filter default route coming from other exit nodes on primary node
+            my $routemap_config_v6 = {
+                protocol_type => 'ipv6',
+                match_type => 'address',
+                value => { list_type => 'prefixlist', list_name => 'only_default_v6' },
+            };
+            my $routemap_v6 = { seq => 1, matches => [$routemap_config_v6], action => "deny" };
+            unshift(
+                @{ $config->{frr}->{routemaps}->{'MAP_VTEP_IN'} }, $routemap_v6,
+            );
 
-            my $routemap_config = ();
-            push @{$routemap_config}, "match ip address prefix-list only_default";
-            my $routemap = { rule => $routemap_config, action => "deny" };
-            unshift(@{ $config->{frr_routemap}->{'MAP_VTEP_IN'} }, $routemap);
+            my $routemap_config = {
+                protocol_type => 'ip',
+                match_type => 'address',
+                value => { list_type => 'prefixlist', list_name => 'only_default' },
+            };
+            my $routemap = { seq => 1, matches => [$routemap_config], action => "deny" };
+            unshift(@{ $config->{frr}->{routemaps}->{'MAP_VTEP_IN'} }, $routemap);
 
         } elsif ($exitnodes_primary ne $local_node) {
-            my $routemap_config_v6 = ();
-            push @{$routemap_config_v6}, "match ipv6 address prefix-list only_default_v6";
-            push @{$routemap_config_v6}, "set metric 200";
-            my $routemap_v6 = { rule => $routemap_config_v6, action => "permit" };
-            unshift(@{ $config->{frr_routemap}->{'MAP_VTEP_OUT'} }, $routemap_v6);
+            my $routemap_config_v6 = {
+                protocol_type => 'ipv6',
+                match_type => 'address',
+                value => { list_type => 'prefixlist', list_name => 'only_default_v6' },
+            };
+            my $routemap_v6 = {
+                seq => 1,
+                matches => [$routemap_config_v6],
+                sets => [{ set_type => 'metric', value => 200 }],
+                action => "permit",
+            };
+            unshift(
+                @{ $config->{frr}->{routemaps}->{'MAP_VTEP_OUT'} }, $routemap_v6,
+            );
 
-            my $routemap_config = ();
-            push @{$routemap_config}, "match ip address prefix-list only_default";
-            push @{$routemap_config}, "set metric 200";
-            my $routemap = { rule => $routemap_config, action => "permit" };
-            unshift(@{ $config->{frr_routemap}->{'MAP_VTEP_OUT'} }, $routemap);
+            my $routemap_config = {
+                protocol_type => 'ip',
+                match_type => 'address',
+                value => { list_type => 'prefixlist', list_name => 'only_default' },
+            };
+            my $routemap = {
+                seq => 1,
+                matches => [$routemap_config],
+                sets => [{ set_type => 'metric', value => 200 }],
+                action => "permit",
+            };
+            unshift(@{ $config->{frr}->{routemaps}->{'MAP_VTEP_OUT'} }, $routemap);
         }
 
         if (!$exitnodes_local_routing) {
-            @controller_config = ();
-            #import /32 routes of evpn network from vrf1 to default vrf (for packet return)
-            push @controller_config, "import vrf $vrf";
-            push(
-                @{
-                    $config->{frr}->{router}->{"bgp $asn"}->{"address-family"}->{"ipv4 unicast"}
-                },
-                @controller_config,
-            );
-            push(
-                @{
-                    $config->{frr}->{router}->{"bgp $asn"}->{"address-family"}->{"ipv6 unicast"}
-                },
-                @controller_config,
-            );
+            # Import /32 routes from VRF to main router
+            my $main_bgp_router = $config->{frr}->{bgp}->{vrf_router}->{'default'};
+            if ($main_bgp_router) {
+                $main_bgp_router->{address_families}->{ipv4_unicast} //= {};
+                push(@{ $main_bgp_router->{address_families}->{ipv4_unicast}->{import_vrf} }, $vrf);
 
-            @controller_config = ();
-            #redistribute connected to be able to route to local vms on the gateway
-            push @controller_config, "redistribute connected";
-            push(
-                @{
-                    $config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}
-                        ->{"ipv4 unicast"}
-                },
-                @controller_config,
-            );
-            push(
-                @{
-                    $config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}
-                        ->{"ipv6 unicast"}
-                },
-                @controller_config,
-            );
+                $main_bgp_router->{address_families}->{ipv6_unicast} //= {};
+                push(@{ $main_bgp_router->{address_families}->{ipv6_unicast}->{import_vrf} }, $vrf);
+            }
+
+            # Redistribute connected in VRF router
+            $vrf_router->{address_families}->{ipv4_unicast} //= { redistribute => [] };
+            push @{ $vrf_router->{address_families}->{ipv4_unicast}->{redistribute} },
+                { protocol => "connected" };
+
+            $vrf_router->{address_families}->{ipv6_unicast} //= { redistribute => [] };
+            push @{ $vrf_router->{address_families}->{ipv6_unicast}->{redistribute} },
+                { protocol => "connected" };
         }
 
-        @controller_config = ();
-        #add default originate to announce 0.0.0.0/0 type5 route in evpn
-        push @controller_config, "default-originate ipv4";
-        push @controller_config, "default-originate ipv6";
-        push(
-            @{
-                $config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}
-                    ->{"l2vpn evpn"}
-            },
-            @controller_config,
-        );
+        # Add default originate to announce 0.0.0.0/0 type5 route in evpn
+        $vrf_router->{address_families}->{l2vpn_evpn} //= {};
+        $vrf_router->{address_families}->{l2vpn_evpn}->{default_originate} = ["ipv4", "ipv6"];
+
     } elsif ($advertisesubnets) {
+        # Redistribute connected networks
+        $vrf_router->{address_families}->{ipv4_unicast} //= { redistribute => [] };
+        push @{ $vrf_router->{address_families}->{ipv4_unicast}->{redistribute} },
+            { protocol => "connected" };
 
-        @controller_config = ();
-        #redistribute connected networks
-        push @controller_config, "redistribute connected";
-        push(
-            @{
-                $config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}
-                    ->{"ipv4 unicast"}
-            },
-            @controller_config,
-        );
-        push(
-            @{
-                $config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}
-                    ->{"ipv6 unicast"}
-            },
-            @controller_config,
-        );
+        $vrf_router->{address_families}->{ipv6_unicast} //= { redistribute => [] };
+        push @{ $vrf_router->{address_families}->{ipv6_unicast}->{redistribute} },
+            { protocol => "connected" };
 
-        @controller_config = ();
-        #advertise connected networks type5 route in evpn
-        push @controller_config, "advertise ipv4 unicast";
-        push @controller_config, "advertise ipv6 unicast";
-        push(
-            @{
-                $config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}
-                    ->{"l2vpn evpn"}
-            },
-            @controller_config,
-        );
+        # Advertise connected networks type5 route in evpn
+        $vrf_router->{address_families}->{l2vpn_evpn} //= {};
+        $vrf_router->{address_families}->{l2vpn_evpn}->{advertise_ipv4_unicast} = 1;
+        $vrf_router->{address_families}->{l2vpn_evpn}->{advertise_ipv6_unicast} = 1;
     }
 
     if ($rt_import) {
-        @controller_config = ();
-        foreach my $rt (sort @{$rt_import}) {
-            push @controller_config, "route-target import $rt";
-        }
-        push(
-            @{
-                $config->{frr}->{router}->{"bgp $asn vrf $vrf"}->{"address-family"}
-                    ->{"l2vpn evpn"}
-            },
-            @controller_config,
-        );
+        $vrf_router->{address_families}->{l2vpn_evpn} //= { route_targets => {} };
+        $vrf_router->{address_families}->{l2vpn_evpn}->{route_targets}->{import} //= [];
+        push @{ $vrf_router->{address_families}->{l2vpn_evpn}->{route_targets}->{import} },
+            @{$rt_import};
     }
 
     return $config;
@@ -458,18 +441,29 @@ sub generate_vnet_frr_config {
     return if !$is_gateway;
 
     my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid, 1);
-    my @controller_config = ();
+    $config->{frr}->{ip_routes} //= [];
     foreach my $subnetid (sort keys %{$subnets}) {
         my $subnet = $subnets->{$subnetid};
         my $cidr = $subnet->{cidr};
         my ($ip) = split(/\//, $cidr, 2);
         if (Net::IP::ip_is_ipv6($ip)) {
-            push @controller_config, "ipv6 route $cidr fe80::2 xvrf_$zoneid";
+            push @{ $config->{frr}->{ip_routes} },
+                {
+                    prefix => $cidr,
+                    via => "fe80::2",
+                    vrf => "xvrf_$zoneid",
+                    is_ipv6 => 1,
+                };
         } else {
-            push @controller_config, "ip route $cidr 10.255.255.2 xvrf_$zoneid";
+            push @{ $config->{frr}->{ip_routes} },
+                {
+                    prefix => $cidr,
+                    via => "10.255.255.2",
+                    vrf => "xvrf_$zoneid",
+                    is_ipv6 => 0,
+                };
         }
     }
-    push(@{ $config->{frr_ip_protocol} }, @controller_config);
 }
 
 sub on_delete_hook {

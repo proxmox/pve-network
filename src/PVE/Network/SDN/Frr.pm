@@ -187,30 +187,6 @@ sub set_daemon_status {
     return $changed;
 }
 
-=head3 to_raw_config(\%frr_config)
-
-Converts a given C<\%frr_config> to the raw config format.
-
-=cut
-
-sub to_raw_config {
-    my ($frr_config) = @_;
-
-    my $raw_config = [];
-
-    generate_frr_vrf($raw_config, $frr_config->{frr}->{vrf});
-    generate_frr_interfaces($raw_config, $frr_config->{frr_interfaces});
-    generate_frr_recurse($raw_config, $frr_config->{frr}, undef, 0);
-    generate_frr_list($raw_config, $frr_config->{frr_access_list}, "access-list");
-    generate_frr_list($raw_config, $frr_config->{frr_prefix_list}, "ip prefix-list");
-    generate_frr_list($raw_config, $frr_config->{frr_prefix_list_v6}, "ipv6 prefix-list");
-    generate_frr_simple_list($raw_config, $frr_config->{frr_bgp_community_list});
-    generate_frr_routemap($raw_config, $frr_config->{frr_routemap});
-    generate_frr_simple_list($raw_config, $frr_config->{frr_ip_protocol});
-
-    return $raw_config;
-}
-
 =head3 raw_config_to_string(\@raw_config)
 
 Converts a given C<\@raw_config> to a string representing a complete frr
@@ -269,8 +245,35 @@ in-place.
 sub append_local_config {
     my ($frr_config, $local_config) = @_;
 
+    # store the generated and override routemaps here, so that we can write them
+    # at the very end. We need to do this because we need to have all the
+    # routemaps, to then sort them and set the seq for every routemap correctly.
+    my $custom_routemaps = {};
+
     $local_config = read_local_frr_config() if !$local_config;
-    return if !$local_config;
+
+    # add already generated frr routemaps (from the evpn controller) to the
+    # custom_routemaps map. by adding them here early the generated routemaps
+    # are inserted BEFORE the frr.conf.local ones.
+    for my $rm (sort keys %{ $frr_config->{'frr'}->{'routemaps'} }) {
+        push(@{ $custom_routemaps->{$rm} }, \$frr_config->{'frr'}->{'routemaps'}->{$rm});
+    }
+
+    if (!$local_config) {
+        # if we exit early because there is no frr.conf.local, we still need to
+        # adjust the routemap seqs
+        for my $rm (sort keys %{$custom_routemaps}) {
+            my $seq = 1;
+            my $entry = $custom_routemaps->{$rm};
+            for my $rm_line (@{$entry}) {
+                for my $rm_obj_entry (@{$$rm_line}) {
+                    $rm_obj_entry->{seq} = $seq;
+                    $seq++;
+                }
+            }
+        }
+        return;
+    }
 
     my $section = \$frr_config->{""};
     my $router = undef;
@@ -336,141 +339,6 @@ sub append_local_config {
             push(@{$routemap_config}, $line);
         } else {
             push(@{$$section}, $line);
-        }
-    }
-}
-
-sub generate_frr_recurse {
-    my ($final_config, $content, $parentkey, $level) = @_;
-
-    my $keylist = {};
-    $keylist->{'address-family'} = 1;
-    $keylist->{router} = 1;
-
-    my $exitkeylist = {};
-    $exitkeylist->{'address-family'} = 1;
-
-    my $simple_exitkeylist = {};
-    $simple_exitkeylist->{router} = 1;
-
-    # FIXME: make this generic
-    my $paddinglevel = undef;
-    if ($level == 1 || $level == 2) {
-        $paddinglevel = $level - 1;
-    } elsif ($level == 3 || $level == 4) {
-        $paddinglevel = $level - 2;
-    }
-
-    my $padding = "";
-    $padding = ' ' x ($paddinglevel) if $paddinglevel;
-
-    if (ref $content eq 'HASH') {
-        foreach my $key (sort keys %$content) {
-            next if $key eq 'vrf';
-            if ($parentkey && defined($keylist->{$parentkey})) {
-                push @{$final_config}, $padding . "!";
-                push @{$final_config}, $padding . "$parentkey $key";
-            } elsif ($key ne '' && !defined($keylist->{$key})) {
-                push @{$final_config}, $padding . "$key";
-            }
-
-            my $option = $content->{$key};
-            generate_frr_recurse($final_config, $option, $key, $level + 1);
-
-            push @{$final_config}, $padding . "exit-$parentkey"
-                if $parentkey && defined($exitkeylist->{$parentkey});
-            push @{$final_config}, $padding . "exit"
-                if $parentkey && defined($simple_exitkeylist->{$parentkey});
-        }
-    }
-
-    if (ref $content eq 'ARRAY') {
-        push @{$final_config}, map { $padding . "$_" } @$content;
-    }
-}
-
-sub generate_frr_vrf {
-    my ($final_config, $vrfs) = @_;
-
-    return if !$vrfs;
-
-    my @config = ();
-
-    foreach my $id (sort keys %$vrfs) {
-        my $vrf = $vrfs->{$id};
-        push @config, "!";
-        push @config, "vrf $id";
-        foreach my $rule (@$vrf) {
-            push @config, " $rule";
-
-        }
-        push @config, "exit-vrf";
-    }
-
-    push @{$final_config}, @config;
-}
-
-sub generate_frr_simple_list {
-    my ($final_config, $rules) = @_;
-
-    return if !$rules;
-
-    my @config = ();
-    push @{$final_config}, "!";
-    foreach my $rule (sort @$rules) {
-        push @{$final_config}, $rule;
-    }
-}
-
-sub generate_frr_list {
-    my ($final_config, $lists, $type) = @_;
-
-    my $config = [];
-
-    for my $id (sort keys %$lists) {
-        my $list = $lists->{$id};
-
-        for my $seq (sort keys %$list) {
-            my $rule = $list->{$seq};
-            push @$config, "$type $id seq $seq $rule";
-        }
-    }
-
-    if (@$config > 0) {
-        push @{$final_config}, "!", @$config;
-    }
-}
-
-sub generate_frr_interfaces {
-    my ($final_config, $interfaces) = @_;
-
-    foreach my $k (sort keys %$interfaces) {
-        my $iface = $interfaces->{$k};
-        push @{$final_config}, "!";
-        push @{$final_config}, "interface $k";
-        foreach my $rule (sort @$iface) {
-            push @{$final_config}, " $rule";
-        }
-    }
-}
-
-sub generate_frr_routemap {
-    my ($final_config, $routemaps) = @_;
-
-    foreach my $id (sort keys %$routemaps) {
-
-        my $routemap = $routemaps->{$id};
-        my $order = 0;
-        foreach my $seq (@$routemap) {
-            $order++;
-            next if !defined($seq->{action});
-            my @config = ();
-            push @config, "!";
-            push @config, "route-map $id $seq->{action} $order";
-            my $rule = $seq->{rule};
-            push @config, map { " $_" } @$rule;
-            push @{$final_config}, @config;
-            push @{$final_config}, "exit";
         }
     }
 }

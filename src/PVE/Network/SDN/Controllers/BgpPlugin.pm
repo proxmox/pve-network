@@ -62,7 +62,7 @@ sub generate_frr_config {
     my @peers;
     @peers = PVE::Tools::split_list($plugin_config->{'peers'}) if $plugin_config->{'peers'};
 
-    my $asn = $plugin_config->{asn};
+    my $asn = int($plugin_config->{asn});
     my $ebgp = $plugin_config->{ebgp};
     my $ebgp_multihop = $plugin_config->{'ebgp-multihop'};
     my $loopback = $plugin_config->{loopback};
@@ -73,66 +73,80 @@ sub generate_frr_config {
     return if !$asn;
     return if $local_node ne $plugin_config->{node};
 
-    my $bgp = $config->{frr}->{router}->{"bgp $asn"} //= {};
-
     my ($ifaceip, $interface) =
         PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers, $loopback);
     my $routerid = PVE::Network::SDN::Controllers::Plugin::get_router_id($ifaceip, $interface);
 
-    my $remoteas = $ebgp ? "external" : $asn;
+    my $bgp_router = $config->{frr}->{bgp}->{vrf_router}->{'default'} //= {};
 
-    #global options
-    my @controller_config = (
-        "bgp router-id $routerid", "no bgp default ipv4-unicast", "coalesce-time 1000",
-    );
-
-    push(@{ $bgp->{""} }, @controller_config) if keys %{$bgp} == 0;
-
-    @controller_config = ();
-    if ($ebgp) {
-        push @controller_config, "bgp disable-ebgp-connected-route-check" if $loopback;
+    # Initialize router if not already configured
+    if (!keys %{$bgp_router}) {
+        $bgp_router->{asn} = $asn;
+        $bgp_router->{router_id} = $routerid;
+        $bgp_router->{default_ipv4_unicast} = 0;
+        $bgp_router->{coalesce_time} = 1000;
+        $bgp_router->{neighbor_groups} = [];
+        $bgp_router->{address_families} = {};
     }
 
-    push @controller_config, "bgp bestpath as-path multipath-relax" if $multipath_relax;
+    # Add BGP-specific options
+    $bgp_router->{disable_ebgp_connected_route_check} = 1 if $loopback && $ebgp;
+    $bgp_router->{bestpath_as_path_multipath_relax} = 1 if $multipath_relax;
 
-    #BGP neighbors
+    # Build BGP neighbor group
     if (@peers) {
-        push @controller_config, "neighbor BGP peer-group";
-        push @controller_config, "neighbor BGP remote-as $remoteas";
-        push @controller_config, "neighbor BGP bfd";
-        push @controller_config, "neighbor BGP ebgp-multihop $ebgp_multihop"
-            if $ebgp && $ebgp_multihop;
-    }
+        my $neighbor_group = {
+            name => "BGP",
+            bfd => 1,
+            remote_as => $ebgp ? "external" : $asn,
+            ips => \@peers,
+            interfaces => [],
+        };
+        $neighbor_group->{ebgp_multihop} = int($ebgp_multihop) if $ebgp && $ebgp_multihop;
 
-    # BGP peers
-    foreach my $address (@peers) {
-        push @controller_config, "neighbor $address peer-group BGP";
-    }
-    push(@{ $bgp->{""} }, @controller_config);
+        push @{ $bgp_router->{neighbor_groups} }, $neighbor_group;
 
-    # address-family unicast
-    if (@peers) {
+        # Configure address-family unicast
         my $ipversion = Net::IP::ip_is_ipv6($ifaceip) ? "ipv6" : "ipv4";
         my $mask = Net::IP::ip_is_ipv6($ifaceip) ? "128" : "32";
+        my $af_key = "${ipversion}_unicast";
 
-        push(@{ $bgp->{"address-family"}->{"$ipversion unicast"} }, "network $ifaceip/$mask")
+        $bgp_router->{address_families}->{$af_key} //= {
+            networks => [],
+            neighbors => [{
+                name => "BGP",
+                soft_reconfiguration_inbound => 1,
+            }],
+        };
+
+        push @{ $bgp_router->{address_families}->{$af_key}->{networks} }, "$ifaceip/$mask"
             if $loopback;
-        push(@{ $bgp->{"address-family"}->{"$ipversion unicast"} }, "neighbor BGP activate");
-        push(
-            @{ $bgp->{"address-family"}->{"$ipversion unicast"} },
-            "neighbor BGP soft-reconfiguration inbound",
-        );
     }
 
+    # Configure route-map for source IP correction with loopback
     if ($loopback) {
-        $config->{frr_prefix_list}->{loopbacks_ips}->{10} = "permit 0.0.0.0/0 le 32";
-        push(@{ $config->{frr_ip_protocol} }, "ip protocol bgp route-map correct_src");
+        $config->{frr}->{prefix_lists}->{loopbacks_ips} = [{
+            seq => 10,
+            action => 'permit',
+            network => '0.0.0.0/0',
+            le => 32,
+            is_ipv6 => 0,
+        }];
 
-        my $routemap_config = ();
-        push @{$routemap_config}, "match ip address prefix-list loopbacks_ips";
-        push @{$routemap_config}, "set src $ifaceip";
-        my $routemap = { rule => $routemap_config, action => "permit" };
-        push(@{ $config->{frr_routemap}->{'correct_src'} }, $routemap);
+        $config->{frr}->{protocol_routemaps}->{bgp}->{v4} = "correct_src";
+
+        my $routemap_config = {
+            protocol_type => 'ip',
+            match_type => 'address',
+            value => { list_type => 'prefixlist', list_name => 'loopbacks_ips' },
+        };
+        my $routemap = {
+            matches => [$routemap_config],
+            sets => [{ set_type => 'src', value => $ifaceip }],
+            action => "permit",
+            seq => 1,
+        };
+        push(@{ $config->{frr}->{routemaps}->{'correct_src'} }, $routemap);
     }
 
     return $config;
