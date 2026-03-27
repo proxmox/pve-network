@@ -1,0 +1,38 @@
+#version:1
+
+auto vnet777
+iface vnet777
+	address 192.0.2.1/24
+	hwaddress BC:24:11:0B:D1:EE
+	bridge_ports vxlan_vnet777
+	bridge_stp off
+	bridge_fd 0
+	mtu 1450
+	ip-forward on
+	arp-accept on
+	vrf vrf_evpnz
+
+auto vrf_evpnz
+iface vrf_evpnz
+	vrf-table auto
+	post-up ip route add vrf vrf_evpnz unreachable default metric 4278198272
+
+auto vrfbr_evpnz
+iface vrfbr_evpnz
+	bridge-ports vrfvx_evpnz
+	bridge_stp off
+	bridge_fd 0
+	mtu 1450
+	vrf vrf_evpnz
+
+auto vrfvx_evpnz
+iface vrfvx_evpnz
+	vxlan-id 999
+	bridge-learning off
+	mtu 1450
+
+auto vxlan_vnet777
+iface vxlan_vnet777
+	vxlan-id 777
+	bridge-learning off
+	mtu 1450

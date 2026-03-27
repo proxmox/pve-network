@@ -1,0 +1,53 @@
+{
+  version => 1,
+  "vnets" => {
+    "ids" => {
+      "vnet777" => {
+        "type" => "vnet",
+        "tag" => 777,
+        "zone" => "evpnz"
+      }
+    }
+  },
+  "zones" => {
+    "ids" => {
+      "evpnz" => {
+        "exitnodes" => {
+          "titan" => 1
+        },
+        "advertise-subnets" => 1,
+        "vrf-vxlan" => 999,
+        "controller" => "evpnctrl",
+        "disable-arp-nd-suppression" => 1,
+        "type" => "evpn",
+        "mac" => "BC:24:11:0B:D1:EE",
+        "ipam" => "pve"
+      }
+    }
+  },
+  "subnets" => {
+    "ids" => {
+      "evpnz-192.0.2.0-24" => {
+        "type" => "subnet",
+        "vnet" => "vnet777",
+        "gateway" => "192.0.2.1"
+      }
+    }
+  },
+  "controllers" => {
+    "ids" => {
+      "evpnctrl" => {
+        "asn" => 65001,
+        "type" => "evpn",
+        "peers" => "172.31.2.1,172.31.2.2,172.31.2.4"
+      },
+      "isisberserker" => {
+        "type" => "isis",
+        "isis-ifaces" => "ens19,ens20",
+        "isis-net" => "49.0000.1234.0000.00",
+        "node" => "berserker",
+        "isis-domain" => "1"
+      }
+    }
+  }
+}

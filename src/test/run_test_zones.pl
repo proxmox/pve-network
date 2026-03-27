@@ -126,11 +126,21 @@ foreach my $test (@tests) {
             reload_controller => sub {
                 return;
             },
-            read_local_frr_config => sub {
-                return;
-            },
         );
     }
+
+    # Mock read_local_frr_config in PVE::Network::SDN::Frr to support testing frr.conf.local merging
+    my $frr_local_config;
+    my $frr_local_path = "./$test/frr.conf.local";
+    if (-e $frr_local_path) {
+        $frr_local_config = read_file($frr_local_path);
+    }
+    my $mocked_frr = Test::MockModule->new('PVE::Network::SDN::Frr');
+    $mocked_frr->mock(
+        read_local_frr_config => sub {
+            return $frr_local_config;
+        },
+    );
 
     my $name = $test;
     my $expected = read_file("./$test/expected_sdn_interfaces");

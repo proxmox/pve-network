@@ -1,0 +1,90 @@
+vrf vrf_qwe
+ vni 1234
+exit-vrf
+!
+vrf vrf_evpnz
+ vni 1233
+exit-vrf
+!
+router eigrp 1337
+ network 203.0.113.0/27
+exit
+!
+bgp community-list 70 permit 7675:70
+bgp community-list 70 deny
+bgp community-list 80 permit 7675:80
+bgp community-list 80 deny
+bgp community-list 90 permit 7675:90
+bgp community-list 90 deny
+bgp community-list standard FILTER deny 1:1
+bgp community-list standard FILTER permit
+!
+router bgp 65001
+  bgp graceful-restart rib-stale-time 123
+  address-family ipv6 unicast
+        redistribute static
+exit-address-family
+  address-family l2vpn evpn
+        redistribute static
+exit-address-family
+exit
+!
+
+router bgp 65001 vrf vrf_evpnz
+  bgp graceful-restart rib-stale-time 123
+  address-family ipv6 unicast
+        redistribute static
+exit-address-family
+  address-family l2vpn evpn
+        redistribute static
+exit-address-family
+exit
+!
+route-map MAP_VTEP_IN deny 1
+exit
+!
+route-map MAP_VTEP_IN permit 1
+exit
+!
+route-map MAP_VTEP_IN permit 1
+ match community cm-prefmod-400
+ set local-preference 400
+exit
+!
+route-map MAP_VTEP_IN permit 1
+ match ip address 10
+ set local-preference 200
+exit
+!
+ip prefix-list pl-peer2-network permit 10.6.1.0/24
+ip prefix-list pl-peer2-network permit 10.6.2.0/24
+ip prefix-list pl-peer2-network permit 192.168.1.0/24
+ip prefix-list pl-peer2-network permit 192.168.2.0/24
+ip prefix-list pl-peer2-network permit 172.16.1/24
+!
+route-map rm-prefmod permit 10
+ match community cm-prefmod-100
+ set local-preference 100
+route-map rm-prefmod permit 20
+ match community cm-prefmod-200
+ set local-preference 200
+route-map rm-prefmod permit 30
+ match community cm-prefmod-300
+ set local-preference 300
+route-map rm-prefmod permit 40
+ match community cm-prefmod-400
+ set local-preference 400
+route-map rm-prefmod permit 50
+!
+bgp community-list standard cm-prefmod-100 permit 64512:2100
+bgp community-list standard cm-prefmod-200 permit 64512:2200
+bgp community-list standard cm-prefmod-300 permit 64512:2300
+bgp community-list standard cm-prefmod-400 permit 64512:2400
+bgp community-list expanded cme-prefmod-range permit 64512:2...
+!
+route-map rm-blackhole permit 10
+ description blackhole, up-pref and ensure it cannot escape this AS
+ set ip next-hop 127.0.0.1
+ set local-preference 10
+ set community additive no-export
+route-map rm-blackhole permit 20

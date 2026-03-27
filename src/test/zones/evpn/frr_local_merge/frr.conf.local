@@ -1,0 +1,120 @@
+!
+! Custom FRR configuration to be merged
+!
+ip nht resolve-via-default
+!
+ip route 192.0.2.0/24 198.51.100.1
+!
+ip protocol bgp route-map correct_src
+!
+vrf vrf_myzone
+ vni 1005
+!
+router bgp 65000
+ neighbor 192.168.1.1 remote-as 65001
+ neighbor 192.168.1.1 description "External Peer"
+ address-family l2vpn evpn
+  advertise-svi-ip
+ exit-address-family
+ address-family ipv4 unicast
+  neighbor VTEP activate
+ exit-address-family
+exit
+!
+route-map MAP_VTEP_OUT permit 1
+ set community 65000:100
+exit
+!
+route-map MAP_VTEP_OUT permit 2
+ match ip next-hop LOCAL
+exit
+!
+route-map correct_src deny 1
+ match ip next-hop NOT_LOCAL
+exit
+!
+route-map MAP_VTEP_IN permit 2
+ set community 65000:200
+exit
+!
+ip prefix-list PL_ALLOW seq 10 permit 10.0.0.0/8 le 24
+!
+ip prefix-list loopbacks_ips seq 5 deny 8.8.8.0/0 le 32
+!
+ipv6 prefix-list PL_ALLOW_6 seq 10 permit fd80:: le 64
+!
+route-map CUSTOM_MAP permit 10
+ match ip address prefix-list PL_ALLOW
+exit
+!
+bgp community-list standard CL_LOCAL permit 65000:200
+!
+interface eth1
+ isis circuit-type level-2-only
+exit
+!
+interface iface2
+ ip ospf area 0
+exit
+!
+interface ens19
+ no ip ospf passive
+exit
+!
+router ospf
+ passive-interface default
+exit
+!
+router bgp 65000 vrf vrf_yourzone
+ bgp router-id 172.31.2.1
+ no bgp hard-administrative-reset
+ no bgp graceful-restart notification
+ address-family ipv4 unicast
+  redistribute kernel
+ exit-address-family
+ address-family ipv6 unicast
+  redistribute kernel
+ exit-address-family
+ address-family l2vpn evpn
+  redistribute kernel
+ exit-address-family
+exit
+!
+router bgp 65000 vrf vrf_myzone
+ bgp disable-ebgp-connected-route-check
+ address-family ipv4 unicast
+  redistribute kernel
+ exit-address-family
+ address-family ipv6 unicast
+  redistribute kernel
+ exit-address-family
+ address-family l2vpn evpn
+  redistribute kernel
+ exit-address-family
+exit
+!
+router bgp 65000
+ neighbor VTEP prefix-list MY_PREFIX_LIST out
+ neighbor VTEP allowas-in 1
+ neighbor VTEP remote-as 64600
+ no neighbor VTEP peer-group
+ address-family l2vpn evpn
+  no neighbor VTEP route-map MAP_VTEP_IN in
+  neighbor VTEP route-map MAP_VTEP_IN_CUSTOM in
+ exit-address-family
+exit
+!
+router eigrp 1
+ network 10.0.0.0/8
+exit
+!
+vrf vrf_yourzone
+ ip route 198.51.100.0/24 null0
+!
+vrf vrf_myzone
+ ip route 192.0.2.0/24 null0
+!
+access-list filter seq 5 permit ip host 10.0.20.2 232.1.1.0 0.0.0.128
+access-list filter seq 10 deny ip 10.0.20.0 0.0.0.255 232.1.1.0 0.0.0.255
+access-list filter seq 15 permit ip any any
+!
