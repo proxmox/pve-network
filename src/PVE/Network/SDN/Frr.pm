@@ -274,70 +274,221 @@ sub append_local_config {
         return;
     }
 
-    my $section = \$frr_config->{""};
-    my $router = undef;
+    $frr_config->{'frr'}->{'custom_frr_config'} //= [];
+    my $section = \$frr_config->{''};
+    my $isis_router_name = undef;
+    my $bgp_router_asn = undef;
+    my $bgp_router_vrf = undef;
+    my $custom_router_name = undef;
     my $routemap = undef;
-    my $routemap_config = ();
-    my $routemap_action = undef;
+    my $interface = undef;
+    my $vrf = undef;
+    my $new_block = 0;
+    my $new_af_block = 0;
 
-    while ($local_config =~ /^\s*(.+?)\s*$/gm) {
+    while ($local_config =~ /^(.+?)\s*$/gm) {
         my $line = $1;
-        $line =~ s/^\s+|\s+$//g;
+        $line =~ s/\s+$//g;
 
-        if ($line =~ m/^router (.+)$/) {
-            $router = $1;
-            $section = \$frr_config->{'frr'}->{'router'}->{$router}->{""};
+        if ($line =~ m/^router isis (.+)$/) {
+            $isis_router_name = $1;
+            if (defined($frr_config->{'frr'}->{'isis'}->{'router'}->{$isis_router_name})) {
+                $section =
+                    \($frr_config->{'frr'}->{'isis'}->{'router'}->{$isis_router_name}
+                        ->{'custom_frr_config'} //= []);
+            } else {
+                $new_block = 1;
+                push(
+                    $frr_config->{'frr'}->{'custom_frr_config'}->@*,
+                    "router isis $isis_router_name",
+                );
+                $section = \$frr_config->{'frr'}->{'custom_frr_config'};
+            }
+            next;
+        } elsif ($line =~ m/^router bgp (\S+)(?: vrf (.+))?$/) {
+            $bgp_router_asn = $1;
+            $bgp_router_vrf = $2 // 'default';
+
+            if (
+                defined($frr_config->{'frr'}->{'bgp'}->{'vrf_router'}->{$bgp_router_vrf})
+                and $frr_config->{'frr'}->{'bgp'}->{'vrf_router'}->{$bgp_router_vrf}->{'asn'}
+                eq $bgp_router_asn
+            ) {
+                $section =
+                    \($frr_config->{'frr'}->{'bgp'}->{'vrf_router'}->{$bgp_router_vrf}
+                        ->{'custom_frr_config'} //= []);
+            } else {
+                $new_block = 1;
+
+                my $config_line =
+                    defined($2)
+                    ? "router bgp $bgp_router_asn vrf $bgp_router_vrf"
+                    : "router bgp $bgp_router_asn";
+
+                push(
+                    $frr_config->{'frr'}->{'custom_frr_config'}->@*, $config_line,
+                );
+                $section = \$frr_config->{'frr'}->{'custom_frr_config'};
+            }
+            next;
+        } elsif ($line =~ m/^router (.+)$/) {
+            $custom_router_name = $1;
+            $new_block = 1;
+            push(
+                $frr_config->{'frr'}->{'custom_frr_config'}->@*, "router $custom_router_name",
+            );
+            $section = \$frr_config->{'frr'}->{'custom_frr_config'};
             next;
         } elsif ($line =~ m/^vrf (.+)$/) {
-            $section = \$frr_config->{'frr'}->{'vrf'}->{$1};
+            $vrf = $1;
+            if (defined($frr_config->{'frr'}->{'bgp'}->{'vrfs'}->{$vrf})) {
+                $section = \$frr_config->{'frr'}->{'bgp'}->{'vrfs'}->{$vrf}->{'custom_frr_config'};
+            } else {
+                $new_block = 1;
+                push($frr_config->{'frr'}->{'custom_frr_config'}->@*, "vrf $vrf");
+                $section = \$frr_config->{'frr'}->{'custom_frr_config'};
+            }
             next;
         } elsif ($line =~ m/^interface (.+)$/) {
-            $section = \$frr_config->{'frr_interfaces'}->{$1};
+            $interface = $1;
+            if (defined($frr_config->{'frr'}->{'isis'}->{'interfaces'}->{$interface})) {
+                $section = \($frr_config->{'frr'}->{'isis'}->{'interfaces'}->{$interface}
+                    ->{'custom_frr_config'} //= []);
+            } else {
+                $new_block = 1;
+                push(
+                    $frr_config->{'frr'}->{'custom_frr_config'}->@*, "interface $interface",
+                );
+                $section = \$frr_config->{'frr'}->{'custom_frr_config'};
+            }
             next;
         } elsif ($line =~ m/^bgp community-list (.+)$/) {
-            push(@{ $frr_config->{'frr_bgp_community_list'} }, $line);
+            push(@{ $frr_config->{'frr'}->{'custom_frr_config'} }, $line);
             next;
         } elsif ($line =~ m/address-family (.+)$/) {
-            $section = \$frr_config->{'frr'}->{'router'}->{$router}->{'address-family'}->{$1};
+            # convert the address family from frr (e.g. l2vpn evpn) into the rust property (e.g. l2vpn_evpn)
+            my $address_family_unchanged = $1;
+            my $address_family = $1 =~ s/ /_/gr;
+
+            if (
+                defined($frr_config->{'frr'}->{'bgp'}->{'vrf_router'}->{$bgp_router_vrf})
+                and $frr_config->{'frr'}->{'bgp'}->{'vrf_router'}->{$bgp_router_vrf}->{'asn'}
+                eq $bgp_router_asn
+            ) {
+                if (defined(
+                    $frr_config->{'frr'}->{'bgp'}->{'vrf_router'}->{$bgp_router_vrf}
+                        ->{'address_families'}->{$address_family}
+                )) {
+                    $section =
+                        \($frr_config->{'frr'}->{'bgp'}->{'vrf_router'}->{$bgp_router_vrf}
+                            ->{'address_families'}->{$address_family}->{'custom_frr_config'} //=
+                            []);
+                } else {
+                    $new_af_block = 1;
+                    push(
+                        $frr_config->{'frr'}->{'bgp'}->{'vrf_router'}->{$bgp_router_vrf}
+                            ->{'custom_frr_config'}->@*,
+                        " address-family $address_family_unchanged",
+                    );
+                    $section = \$frr_config->{'frr'}->{'bgp'}->{'vrf_router'}->{$bgp_router_vrf}
+                        ->{'custom_frr_config'};
+                }
+            } else {
+                $new_af_block = 1;
+                push(
+                    $frr_config->{'frr'}->{'custom_frr_config'}->@*,
+                    " address-family $address_family_unchanged",
+                );
+                $section = \$frr_config->{'frr'}->{'custom_frr_config'};
+            }
             next;
         } elsif ($line =~ m/^route-map (.+) (permit|deny) (\d+)/) {
             $routemap = $1;
-            $routemap_config = ();
-            $routemap_action = $2;
-            $section = \$frr_config->{'frr_routemap'}->{$routemap};
+            my $routemap_action = $2;
+            my $seq_number = $3;
+            # NEVER merge the route-maps, we always just add them to the
+            # custom_routemaps map so that we can push them at the very end.
+            $new_block = 1;
+            push(
+                $custom_routemaps->{$routemap}->@*,
+                "route-map $routemap $routemap_action $seq_number",
+            );
+            $section = \$custom_routemaps->{$routemap};
             next;
         } elsif ($line =~ m/^access-list (.+) seq (\d+) (.+)$/) {
-            $frr_config->{'frr_access_list'}->{$1}->{$2} = $3;
+            push($frr_config->{'frr'}->{'custom_frr_config'}->@*, $line);
             next;
         } elsif ($line =~ m/^ip prefix-list (.+) seq (\d+) (.*)$/) {
-            $frr_config->{'frr_prefix_list'}->{$1}->{$2} = $3;
+            push($frr_config->{'frr'}->{'custom_frr_config'}->@*, $line);
             next;
         } elsif ($line =~ m/^ipv6 prefix-list (.+) seq (\d+) (.*)$/) {
-            $frr_config->{'frr_prefix_list_v6'}->{$1}->{$2} = $3;
+            push($frr_config->{'frr'}->{'custom_frr_config'}->@*, $line);
             next;
-        } elsif ($line =~ m/^exit-address-family$/) {
-            next;
-        } elsif ($line =~ m/^exit$/) {
-            if ($router) {
-                $section = \$frr_config->{''};
-                $router = undef;
-            } elsif ($routemap) {
-                push(@{$$section}, { rule => $routemap_config, action => $routemap_action });
-                $section = \$frr_config->{''};
-                $routemap = undef;
-                $routemap_action = undef;
-                $routemap_config = ();
+        } elsif ($line =~ m/exit-address-family$/) {
+            if ($new_af_block) {
+                push(@{$$section}, $line);
+                $section = \$frr_config->{'frr'}->{'custom_frr_config'};
+            } else {
+                $section =
+                    \($frr_config->{'frr'}->{'bgp'}->{'vrf_router'}->{$bgp_router_vrf}
+                        ->{'custom_frr_config'} //= []);
             }
+            $new_af_block = 0;
+            next;
+        } elsif ($line =~ m/^exit/) {
+            # this means we just added a new router/vrf/interface/routemap
+            if ($new_block) {
+                push(@{$$section}, $line);
+                push(@{$$section}, "!");
+            }
+            $section = \$frr_config->{''};
+            # we can't stack these, so exit out of all of them (technically we can have a vrf inside of a router bgp block, but we don't support that)
+            $isis_router_name = undef;
+            $bgp_router_vrf = undef;
+            $bgp_router_asn = undef;
+            $custom_router_name = undef;
+            $vrf = undef;
+            $interface = undef;
+            $routemap = undef;
+            $new_block = 0;
             next;
         } elsif ($line =~ m/!/) {
             next;
         }
 
         next if !$section;
-        if ($routemap) {
-            push(@{$routemap_config}, $line);
-        } else {
-            push(@{$$section}, $line);
+        push(@{$$section}, $line);
+    }
+
+    # go through custom_routemaps, which holds generated and override routemaps.
+    # We need to sort by name and then give each rule in the route-map name a
+    # ascending seq number. If we have a routemap generated by the perl code, we
+    # get an object and need to change the seq property (this is rendered using
+    # the templates). If we have a override route-map (from frr.conf.local), then
+    # we just get the strings of the lines and we need to parse it again and write
+    # with the correct seq.
+    for my $rm (sort keys %{$custom_routemaps}) {
+        my $seq = 1;
+        my $entry = $custom_routemaps->{$rm};
+        for my $rm_line (@{$entry}) {
+            if (!ref($rm_line)) {
+                if ($rm_line =~ m/^route-map (.+) (permit|deny) (\d+)/) {
+                    my $name = $1;
+                    my $action = $2;
+                    push(
+                        $frr_config->{'frr'}->{'custom_frr_config'}->@*,
+                        "route-map $name $action $seq",
+                    );
+                    $seq++;
+                } else {
+                    push($frr_config->{'frr'}->{'custom_frr_config'}->@*, $rm_line);
+                }
+            } else {
+                for my $rm_obj_entry (@{$$rm_line}) {
+                    $rm_obj_entry->{seq} = $seq;
+                    $seq++;
+                }
+            }
         }
     }
 }
