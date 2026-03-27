@@ -10,6 +10,7 @@ use NetAddr::IP qw(:lower);
 
 use Test::More;
 use Test::MockModule;
+use Test::Differences;
 
 use PVE::Tools qw(extract_param file_set_contents);
 
@@ -416,7 +417,7 @@ sub test_without_subnet {
 
     my @ips = get_ips_from_mac($mac);
     my $num_ips = scalar @ips;
-    is($num_ips, 0, "$test_name: No IP allocated in IPAM");
+    eq_or_diff($num_ips, 0, "$test_name: No IP allocated in IPAM");
 }
 run_test(\&test_without_subnet);
 
@@ -463,7 +464,7 @@ sub test_nic_join {
 
     my @ips = get_ips_from_mac($mac);
     my $num_ips = scalar @ips;
-    is($num_ips, $num_subnets, "$test_name: Expecting $num_subnets IPs, found $num_ips");
+    eq_or_diff($num_ips, $num_subnets, "$test_name: Expecting $num_subnets IPs, found $num_ips");
     ok(
         (all { ($_->{vnet} eq $vnetid && $_->{zone} eq $zoneid) } @ips),
         "$test_name: all IPs in correct vnet and zone",
@@ -622,7 +623,7 @@ sub test_nic_join_full_dhcp_range {
 
     my @ips = get_ips_from_mac($mac);
     my $num_ips = scalar @ips;
-    is($num_ips, 0, "$test_name: No IP allocated in IPAM");
+    eq_or_diff($num_ips, 0, "$test_name: No IP allocated in IPAM");
 }
 
 run_test(
@@ -770,9 +771,9 @@ sub test_nic_start {
         });
     }
     my @current_ips = get_ips_from_mac($mac);
-    is(get_ip4(@current_ips), $current_ip4, "$test_name: setup current IPv4: $current_ip4")
+    eq_or_diff(get_ip4(@current_ips), $current_ip4, "$test_name: setup current IPv4: $current_ip4")
         if defined $current_ip4;
-    is(get_ip6(@current_ips), $current_ip6, "$test_name: setup current IPv6: $current_ip6")
+    eq_or_diff(get_ip6(@current_ips), $current_ip6, "$test_name: setup current IPv6: $current_ip6")
         if defined $current_ip6;
 
     eval { nic_start($vnetid, $mac, $hostname, $vmid); };
@@ -784,14 +785,20 @@ sub test_nic_start {
 
     my @ips = get_ips_from_mac($mac);
     my $num_ips = scalar @ips;
-    is($num_ips, $num_expected_ips, "$test_name: Expecting $num_expected_ips IPs, found $num_ips");
+    eq_or_diff(
+        $num_ips,
+        $num_expected_ips,
+        "$test_name: Expecting $num_expected_ips IPs, found $num_ips",
+    );
     ok(
         (all { ($_->{vnet} eq $vnetid && $_->{zone} eq $zoneid) } @ips),
         "$test_name: all IPs in correct vnet and zone",
     );
 
-    is(get_ip4(@ips), $current_ip4, "$test_name: still current IPv4: $current_ip4") if $current_ip4;
-    is(get_ip6(@ips), $current_ip6, "$test_name: still current IPv6: $current_ip6") if $current_ip6;
+    eq_or_diff(get_ip4(@ips), $current_ip4, "$test_name: still current IPv4: $current_ip4")
+        if $current_ip4;
+    eq_or_diff(get_ip6(@ips), $current_ip6, "$test_name: still current IPv6: $current_ip6")
+        if $current_ip6;
 }
 
 run_test(

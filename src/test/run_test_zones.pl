@@ -8,6 +8,7 @@ use File::Slurp;
 
 use Test::More;
 use Test::MockModule;
+use Test::Differences;
 
 use PVE::Network::SDN;
 use PVE::Network::SDN::Zones;
@@ -140,7 +141,7 @@ foreach my $test (@tests) {
         diag("got unexpected error - $err");
         fail($name);
     } else {
-        is($result, $expected, $name);
+        eq_or_diff($result, $expected, $name);
     }
 
     if ($sdn_config->{controllers}) {
@@ -155,7 +156,7 @@ foreach my $test (@tests) {
             diag("got unexpected error - $err");
             fail($name);
         } else {
-            is($config, $expected, $name);
+            eq_or_diff($config, $expected, $name);
         }
     }
 }

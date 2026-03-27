@@ -9,6 +9,7 @@ use Net::IP;
 
 use Test::More;
 use Test::MockModule;
+use Test::Differences;
 
 use PVE::Network::SDN;
 use PVE::Network::SDN::Zones;
@@ -101,7 +102,7 @@ foreach my $path (@plugins) {
         $plugin->add_a_record($plugin_config, $zone, $hostname, $ip, 1);
 
         if ($@) {
-            is($@, $expected, $name);
+            eq_or_diff($@, $expected, $name);
         } else {
             fail($name);
         }
@@ -114,7 +115,7 @@ foreach my $path (@plugins) {
         $plugin->add_ptr_record($plugin_config, $zone, $hostname, $ip, 1);
 
         if ($@) {
-            is($@, $expected, $name);
+            eq_or_diff($@, $expected, $name);
         } else {
             fail($name);
         }
@@ -127,7 +128,7 @@ foreach my $path (@plugins) {
         $plugin->del_ptr_record($plugin_config, $zone, $ip, 1);
 
         if ($@) {
-            is($@, $expected, $name);
+            eq_or_diff($@, $expected, $name);
         } else {
             fail($name);
         }
@@ -167,7 +168,7 @@ foreach my $path (@plugins) {
         $plugin->del_a_record($plugin_config, $zone, $hostname, $ip, 1);
 
         if ($@) {
-            is($@, $expected, $name);
+            eq_or_diff($@, $expected, $name);
         } else {
             fail($name);
         }
@@ -212,7 +213,7 @@ foreach my $path (@plugins) {
         $plugin->del_a_record($plugin_config, $zone, $hostname, $ip, 1);
 
         if ($@) {
-            is($@, $expected, $name);
+            eq_or_diff($@, $expected, $name);
         } else {
             fail($name);
         }
@@ -250,7 +251,7 @@ foreach my $path (@plugins) {
         $plugin->add_a_record($plugin_config, $zone, $hostname, $ip, 1);
 
         if ($@) {
-            is($@, $expected, $name);
+            eq_or_diff($@, $expected, $name);
         } else {
             fail($name);
         }
@@ -264,7 +265,7 @@ foreach my $path (@plugins) {
     $plugin->verify_zone($plugin_config, $zone, 1);
 
     if ($@) {
-        is($@, $expected, $name);
+        eq_or_diff($@, $expected, $name);
     } else {
         fail($name);
     }

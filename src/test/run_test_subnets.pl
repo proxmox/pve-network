@@ -8,6 +8,7 @@ use File::Slurp;
 
 use Test::More;
 use Test::MockModule;
+use Test::Differences;
 
 use PVE::Network::SDN;
 use PVE::Network::SDN::Zones;
@@ -147,9 +148,9 @@ foreach my $path (@plugins) {
         fail("$name : $@");
     } elsif ($ipam) {
         $result = $js->encode($plugin->read_db());
-        is($result, $expected, $name);
+        eq_or_diff($result, $expected, $name);
     } else {
-        is(undef, undef, $name);
+        eq_or_diff(undef, undef, $name);
     }
 
     ## add_ip
@@ -173,9 +174,9 @@ foreach my $path (@plugins) {
         fail("$name : $@");
     } elsif ($ipam) {
         $result = $js->encode($plugin->read_db());
-        is($result, $expected, $name);
+        eq_or_diff($result, $expected, $name);
     } else {
-        is(undef, undef, $name);
+        eq_or_diff(undef, undef, $name);
     }
 
     if ($ipam) {
@@ -190,7 +191,7 @@ foreach my $path (@plugins) {
         };
 
         if ($@) {
-            is(undef, undef, $name);
+            eq_or_diff(undef, undef, $name);
         } else {
             fail("$name : $@");
         }
@@ -225,9 +226,9 @@ foreach my $path (@plugins) {
         fail("$name : $@");
     } elsif ($ipam) {
         $result = $js->encode($plugin->read_db());
-        is($result, $expected, $name);
+        eq_or_diff($result, $expected, $name);
     } else {
-        is(undef, undef, $name);
+        eq_or_diff(undef, undef, $name);
     }
 
     ## add_next_free
@@ -266,7 +267,7 @@ foreach my $path (@plugins) {
         fail("$name : $@");
     } elsif ($ipam) {
         $result = $js->encode($plugin->read_db());
-        is($result, $expected, $name);
+        eq_or_diff($result, $expected, $name);
     }
 
     ## del_ip
@@ -299,9 +300,9 @@ foreach my $path (@plugins) {
         fail("$name : $@");
     } elsif ($ipam) {
         $result = $js->encode($plugin->read_db());
-        is($result, $expected, $name);
+        eq_or_diff($result, $expected, $name);
     } else {
-        is(undef, undef, $name);
+        eq_or_diff(undef, undef, $name);
     }
 
     if ($ipam) {
@@ -314,7 +315,7 @@ foreach my $path (@plugins) {
         eval { PVE::Network::SDN::Subnets::del_subnet($zone, $subnetid, $subnet); };
 
         if ($@) {
-            is($result, $expected, $name);
+            eq_or_diff($result, $expected, $name);
         } else {
             fail("$name : $@");
         }
@@ -367,9 +368,9 @@ foreach my $path (@plugins) {
     if ($@) {
         if ($ipam) {
             $result = $js->encode($plugin->read_db());
-            is($result, $expected, $name);
+            eq_or_diff($result, $expected, $name);
         } else {
-            is(undef, undef, $name);
+            eq_or_diff(undef, undef, $name);
         }
     } else {
         fail("$name : $@");
@@ -390,9 +391,9 @@ foreach my $path (@plugins) {
         fail("$name : $@");
     } elsif ($ipam) {
         $result = $js->encode($plugin->read_db());
-        is($result, $expected, $name);
+        eq_or_diff($result, $expected, $name);
     } else {
-        is(undef, undef, $name);
+        eq_or_diff(undef, undef, $name);
     }
 
 }

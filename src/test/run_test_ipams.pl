@@ -8,6 +8,7 @@ use File::Slurp;
 
 use Test::More;
 use Test::MockModule;
+use Test::Differences;
 
 use PVE::Network::SDN;
 use PVE::Network::SDN::Zones;
@@ -120,7 +121,7 @@ foreach my $path (@plugins) {
     );
 
     if ($@) {
-        is($@, $expected, $name);
+        eq_or_diff($@, $expected, $name);
     } else {
         fail($name);
     }
@@ -133,7 +134,7 @@ foreach my $path (@plugins) {
     $plugin->add_next_freeip($plugin_config, $subnetid, $subnet, $hostname, $mac, $description, 1);
 
     if ($@) {
-        is($@, $expected, $name);
+        eq_or_diff($@, $expected, $name);
     } else {
         fail($name);
     }
@@ -146,7 +147,7 @@ foreach my $path (@plugins) {
     $plugin->del_ip($plugin_config, $subnetid, $subnet, $ip, 1);
 
     if ($@) {
-        is($@, $expected, $name);
+        eq_or_diff($@, $expected, $name);
     } else {
         fail($name);
     }
@@ -168,7 +169,7 @@ foreach my $path (@plugins) {
     );
 
     if ($@) {
-        is($@, $expected, $name);
+        eq_or_diff($@, $expected, $name);
     } else {
         fail($name);
     }
@@ -192,7 +193,7 @@ foreach my $path (@plugins) {
     );
 
     if ($@) {
-        is($@, $expected, $name);
+        eq_or_diff($@, $expected, $name);
     } else {
         fail($name);
     }
@@ -211,7 +212,7 @@ foreach my $path (@plugins) {
     $plugin->add_subnet($plugin_config, $subnetid, $subnet, 1);
 
     if ($@) {
-        is($@, $expected, $name);
+        eq_or_diff($@, $expected, $name);
     } else {
         fail($name);
     }
