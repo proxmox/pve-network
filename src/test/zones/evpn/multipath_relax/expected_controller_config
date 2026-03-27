@@ -14,12 +14,12 @@ router bgp 65000
  no bgp default ipv4-unicast
  coalesce-time 1000
  no bgp graceful-restart notification
+ bgp bestpath as-path multipath-relax
  neighbor VTEP peer-group
  neighbor VTEP remote-as 65000
  neighbor VTEP bfd
  neighbor 192.168.0.2 peer-group VTEP
  neighbor 192.168.0.3 peer-group VTEP
- bgp bestpath as-path multipath-relax
  neighbor BGP peer-group
  neighbor BGP remote-as 65000
  neighbor BGP bfd

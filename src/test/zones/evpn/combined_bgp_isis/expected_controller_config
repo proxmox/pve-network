@@ -4,13 +4,9 @@ hostname localhost
 log syslog informational
 service integrated-vtysh-config
 !
-!
 vrf vrf_myzone
  vni 1000
 exit-vrf
-!
-interface eth1
- ip router isis isis1
 !
 router bgp 65000
  bgp router-id 192.168.0.1
@@ -55,6 +51,10 @@ router isis isis1
  redistribute ipv4 connected level-1
  redistribute ipv6 connected level-1
  log-adjacency-changes
+exit
+!
+interface eth1
+ ip router isis isis1
 exit
 !
 ip prefix-list loopbacks_ips seq 10 permit 0.0.0.0/0 le 32

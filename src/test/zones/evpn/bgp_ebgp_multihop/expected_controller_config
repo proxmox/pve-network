@@ -4,7 +4,6 @@ hostname localhost
 log syslog informational
 service integrated-vtysh-config
 !
-!
 vrf vrf_myzone
  vni 1000
 exit-vrf
@@ -15,13 +14,13 @@ router bgp 65000
  no bgp default ipv4-unicast
  coalesce-time 1000
  no bgp graceful-restart notification
+ bgp disable-ebgp-connected-route-check
  neighbor VTEP peer-group
  neighbor VTEP remote-as 65000
  neighbor VTEP bfd
  neighbor VTEP update-source lo
  neighbor 192.168.0.2 peer-group VTEP
  neighbor 192.168.0.3 peer-group VTEP
- bgp disable-ebgp-connected-route-check
  neighbor BGP peer-group
  neighbor BGP remote-as external
  neighbor BGP bfd

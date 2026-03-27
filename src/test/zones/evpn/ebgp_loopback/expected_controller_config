@@ -14,6 +14,7 @@ router bgp 65001
  no bgp default ipv4-unicast
  coalesce-time 1000
  no bgp graceful-restart notification
+ bgp disable-ebgp-connected-route-check
  neighbor VTEP peer-group
  neighbor VTEP remote-as external
  neighbor VTEP bfd
@@ -21,7 +22,6 @@ router bgp 65001
  neighbor VTEP update-source dummy1
  neighbor 192.168.0.2 peer-group VTEP
  neighbor 192.168.0.3 peer-group VTEP
- bgp disable-ebgp-connected-route-check
  neighbor BGP peer-group
  neighbor BGP remote-as external
  neighbor BGP bfd

@@ -4,7 +4,6 @@ hostname localhost
 log syslog informational
 service integrated-vtysh-config
 !
-!
 router bgp 65001
  bgp router-id 192.168.0.1
  no bgp default ipv4-unicast

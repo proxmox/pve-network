@@ -4,18 +4,19 @@ hostname localhost
 log syslog informational
 service integrated-vtysh-config
 !
-!
-interface eth0
- ip router isis isis1
-!
-interface eth1
- ip router isis isis1
-!
 router isis isis1
  net 47.0023.0000.0000.0000.0000.0000.0000.1900.0004.00
  redistribute ipv4 connected level-1
  redistribute ipv6 connected level-1
  log-adjacency-changes
+exit
+!
+interface eth0
+ ip router isis isis1
+exit
+!
+interface eth1
+ ip router isis isis1
 exit
 !
 line vty
