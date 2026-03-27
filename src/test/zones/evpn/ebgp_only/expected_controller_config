@@ -1,0 +1,26 @@
+frr version 10.4.1
+frr defaults datacenter
+hostname localhost
+log syslog informational
+service integrated-vtysh-config
+!
+!
+router bgp 65001
+ bgp router-id 192.168.0.1
+ no bgp default ipv4-unicast
+ coalesce-time 1000
+ neighbor BGP peer-group
+ neighbor BGP remote-as external
+ neighbor BGP bfd
+ neighbor BGP ebgp-multihop 3
+ neighbor 192.168.0.252 peer-group BGP
+ neighbor 192.168.0.253 peer-group BGP
+ !
+ address-family ipv4 unicast
+  neighbor BGP activate
+  neighbor BGP soft-reconfiguration inbound
+ exit-address-family
+exit
+!
+line vty
+!

@@ -1,0 +1,19 @@
+{
+    version => 1,
+    vnets => {},
+    zones => {},
+    controllers => {
+        ids => {
+            localhost => {
+                type => "bgp",
+                'peers' => '192.168.0.252,192.168.0.253',
+                ebgp => "1",
+                'ebgp-multihop' => '3',
+                asn => "65001",
+                node => "localhost",
+            },
+        },
+    },
+
+    subnets => {},
+}

@@ -1,0 +1,7 @@
+auto vmbr0
+iface vmbr0 inet static
+	address 192.168.0.1/24
+	gateway 192.168.0.254
+        bridge-ports eth0
+        bridge-stp off
+        bridge-fd 0
