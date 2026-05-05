@@ -415,7 +415,12 @@ __PACKAGE__->register_method({
         my $running_cfg = PVE::Network::SDN::compile_running_cfg(1);
 
         my $fabric_cfg = PVE::Network::SDN::Fabrics::config(0);
-        my $frr_cfg = PVE::Network::SDN::generate_frr_raw_config($running_cfg, $fabric_cfg);
+        my $route_map_config = PVE::Network::SDN::RouteMaps::config(0);
+        my $prefix_list_config = PVE::Network::SDN::PrefixLists::config(0);
+
+        my $frr_cfg = PVE::Network::SDN::generate_frr_raw_config(
+            $running_cfg, $fabric_cfg, $route_map_config, $prefix_list_config,
+        );
         my $new_cfg_frr = PVE::Network::SDN::Frr::raw_config_to_string($frr_cfg);
 
         my $new_interfaces_cfg =
