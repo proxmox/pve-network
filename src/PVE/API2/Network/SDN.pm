@@ -261,6 +261,16 @@ __PACKAGE__->register_method({
             my $parsed_fabrics_config = PVE::RS::SDN::Fabrics->running_config($fabrics_config);
             PVE::Network::SDN::Fabrics::write_config($parsed_fabrics_config);
 
+            my $route_map_config = $running_config->{'route-maps'}->{ids} // {};
+            my $parsed_route_map_config =
+                PVE::RS::SDN::RouteMaps->running_config($route_map_config);
+            PVE::Network::SDN::RouteMaps::write_config($parsed_route_map_config);
+
+            my $prefix_list_config = $running_config->{'prefix-lists'}->{ids} // {};
+            my $parsed_prefix_list_config =
+                PVE::RS::SDN::PrefixLists->running_config($prefix_list_config);
+            PVE::Network::SDN::PrefixLists::write_config($parsed_prefix_list_config);
+
             PVE::Network::SDN::delete_global_lock() if $lock_token && $release_lock;
         };
 

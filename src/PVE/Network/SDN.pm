@@ -25,6 +25,8 @@ use PVE::Network::SDN::Subnets;
 use PVE::Network::SDN::Dhcp;
 use PVE::Network::SDN::Frr;
 use PVE::Network::SDN::Fabrics;
+use PVE::Network::SDN::RouteMaps;
+use PVE::Network::SDN::PrefixLists;
 
 my $RUNNING_CFG_FILENAME = "sdn/.running-config";
 
@@ -122,12 +124,15 @@ configuration and then evaluate it.
 sub running_config_has_frr {
     my $running_config = PVE::Network::SDN::running_config();
 
-    # both can be empty if the SDN configuration was never applied
+    # all can be empty if the SDN configuration was never applied
     my $controllers = $running_config->{controllers}->{ids} // {};
     my $fabrics = $running_config->{fabrics}->{ids} // {};
+    my $route_maps = $running_config->{'route-maps'}->{ids} // {};
+    my $prefix_lists = $running_config->{'prefix-lists'}->{ids} // {};
+
     my $local_frr_config = PVE::Network::SDN::Frr::local_frr_config_exists();
 
-    return %$controllers || %$fabrics || $local_frr_config;
+    return %$controllers || %$fabrics || %$route_maps || %$prefix_lists || $local_frr_config;
 }
 
 sub pending_config {
@@ -207,12 +212,16 @@ sub compile_running_cfg {
     my $controllers_cfg = PVE::Network::SDN::Controllers::config();
     my $subnets_cfg = PVE::Network::SDN::Subnets::config();
     my $fabrics_cfg = PVE::Network::SDN::Fabrics::config();
+    my $route_maps_cfg = PVE::Network::SDN::RouteMaps::config();
+    my $prefix_lists_cfg = PVE::Network::SDN::PrefixLists::config();
 
     my $vnets = { ids => $vnets_cfg->{ids} };
     my $zones = { ids => $zones_cfg->{ids} };
     my $controllers = { ids => $controllers_cfg->{ids} };
     my $subnets = { ids => $subnets_cfg->{ids} };
     my $fabrics = { ids => $fabrics_cfg->to_sections() };
+    my $route_maps = { ids => $route_maps_cfg->to_sections() };
+    my $prefix_lists = { ids => $prefix_lists_cfg->to_sections() };
 
     $cfg = {
         version => $version,
@@ -221,6 +230,8 @@ sub compile_running_cfg {
         controllers => $controllers,
         subnets => $subnets,
         fabrics => $fabrics,
+        'route-maps' => $route_maps,
+        'prefix-lists' => $prefix_lists,
     };
 
     return $cfg;
@@ -241,6 +252,8 @@ sub has_pending_changes {
         vnets => PVE::Network::SDN::Vnets::config(),
         subnets => PVE::Network::SDN::Subnets::config(),
         controllers => PVE::Network::SDN::Controllers::config(),
+        'route-maps' => { ids => PVE::Network::SDN::RouteMaps::config()->to_sections() },
+        'prefix-lists' => { ids => PVE::Network::SDN::PrefixLists::config()->to_sections() },
     };
 
     for my $config_file (keys %$config_files) {
@@ -425,9 +438,11 @@ configuration.
 =cut
 
 sub generate_frr_raw_config {
-    my ($running_config, $fabric_config) = @_;
+    my ($running_config, $fabric_config, $route_map_config, $prefix_list_config) = @_;
 
     $running_config = PVE::Network::SDN::running_config() if !$running_config;
+    $prefix_list_config = PVE::Network::SDN::PrefixLists::config(1) if !$prefix_list_config;
+    $route_map_config = PVE::Network::SDN::RouteMaps::config(1) if !$route_map_config;
     $fabric_config = PVE::Network::SDN::Fabrics::config(1) if !$fabric_config;
 
     my $frr_config = {};
@@ -438,7 +453,11 @@ sub generate_frr_raw_config {
     my $nodename = PVE::INotify::nodename();
 
     return PVE::RS::SDN::get_frr_raw_config(
-        $frr_config->{'frr'}, $fabric_config, $nodename,
+        $frr_config->{'frr'},
+        $prefix_list_config,
+        $route_map_config,
+        $fabric_config,
+        $nodename,
     );
 }
 
@@ -484,7 +503,15 @@ sub generate_dhcp_config {
 sub encode_value {
     my ($type, $key, $value) = @_;
 
-    if ($key eq 'nodes' || $key eq 'exitnodes' || $key eq 'dhcp-range' || $key eq 'interfaces') {
+    if (
+        $key eq 'nodes'
+        || $key eq 'exitnodes'
+        || $key eq 'dhcp-range'
+        || $key eq 'interfaces'
+        || $key eq 'entries'
+        || $key eq 'match'
+        || $key eq 'set'
+    ) {
         if (ref($value) eq 'HASH') {
             return join(',', sort keys(%$value));
         } elsif (ref($value) eq 'ARRAY') {
