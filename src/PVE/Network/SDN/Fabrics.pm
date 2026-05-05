@@ -299,6 +299,17 @@ sub node_properties {
                                 format => 'pve-iface',
                                 description => 'Name of the network interface',
                             },
+                            network_type => {
+                                type => 'string',
+                                description => 'Network Type of the OSPF interface',
+                                enum => [
+                                    'broadcast',
+                                    'non-broadcast',
+                                    'point-to-multipoint',
+                                    'point-to-point',
+                                ],
+                                optional => 1,
+                            },
                             ip => {
                                 type => 'string',
                                 format => 'CIDRv4',
