@@ -5,6 +5,7 @@ use warnings;
 
 use PVE::Exception qw(raise_param_exc);
 use PVE::JSONSchema qw(get_standard_option);
+use PVE::Network::SDN::RouteMaps;
 use PVE::Tools qw(extract_param);
 
 use PVE::RESTHandler;
@@ -126,6 +127,11 @@ __PACKAGE__->register_method({
                 my $order = extract_param($param, 'order');
 
                 $config->delete($route_map_id, $order);
+
+                my $remaining_entries = $config->list_route_map($route_map_id);
+                PVE::Network::SDN::RouteMaps::check_references($route_map_id)
+                    if !$remaining_entries->%*;
+
                 PVE::Network::SDN::RouteMaps::write_config($config);
             },
             "deleting route map entry failed",

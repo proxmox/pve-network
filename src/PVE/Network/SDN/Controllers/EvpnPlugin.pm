@@ -45,6 +45,8 @@ sub options {
         'asn' => { optional => 0 },
         'peers' => { optional => 1 },
         'fabric' => { optional => 1 },
+        'route-map-in' => { optional => 1 },
+        'route-map-out' => { optional => 1 },
     };
 }
 
@@ -165,11 +167,19 @@ sub generate_frr_config {
 
     $bgp_router->{address_families}->{l2vpn_evpn}->{autort_as} = $autortas if $autortas;
 
-    my $routemap_in = { seq => 1, action => "permit" };
-    my $routemap_out = { seq => 1, action => "permit" };
+    if (!$config->{frr}->{routemaps}->{'MAP_VTEP_IN'}) {
+        my $entry = { seq => 1, action => "permit" };
+        $entry->{call} = $plugin_config->{'route-map-in'} if $plugin_config->{'route-map-in'};
 
-    push($config->{frr}->{routemaps}->{'MAP_VTEP_IN'}->@*, $routemap_in);
-    push($config->{frr}->{routemaps}->{'MAP_VTEP_OUT'}->@*, $routemap_out);
+        push($config->{frr}->{routemaps}->{'MAP_VTEP_IN'}->@*, $entry);
+    }
+
+    if (!$config->{frr}->{routemaps}->{'MAP_VTEP_OUT'}) {
+        my $entry = { seq => 1, action => "permit" };
+        $entry->{call} = $plugin_config->{'route-map-out'} if $plugin_config->{'route-map-out'};
+
+        push($config->{frr}->{routemaps}->{'MAP_VTEP_OUT'}->@*, $entry);
+    }
 
     return $config;
 }
@@ -488,6 +498,18 @@ sub on_update_hook {
     }
 
     my $controller = $controller_cfg->{ids}->{$controllerid};
+    my $route_map_config = PVE::Network::SDN::RouteMaps::config(0);
+
+    if ($controller->{'route-map-in'}) {
+        my $entries = $route_map_config->list_route_map($controller->{'route-map-in'});
+        die "route map $controller->{'route-map-in'} does not exist!" if !$entries->%*;
+    }
+
+    if ($controller->{'route-map-out'}) {
+        my $entries = $route_map_config->list_route_map($controller->{'route-map-out'});
+        die "route map $controller->{'route-map-out'} does not exist!" if !$entries->%*;
+    }
+
     if ($controller->{type} eq 'evpn') {
         die "must have exactly one of peers / fabric defined"
             if ($controller->{peers} && $controller->{fabric})

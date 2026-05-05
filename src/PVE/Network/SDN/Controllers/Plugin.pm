@@ -7,6 +7,8 @@ use PVE::Tools;
 use PVE::JSONSchema;
 use PVE::Cluster;
 
+use PVE::Network::SDN::RouteMaps;
+
 use PVE::JSONSchema qw(get_standard_option);
 use base qw(PVE::SectionConfig);
 
@@ -40,6 +42,18 @@ my $defaultData = {
             'pve-sdn-controller-id',
             { completion => \&PVE::Network::SDN::complete_sdn_controller },
         ),
+        'route-map-in' => {
+            description => "Route Map that should be applied for incoming routes",
+            type => 'string',
+            format => 'pve-sdn-route-map-id',
+            optional => 1,
+        },
+        'route-map-out' => {
+            description => "Route Map that should be applied for outgoing routes",
+            type => 'string',
+            format => 'pve-sdn-route-map-id',
+            optional => 1,
+        },
     },
 };
 

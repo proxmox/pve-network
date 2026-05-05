@@ -107,6 +107,26 @@ sub write_config {
     cfs_write_file("sdn/route-maps.cfg", $config->to_raw(), 1);
 }
 
+sub check_references {
+    my ($route_map_id) = @_;
+
+    my $controller_config = PVE::Network::SDN::Controllers::config();
+
+    for my $controller_id (keys $controller_config->{ids}->%*) {
+        my $controller = $controller_config->{ids}->{$controller_id};
+
+        if ($controller->{'route-map-in'}) {
+            die "route map $route_map_id still referenced by controller $controller_id"
+                if $controller->{'route-map-in'} eq $route_map_id;
+        }
+
+        if ($controller->{'route-map-out'}) {
+            die "route map $route_map_id still referenced by controller $controller_id"
+                if $controller->{'route-map-out'} eq $route_map_id;
+        }
+    }
+}
+
 sub route_map_properties {
     my ($update) = @_;
 
