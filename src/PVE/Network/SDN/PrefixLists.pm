@@ -1,0 +1,134 @@
+package PVE::Network::SDN::PrefixLists;
+
+use strict;
+use warnings;
+
+use PVE::Cluster qw(cfs_register_file cfs_read_file cfs_lock_file cfs_write_file);
+use PVE::JSONSchema qw(get_standard_option);
+use PVE::INotify;
+use PVE::Network::SDN;
+use PVE::RS::SDN::PrefixLists;
+
+PVE::JSONSchema::register_format(
+    'pve-sdn-prefix-list-id',
+    sub {
+        my ($id, $noerr) = @_;
+
+        if ($id =~ m/^(only_default|only_default_v6|loopbacks_ips)$/) {
+            return undef if $noerr;
+            die "prefix list ID '$id' is currently reserved and cannot be used\n";
+        }
+
+        if ($id !~ m/^[a-zA-Z0-9][a-zA-Z0-9-_]{0,30}[a-zA-Z0-9]?$/i) {
+            return undef if $noerr;
+            die "prefix list ID '$id' contains illegal characters\n";
+        }
+
+        return $id;
+    },
+);
+
+PVE::JSONSchema::register_standard_option(
+    'pve-sdn-prefix-list-id',
+    {
+        description => "The SDN prefix list identifier",
+        type => 'string',
+        format => 'pve-sdn-prefix-list-id',
+    },
+);
+
+cfs_register_file(
+    'sdn/prefix-lists.cfg', \&parse_prefix_lists_config, \&write_prefix_lists_config,
+);
+
+sub parse_prefix_lists_config {
+    my ($filename, $raw) = @_;
+    return $raw // '';
+}
+
+sub write_prefix_lists_config {
+    my ($filename, $config) = @_;
+    return $config // '';
+}
+
+sub config {
+    my ($running) = @_;
+
+    if ($running) {
+        my $running_config = PVE::Network::SDN::running_config();
+
+        # if the config hasn't yet been applied after the introduction of
+        # prefix lists then the key does not exist in the running config so we
+        # default to an empty hash
+        my $prefix_lists_config = $running_config->{'prefix-lists'}->{ids} // {};
+        return PVE::RS::SDN::PrefixLists->running_config($prefix_lists_config);
+    }
+
+    my $prefix_lists_config = cfs_read_file("sdn/prefix-lists.cfg");
+    return PVE::RS::SDN::PrefixLists->config($prefix_lists_config);
+}
+
+sub write_config {
+    my ($config) = @_;
+    cfs_write_file("sdn/prefix-lists.cfg", $config->to_raw(), 1);
+}
+
+sub prefix_list_properties {
+    my ($update) = @_;
+
+    my $properties = {
+        digest => get_standard_option('pve-config-digest'),
+        entries => {
+            type => 'array',
+            optional => 1,
+            items => {
+                type => 'string',
+                format => {
+                    action => {
+                        type => 'string',
+                        enum => ['permit', 'deny'],
+                    },
+                    prefix => {
+                        type => 'string',
+                        format => 'CIDR',
+                    },
+                    le => {
+                        type => 'integer',
+                        minimum => 0,
+                        maximum => 128,
+                        optional => 1,
+                    },
+                    ge => {
+                        type => 'integer',
+                        minimum => 0,
+                        maximum => 128,
+                        optional => 1,
+                    },
+                    seq => {
+                        type => 'integer',
+                        minimum => 0,
+                        maximum => 2**32 - 1,
+                        optional => 1,
+                    },
+                },
+            },
+        },
+    };
+
+    if ($update) {
+        $properties->{delete} = {
+            type => 'array',
+            optional => 1,
+            items => {
+                type => 'string',
+                enum => ['entries'],
+            },
+        };
+    } else {
+        $properties->{id} = get_standard_option('pve-sdn-prefix-list-id');
+    }
+
+    return $properties;
+}
+
+1;
