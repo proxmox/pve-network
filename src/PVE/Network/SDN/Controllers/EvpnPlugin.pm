@@ -329,9 +329,8 @@ sub generate_zone_frr_config {
         if (!$exitnodes_primary || $exitnodes_primary eq $local_node) {
             # Filter default route coming from other exit nodes on primary node
             my $routemap_config_v6 = {
-                protocol_type => 'ipv6',
-                match_type => 'address',
-                value => { list_type => 'prefixlist', list_name => 'only_default_v6' },
+                key => 'ipv6 address prefix-list',
+                value => 'only_default_v6',
             };
             my $routemap_v6 = { seq => 1, matches => [$routemap_config_v6], action => "deny" };
             unshift(
@@ -339,23 +338,21 @@ sub generate_zone_frr_config {
             );
 
             my $routemap_config = {
-                protocol_type => 'ip',
-                match_type => 'address',
-                value => { list_type => 'prefixlist', list_name => 'only_default' },
+                key => 'ip address prefix-list',
+                value => 'only_default',
             };
             my $routemap = { seq => 1, matches => [$routemap_config], action => "deny" };
             unshift(@{ $config->{frr}->{routemaps}->{'MAP_VTEP_IN'} }, $routemap);
 
         } elsif ($exitnodes_primary ne $local_node) {
             my $routemap_config_v6 = {
-                protocol_type => 'ipv6',
-                match_type => 'address',
-                value => { list_type => 'prefixlist', list_name => 'only_default_v6' },
+                key => 'ipv6 address prefix-list',
+                value => 'only_default_v6',
             };
             my $routemap_v6 = {
                 seq => 1,
                 matches => [$routemap_config_v6],
-                sets => [{ set_type => 'metric', value => 200 }],
+                sets => [{ key => 'metric', value => "200" }],
                 action => "permit",
             };
             unshift(
@@ -363,14 +360,13 @@ sub generate_zone_frr_config {
             );
 
             my $routemap_config = {
-                protocol_type => 'ip',
-                match_type => 'address',
-                value => { list_type => 'prefixlist', list_name => 'only_default' },
+                key => 'ip address prefix-list',
+                value => 'only_default',
             };
             my $routemap = {
                 seq => 1,
                 matches => [$routemap_config],
-                sets => [{ set_type => 'metric', value => 200 }],
+                sets => [{ key => 'metric', value => "200" }],
                 action => "permit",
             };
             unshift(@{ $config->{frr}->{routemaps}->{'MAP_VTEP_OUT'} }, $routemap);

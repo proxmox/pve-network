@@ -136,13 +136,12 @@ sub generate_frr_config {
         $config->{frr}->{protocol_routemaps}->{bgp}->{v4} = "correct_src";
 
         my $routemap_config = {
-            protocol_type => 'ip',
-            match_type => 'address',
-            value => { list_type => 'prefixlist', list_name => 'loopbacks_ips' },
+            key => 'ip address prefix-list',
+            value => 'loopbacks_ips',
         };
         my $routemap = {
             matches => [$routemap_config],
-            sets => [{ set_type => 'src', value => $ifaceip }],
+            sets => [{ key => 'src', value => $ifaceip }],
             action => "permit",
             seq => 1,
         };
