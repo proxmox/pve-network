@@ -52,6 +52,8 @@ sub options {
         'ebgp' => { optional => 1 },
         'ebgp-multihop' => { optional => 1 },
         'loopback' => { optional => 1 },
+        'route-map-in' => { optional => 1 },
+        'route-map-out' => { optional => 1 },
     };
 }
 
@@ -111,12 +113,19 @@ sub generate_frr_config {
         my $mask = Net::IP::ip_is_ipv6($ifaceip) ? "128" : "32";
         my $af_key = "${ipversion}_unicast";
 
+        my $bgp_neighbor = {
+            name => "BGP",
+            soft_reconfiguration_inbound => 1,
+        };
+
+        $bgp_neighbor->{route_map_in} = $plugin_config->{'route-map-in'}
+            if $plugin_config->{'route-map-in'};
+        $bgp_neighbor->{route_map_out} = $plugin_config->{'route-map-out'}
+            if $plugin_config->{'route-map-out'};
+
         $bgp_router->{address_families}->{$af_key} //= {
             networks => [],
-            neighbors => [{
-                name => "BGP",
-                soft_reconfiguration_inbound => 1,
-            }],
+            neighbors => [$bgp_neighbor],
         };
 
         push @{ $bgp_router->{address_families}->{$af_key}->{networks} }, "$ifaceip/$mask"
@@ -180,6 +189,19 @@ sub on_update_hook {
         next if $controller->{node} ne $local_node;
         $controllernb++;
         die "only 1 bgp controller can be defined" if $controllernb > 1;
+    }
+
+    my $controller = $controller_cfg->{ids}->{$controllerid};
+    my $route_map_config = PVE::Network::SDN::RouteMaps::config(0);
+
+    if ($controller->{'route-map-in'}) {
+        my $entries = $route_map_config->list_route_map($controller->{'route-map-in'});
+        die "route map $controller->{'route-map-in'} does not exist!" if !$entries->%*;
+    }
+
+    if ($controller->{'route-map-out'}) {
+        my $entries = $route_map_config->list_route_map($controller->{'route-map-out'});
+        die "route map $controller->{'route-map-out'} does not exist!" if !$entries->%*;
     }
 }
 
