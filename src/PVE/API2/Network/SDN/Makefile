@@ -6,8 +6,8 @@ SOURCES=Vnets.pm\
 		Dns.pm\
 		Ips.pm\
 		Fabrics.pm\
-		PrefixLists.pm
-
+		PrefixLists.pm\
+		RouteMaps.pm
 
 PERL5DIR=${DESTDIR}/usr/share/perl5
 

@@ -23,6 +23,7 @@ use PVE::API2::Network::SDN::Ipams;
 use PVE::API2::Network::SDN::Dns;
 use PVE::API2::Network::SDN::Fabrics;
 use PVE::API2::Network::SDN::PrefixLists;
+use PVE::API2::Network::SDN::RouteMaps;
 
 use base qw(PVE::RESTHandler);
 
@@ -62,6 +63,11 @@ __PACKAGE__->register_method({
 });
 
 __PACKAGE__->register_method({
+    subclass => "PVE::API2::Network::SDN::RouteMaps",
+    path => 'route-maps',
+});
+
+__PACKAGE__->register_method({
     name => 'index',
     path => '',
     method => 'GET',
@@ -94,6 +100,7 @@ __PACKAGE__->register_method({
             { id => 'dns' },
             { id => 'fabrics' },
             { id => 'prefix-lists' },
+            { id => 'route-maps' },
         ];
 
         return $res;
