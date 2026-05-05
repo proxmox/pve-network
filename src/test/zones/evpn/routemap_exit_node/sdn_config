@@ -1,0 +1,71 @@
+{
+  version => 1,
+  vnets   => {
+               ids => {
+                        myvnet => { tag => "100", type => "vnet", zone => "myzone" },
+                      },
+             },
+
+  zones   => {
+               ids => { myzone => { ipam => "pve", type => "evpn", controller =>
+               "evpnctl", 'vrf-vxlan' => 1000, exitnodes => { 'localhost' => 1 } } },
+             },
+  controllers  => {
+               ids => { evpnctl => { type => "evpn", 'peers' =>
+               '192.168.0.1,192.168.0.2,192.168.0.3', asn => "65000",
+               'route-map-in' => 'map-in', 'route-map-out' => 'map-out' } },
+             },
+
+  subnets => {
+              ids => { 'myzone-10.0.0.0-24' => {
+							'type' => 'subnet',
+							'vnet' => 'myvnet',
+							'gateway' => '10.0.0.1',
+						  }
+		     }
+	     },
+  'route-maps' => {
+        ids => {
+            'map-in_222' => {
+                id => 'map-in_222',
+                type => 'route-map-entry',
+                action => 'deny',
+                match => [
+                      'key=ip-next-hop-address,value=192.0.2.45',
+                      'key=metric,value=8347',
+                      'key=local-preference,value=8347',
+                ],
+            },
+            'map-in_5' => {
+                id => 'map-in_5',
+                type => 'route-map-entry',
+                action => 'deny',
+                set => [
+                      'key=src,value=192.0.2.1'
+                ],
+            },
+            'map-in_123' => {
+                id => 'map-in_123',
+                type => 'route-map-entry',
+                action => 'permit',
+                match => [
+                      'key=ip-next-hop-address,value=192.0.2.45',
+                      'key=metric,value=8347',
+                      'key=local-preference,value=8347',
+                ],
+                set => [
+                      'key=ip-next-hop,value=198.51.100.3',
+                      'key=local-preference,value=1234',
+                      'key=tag,value=999',
+                ],
+            },
+            'map-out_999' => {
+                id => 'map-out_999',
+                type => 'route-map-entry',
+                action => 'permit',
+            }
+        }
+  }
+}
+
+
