@@ -1,0 +1,58 @@
+{
+  version => 1,
+  vnets   => {
+               ids => {
+                        myvnet => { tag => "100", type => "vnet", zone => "myzone" },
+                      },
+             },
+
+  zones   => {
+               ids => { myzone => { ipam => "pve", type => "evpn", controller => "evpnctl", 'vrf-vxlan' => 1000, } },
+             },
+  controllers  => {
+               ids => {
+                    evpnctl => {
+                        type => "evpn",
+                        'peers' => '192.168.0.1,192.168.0.2,192.168.0.3',
+                        asn => "65000",
+                        'route-map-out' => 'map-out'
+                    }
+                },
+             },
+
+  subnets => {
+              ids => { 'myzone-10.0.0.0-24' => {
+							'type' => 'subnet',
+							'vnet' => 'myvnet',
+							'gateway' => '10.0.0.1',
+						  }
+		     }
+	     },
+  'prefix-lists' => {
+        ids => {
+            'some_list' => {
+                id => 'some_list',
+                type => 'prefix-list',
+                entries => [
+                    'action=deny,prefix=192.0.2.0/24,le=25',
+                    'action=deny,prefix=198.51.100.0/25,ge=25,le=26',
+                    'action=permit,prefix=203.0.113.0/24,seq=22',
+                ]
+            }
+        }
+  },
+  'route-maps' => {
+        ids => {
+            'map-out_999' => {
+                id => 'map-out_999',
+                type => 'route-map-entry',
+                action => 'permit',
+                match => [
+                    'key=ip-next-hop-prefix-list,value=some_list'
+                ]
+            }
+        }
+  }
+}
+
+
