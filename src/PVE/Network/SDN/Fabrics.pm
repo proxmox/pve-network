@@ -6,8 +6,10 @@ use warnings;
 use PVE::Cluster qw(cfs_register_file cfs_read_file cfs_lock_file cfs_write_file);
 use PVE::JSONSchema qw(get_standard_option);
 use PVE::INotify;
+
 use PVE::RS::SDN;
 use PVE::RS::SDN::Fabrics;
+use PVE::RS::SDN::PrefixLists;
 
 PVE::JSONSchema::register_format(
     'pve-sdn-fabric-id',
@@ -264,6 +266,15 @@ sub fabric_properties {
                 'OSPF area. Either a IPv4 address or a 32-bit number. Gets validated in rust.',
             optional => 1,
         },
+        route_filter => {
+            type => 'string',
+            format => 'pve-sdn-prefix-list-id',
+            'type-property' => 'protocol',
+            'instance-types' => ['ospf', 'openfabric'],
+            description =>
+                'A prefix list that should be used for filtering routes that are to be installed into the kernel routing table',
+            optional => 1,
+        },
     };
 
     if ($update) {
@@ -277,7 +288,7 @@ sub fabric_properties {
                     'instance-types' => ['openfabric'],
                     items => {
                         type => 'string',
-                        enum => ['hello_interval', 'csnp_interval'],
+                        enum => ['hello_interval', 'csnp_interval', 'route_filter'],
                     },
                     optional => 1,
                 },
@@ -286,7 +297,7 @@ sub fabric_properties {
                     'instance-types' => ['ospf'],
                     items => {
                         type => 'string',
-                        enum => ['area'],
+                        enum => ['area', 'redistribute', 'route_filter'],
                     },
                     optional => 1,
                 },

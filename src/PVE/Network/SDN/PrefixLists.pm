@@ -9,6 +9,7 @@ use PVE::INotify;
 use PVE::Network::SDN;
 use PVE::Network::SDN::RouteMaps;
 use PVE::RS::SDN::PrefixLists;
+use PVE::RS::SDN::Fabrics;
 
 PVE::JSONSchema::register_format(
     'pve-sdn-prefix-list-id',
@@ -76,6 +77,16 @@ sub write_config {
 
 sub check_references {
     my ($prefix_list_id) = @_;
+
+    my $fabrics = PVE::Network::SDN::Fabrics::config()->list_fabrics();
+    for my $fabric_id (keys $fabrics->%*) {
+        my $fabric = $fabrics->{$fabric_id};
+
+        if ($fabric->{route_filter}) {
+            die "prefix list $prefix_list_id is still referenced by fabric $fabric_id"
+                if $fabric->{route_filter} eq $prefix_list_id;
+        }
+    }
 
     my $route_map_entries = PVE::Network::SDN::RouteMaps::config()->list();
     for my $route_map_entry (values $route_map_entries->%*) {
