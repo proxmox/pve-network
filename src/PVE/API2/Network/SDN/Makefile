@@ -16,4 +16,5 @@ install:
 	for i in ${SOURCES}; do install -D -m 0644 $$i ${PERL5DIR}/PVE/API2/Network/SDN/$$i; done
 	make -C Fabrics install
 	make -C Nodes install
+	make -C RouteMaps install
 
