@@ -3,12 +3,18 @@ package PVE::API2::Network::SDN::RouteMaps::RouteMap;
 use strict;
 use warnings;
 
+use PVE::API2::Network::SDN::RouteMaps::RouteMapEntry;
 use PVE::JSONSchema qw(get_standard_option);
 use PVE::Exception qw(raise_param_exc);
 use PVE::Tools qw(extract_param);
 
 use PVE::RESTHandler;
 use base qw(PVE::RESTHandler);
+
+__PACKAGE__->register_method({
+    subclass => "PVE::API2::Network::SDN::RouteMaps::RouteMapEntry",
+    path => '{order}',
+});
 
 __PACKAGE__->register_method({
     name => 'list_route_map_entries',
