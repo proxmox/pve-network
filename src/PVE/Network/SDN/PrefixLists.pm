@@ -7,6 +7,7 @@ use PVE::Cluster qw(cfs_register_file cfs_read_file cfs_lock_file cfs_write_file
 use PVE::JSONSchema qw(get_standard_option);
 use PVE::INotify;
 use PVE::Network::SDN;
+use PVE::Network::SDN::RouteMaps;
 use PVE::RS::SDN::PrefixLists;
 
 PVE::JSONSchema::register_format(
@@ -71,6 +72,26 @@ sub config {
 sub write_config {
     my ($config) = @_;
     cfs_write_file("sdn/prefix-lists.cfg", $config->to_raw(), 1);
+}
+
+sub check_references {
+    my ($prefix_list_id) = @_;
+
+    my $route_map_entries = PVE::Network::SDN::RouteMaps::config()->list();
+    for my $route_map_entry (values $route_map_entries->%*) {
+        for my $match_action_property_string ($route_map_entry->{match}->@*) {
+            my $match_action = PVE::JSONSchema::parse_property_string(
+                $PVE::Network::SDN::RouteMaps::ROUTE_MAP_MATCH_FORMAT,
+                $match_action_property_string,
+            );
+
+            next if $match_action->{key} !~ m/^(.*)-prefix-list$/;
+
+            die
+                "prefix list $prefix_list_id is still referenced by route map entry $route_map_entry->{'route-map-id'} #$route_map_entry->{'order'}"
+                if $match_action->{value} eq $prefix_list_id;
+        }
+    }
 }
 
 sub prefix_list_properties {
