@@ -252,6 +252,7 @@ sub has_pending_changes {
         vnets => PVE::Network::SDN::Vnets::config(),
         subnets => PVE::Network::SDN::Subnets::config(),
         controllers => PVE::Network::SDN::Controllers::config(),
+        fabrics => { ids => PVE::Network::SDN::Fabrics::config()->to_sections() },
         'route-maps' => { ids => PVE::Network::SDN::RouteMaps::config()->to_sections() },
         'prefix-lists' => { ids => PVE::Network::SDN::PrefixLists::config()->to_sections() },
     };
