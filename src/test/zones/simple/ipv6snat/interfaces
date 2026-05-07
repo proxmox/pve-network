@@ -5,3 +5,7 @@ iface vmbr0 inet static
         bridge-ports eth0
         bridge-stp off
         bridge-fd 0
+
+iface vmbr0 inet6 static
+       address 2001:db8::2/64
+       gateway 2001:db8::1

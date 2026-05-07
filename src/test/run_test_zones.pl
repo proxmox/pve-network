@@ -83,8 +83,12 @@ foreach my $test (@tests) {
     $pve_sdn_zones_plugin = Test::MockModule->new('PVE::Network::SDN::Zones::Plugin');
     $pve_sdn_zones_plugin->mock(
         get_local_route_ip => sub {
+            my ($targetip) = @_;
             my $outiface = "vmbr0";
             my $outip = $interfaces_config->{ifaces}->{$outiface}->{address};
+            if (Net::IP::ip_is_ipv6($targetip)) {
+                $outip = $interfaces_config->{ifaces}->{$outiface}->{address6};
+            }
             return ($outip, $outiface);
         },
         is_vlanaware => sub {
