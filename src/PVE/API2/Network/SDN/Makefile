@@ -17,4 +17,5 @@ install:
 	make -C Fabrics install
 	make -C Nodes install
 	make -C RouteMaps install
+	make -C PrefixLists install
 
