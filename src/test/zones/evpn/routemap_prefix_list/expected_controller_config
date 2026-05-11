@@ -34,8 +34,8 @@ router bgp 65000 vrf vrf_myzone
  no bgp graceful-restart notification
 exit
 !
-ip prefix-list some_list deny 192.0.2.0/24 le 25
-ip prefix-list some_list deny 198.51.100.0/25 le 26 ge 25
+ip prefix-list some_list seq 11 deny 192.0.2.0/24 le 25
+ip prefix-list some_list seq 123 deny 198.51.100.0/25 le 26 ge 25
 ip prefix-list some_list seq 22 permit 203.0.113.0/24
 !
 route-map MAP_VTEP_IN permit 1

@@ -42,8 +42,8 @@
                 id => 'some_list',
                 type => 'prefix-list',
                 entries => [
-                    'action=deny,prefix=192.0.2.0/24,le=25',
-                    'action=deny,prefix=198.51.100.0/25,ge=25,le=26',
+                    'action=deny,prefix=192.0.2.0/24,le=25,seq=44',
+                    'action=deny,prefix=198.51.100.0/25,ge=25,le=26,seq=123',
                     'action=permit,prefix=203.0.113.0/24,seq=22',
                 ]
             }
