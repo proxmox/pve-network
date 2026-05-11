@@ -3,9 +3,8 @@ package PVE::API2::Network::SDN::RouteMaps::RouteMapEntry;
 use strict;
 use warnings;
 
-use PVE::Exception qw(raise_param_exc);
 use PVE::JSONSchema qw(get_standard_option);
-use PVE::Network::SDN::RouteMaps;
+use PVE::Exception qw(raise_param_exc);
 use PVE::Tools qw(extract_param);
 
 use PVE::RESTHandler;
@@ -13,7 +12,7 @@ use base qw(PVE::RESTHandler);
 
 __PACKAGE__->register_method({
     name => 'get_route_map_entry',
-    path => '',
+    path => '{order}',
     method => 'GET',
     permissions => {
         check =>
@@ -48,7 +47,7 @@ __PACKAGE__->register_method({
 
 __PACKAGE__->register_method({
     name => 'update_route_map_entry',
-    path => '',
+    path => '{order}',
     method => 'PUT',
     protected => 1,
     permissions => {
@@ -94,7 +93,7 @@ __PACKAGE__->register_method({
 
 __PACKAGE__->register_method({
     name => 'delete_route_map_entry',
-    path => '',
+    path => '{order}',
     method => 'DELETE',
     protected => 1,
     permissions => {

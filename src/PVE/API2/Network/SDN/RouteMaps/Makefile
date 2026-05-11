@@ -1,6 +1,6 @@
 SOURCES=RouteMap.pm\
+		RouteMapEntries.pm\
 		RouteMapEntry.pm
-
 
 PERL5DIR=${DESTDIR}/usr/share/perl5
 

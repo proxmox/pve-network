@@ -13,11 +13,11 @@ use base qw(PVE::RESTHandler);
 
 __PACKAGE__->register_method({
     subclass => "PVE::API2::Network::SDN::RouteMaps::RouteMapEntry",
-    path => '{order}',
+    path => 'entry',
 });
 
 __PACKAGE__->register_method({
-    name => 'list_route_map_entries',
+    name => 'list_route_map_entries_for_route_map',
     path => '',
     method => 'GET',
     permissions => {
@@ -46,13 +46,14 @@ __PACKAGE__->register_method({
             type => "object",
             properties => PVE::Network::SDN::RouteMaps::route_map_properties(0),
         },
-        links => [{ rel => 'child', href => "{order}" }],
+        links => [{ rel => 'child', href => "entry/{order}" }],
     },
     code => sub {
         my ($param) = @_;
 
         my $pending = extract_param($param, 'pending');
         my $running = extract_param($param, 'running');
+
         my $route_map_id = extract_param($param, 'route-map-id');
 
         my $digest;
