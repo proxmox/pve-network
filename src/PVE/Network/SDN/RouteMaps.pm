@@ -48,7 +48,8 @@ our $ROUTE_MAP_MATCH_FORMAT = {
     value => {
         type => 'string',
         optional => 1,
-        description => 'value that should be matched on',
+        description => 'Value that the field <key> should be matched on.',
+        format_description => '<key-dependent>',
     },
 };
 
@@ -67,7 +68,7 @@ PVE::JSONSchema::register_standard_option(
         description => 'The index of this route map entry',
         type => 'integer',
         minimum => 0,
-        maximum => 2**32 - 1,
+        maximum => 65535,
     },
 );
 
@@ -164,7 +165,8 @@ sub route_map_properties {
                     value => {
                         type => 'string',
                         optional => 1,
-                        description => 'value that should be set to',
+                        description => 'Value that the field <key> should be set to.',
+                        format_description => '<key-dependent>',
                     },
                 },
             },
@@ -187,11 +189,7 @@ sub route_map_properties {
                         'on-match-goto', 'on-match-next', 'continue',
                     ],
                 },
-                value => {
-                    type => 'string',
-                    optional => 1,
-                    description => 'type of exit action',
-                },
+                value => get_standard_option('pve-sdn-route-map-order'),
             },
             optional => 1,
         },
