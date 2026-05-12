@@ -3,11 +3,13 @@ package PVE::API2::Network::SDN::Fabrics::FabricNode;
 use strict;
 use warnings;
 
-use PVE::JSONSchema qw(get_standard_option);
-use PVE::Tools qw(extract_param);
+use PVE::JSONSchema qw(get_standard_option parse_property_string);
+use PVE::Tools qw(extract_param run_command);
 
 use PVE::Network::SDN;
 use PVE::Network::SDN::Fabrics;
+use PVE::Network::SDN::WireGuard;
+use PVE::RS::SDN::Fabrics;
 
 use PVE::RESTHandler;
 use base qw(PVE::RESTHandler);
@@ -131,6 +133,11 @@ __PACKAGE__->register_method({
     },
 });
 
+my sub is_internal_wireguard_node {
+    my ($node) = @_;
+    return $node->{protocol} eq 'wireguard' && $node->{role} eq 'internal';
+}
+
 __PACKAGE__->register_method({
     name => 'add_node',
     path => '',
@@ -162,8 +169,42 @@ __PACKAGE__->register_method({
                 my $digest = extract_param($param, 'digest');
                 PVE::Tools::assert_if_modified($config->digest(), $digest) if $digest;
 
-                $config->add_node($param);
-                PVE::Network::SDN::Fabrics::write_config($config);
+                if (is_internal_wireguard_node($param) && $param->{interfaces}) {
+                    my $private_keys = PVE::Network::SDN::WireGuard::private_keys();
+
+                    my @parsed_interfaces = map {
+                        PVE::RS::SDN::Fabrics::parse_wireguard_create_interface($_)
+                    } $param->{interfaces}->@*;
+
+                    my @interfaces;
+                    for my $interface (@parsed_interfaces) {
+                        $interface->{public_key} =
+                            $private_keys->upsert($param->{node_id}, $interface->{name});
+                        push @interfaces,
+                            PVE::RS::SDN::Fabrics::print_wireguard_interface($interface);
+                    }
+
+                    $param->{interfaces} = \@interfaces;
+                    $config->add_node($param);
+
+                    eval { PVE::Network::SDN::WireGuard::write_private_keys($private_keys); };
+                    die "could not save private key config: $@\n" if $@;
+
+                    eval { PVE::Network::SDN::Fabrics::write_config($config); };
+                    if (my $err = $@) {
+                        for my $interface (@parsed_interfaces) {
+                            $private_keys->delete($param->{node_id}, $interface->{name});
+                        }
+
+                        eval { PVE::Network::SDN::WireGuard::write_private_keys($private_keys) };
+                        warn "could not roll back private key config: $@\n" if $@;
+
+                        die $err;
+                    }
+                } else {
+                    $config->add_node($param);
+                    PVE::Network::SDN::Fabrics::write_config($config);
+                }
             },
             "adding node failed",
             $lock_token,
@@ -205,8 +246,62 @@ __PACKAGE__->register_method({
                 my $digest = extract_param($param, 'digest');
                 PVE::Tools::assert_if_modified($config->digest(), $digest) if $digest;
 
-                $config->update_node($fabric_id, $node_id, $param);
-                PVE::Network::SDN::Fabrics::write_config($config);
+                my $old_node = $config->get_node($fabric_id, $node_id);
+
+                # required so rust can parse the proper wireguard node
+                # variant
+                $param->{role} = $old_node->{role} if $old_node->{protocol} eq 'wireguard';
+
+                if (is_internal_wireguard_node($param)) {
+                    my $private_keys = PVE::Network::SDN::WireGuard::private_keys();
+
+                    my %new_interfaces = map {
+                        my $interface =
+                            PVE::RS::SDN::Fabrics::parse_wireguard_create_interface($_);
+                        $interface->{name} => $interface
+                    } $param->{interfaces}->@*;
+
+                    my %old_interfaces = map {
+                        my $interface = PVE::RS::SDN::Fabrics::parse_wireguard_interface($_);
+                        $interface->{name} => $interface
+                    } $old_node->{interfaces}->@*;
+
+                    my @interfaces;
+                    for my $interface_name (keys %new_interfaces) {
+                        my $interface = $new_interfaces{$interface_name};
+                        # always derive the public key from the stored private
+                        # key, never trust a user-supplied value, otherwise an
+                        # update could let the public key in fabrics.cfg drift
+                        # away from the matching private key in wg-keys.cfg
+                        $interface->{public_key} =
+                            $private_keys->upsert($node_id, $interface_name);
+                        push @interfaces,
+                            PVE::RS::SDN::Fabrics::print_wireguard_interface($interface);
+                    }
+                    $param->{interfaces} = \@interfaces;
+
+                    $config->update_node($fabric_id, $node_id, $param);
+
+                    eval { PVE::Network::SDN::WireGuard::write_private_keys($private_keys); };
+                    die "could not save private key config: $@\n" if $@;
+
+                    eval { PVE::Network::SDN::Fabrics::write_config($config); };
+
+                    if (my $err = $@) {
+                        for my $interface (values %new_interfaces) {
+                            $private_keys->delete($node_id, $interface->{name})
+                                if !exists($old_interfaces{ $interface->{name} });
+                        }
+
+                        eval { PVE::Network::SDN::WireGuard::write_private_keys($private_keys) };
+                        warn "could not roll back private key config: $@\n" if $@;
+
+                        die $err;
+                    }
+                } else {
+                    $config->update_node($fabric_id, $node_id, $param);
+                    PVE::Network::SDN::Fabrics::write_config($config);
+                }
             },
             "updating node failed",
             $lock_token,

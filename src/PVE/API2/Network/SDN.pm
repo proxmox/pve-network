@@ -325,6 +325,8 @@ __PACKAGE__->register_method({
                 PVE::Network::SDN::commit_config();
                 $new_config_has_frr = PVE::Network::SDN::running_config_has_frr();
 
+                PVE::Network::SDN::WireGuard::cleanup_private_keys();
+
                 PVE::Network::SDN::delete_global_lock() if $lock_token && $release_lock;
             },
             "could not commit SDN config",
