@@ -1,3 +1,15 @@
+libpve-network-perl (1.4.1) trixie; urgency=medium
+
+  * api: refactor route map endpoints. The /route-maps endpoint now returns
+    only the IDs (used by the new selector component), entry CRUD lives
+    under /route-maps/entries/{route-map-id}/entry/{order}.
+
+  * api: refactor prefix list endpoints. Introduces dedicated CRUD endpoints
+    for prefix list entries under /prefix-lists/{id}/entries and adds a
+    verbose query parameter on the prefix-list listing.
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 12 May 2026 02:12:52 +0200
+
 libpve-network-perl (1.4.0) trixie; urgency=medium
 
   * introduce prefix lists and route maps as configurable entities, exposed
