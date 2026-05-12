@@ -125,7 +125,7 @@ my $create_reload_network_worker = sub {
             }
         },
     );
-    #my $upid = PVE::API2::Network->reload_network_config(node => $nodename});
+    #my $upid = PVE::API2::Network->reload_network_config({ node => $nodename });
     my $res = PVE::Tools::upid_decode($upid);
 
     return $res->{pid};

@@ -51,7 +51,57 @@ PVE::JSONSchema::register_standard_option(
     {
         description => "Type of configuration entry in an SDN Fabric section config",
         type => 'string',
-        enum => ['openfabric', 'ospf'],
+        enum => ['openfabric', 'ospf', 'wireguard'],
+    },
+);
+
+PVE::JSONSchema::register_format(
+    'pve-sdn-wireguard-iface-name',
+    sub {
+        my ($name, $noerr) = @_;
+
+        if ($name !~ m/^[a-zA-Z0-9][a-zA-Z0-9-]{0,6}[a-zA-Z0-9]?$/) {
+            return undef if $noerr;
+            die "WireGuard interface name '$name' contains illegal characters"
+                . " or exceeds the eight character limit\n";
+        }
+
+        return $name;
+    },
+);
+
+PVE::JSONSchema::register_format(
+    'pve-sdn-fabric-wireguard-interface',
+    {
+        name => {
+            type => 'string',
+            format => 'pve-sdn-wireguard-iface-name',
+            description => 'Name of the network interface',
+        },
+        public_key => {
+            type => 'string',
+            description => 'The public key of this interface',
+            optional => 1,
+        },
+        ip => {
+            type => 'string',
+            format => 'CIDRv4',
+            description => 'IPv4 address for this node',
+            optional => 1,
+        },
+        ip6 => {
+            type => 'string',
+            format => 'CIDRv6',
+            description => 'IPv6 address for this node',
+            optional => 1,
+        },
+        listen_port => {
+            type => 'number',
+            description => 'Port to listen on for WireGuard traffic.',
+            optional => 1,
+            minimum => 1,
+            maximum => 65535,
+        },
     },
 );
 
@@ -202,18 +252,123 @@ sub node_properties {
                     description => 'OSPF network interface',
                     optional => 1,
                 },
+                {
+                    type => 'array',
+                    'instance-types' => ['wireguard'],
+                    items => {
+                        description => "WireGuard network interface",
+                        type => 'string',
+                        format => 'pve-sdn-fabric-wireguard-interface',
+                    },
+                    description => 'List of WireGuard network interfaces for this node.',
+                    optional => 1,
+                },
             ],
+        },
+        public_key => {
+            'type-property' => 'protocol',
+            'instance-types' => ['wireguard'],
+            description => 'The public key for the external node.',
+            type => 'string',
+            optional => 1,
+        },
+        role => {
+            'type-property' => 'protocol',
+            'instance-types' => ['wireguard'],
+            description => 'The role of this node in the WireGuard fabric.',
+            type => 'string',
+            enum => ['internal', 'external'],
+            optional => 1,
+        },
+        endpoint => {
+            'type-property' => 'protocol',
+            'instance-types' => ['wireguard'],
+            description => 'The endpoint used for connecting to this node.',
+            optional => 1,
+            type => 'string',
+        },
+        allowed_ips => {
+            'type-property' => 'protocol',
+            'instance-types' => ['wireguard'],
+            type => 'array',
+            optional => 1,
+            description =>
+                'A list of IPs that are routable via this node in the WireGuard fabric.',
+            items => {
+                type => 'string',
+                format => 'CIDR',
+            },
+        },
+        peers => {
+            'type-property' => 'protocol',
+            'instance-types' => ['wireguard'],
+            optional => 1,
+            type => 'array',
+            items => {
+                type => 'string',
+                format => {
+                    type => {
+                        type => 'string',
+                        enum => ['internal', 'external'],
+                    },
+                    node => {
+                        description =>
+                            'The name of the referenced node section (the external node or the internal peer node).',
+                        type => 'string',
+                    },
+                    node_iface => {
+                        description => 'The interface of the other node, if it is internal',
+                        type => 'string',
+                        optional => 1,
+                    },
+                    iface => {
+                        description =>
+                            'The interface of this node that uses this peer definition.',
+                        type => 'string',
+                    },
+                    endpoint => {
+                        description =>
+                            'Override for the endpoint settings in the node section.',
+                        optional => 1,
+                        type => 'string',
+                    },
+                    skip_route_generation => {
+                        description =>
+                            'Whether routes for the allowed IPs should be created in the kernel routing table.',
+                        optional => 1,
+                        default => 0,
+                        type => 'boolean',
+                    },
+                },
+            },
         },
     };
 
     if ($update) {
         $properties->{delete} = {
+            # coerce this value into an array before parsing (oneOf workaround)
             type => 'array',
-            items => {
-                type => 'string',
-                enum => ['interfaces', 'ip', 'ip6'],
-            },
-            optional => 1,
+            'type-property' => 'protocol',
+            oneOf => [
+                {
+                    type => 'array',
+                    'instance-types' => ['openfabric', 'ospf'],
+                    items => {
+                        type => 'string',
+                        enum => ['interfaces', 'ip', 'ip6'],
+                    },
+                    optional => 1,
+                },
+                {
+                    type => 'array',
+                    'instance-types' => ['wireguard'],
+                    items => {
+                        type => 'string',
+                        enum => ['allowed_ips', 'endpoint', 'interfaces', 'ip', 'ip6', 'peers'],
+                    },
+                    optional => 1,
+                },
+            ],
         };
     }
 
@@ -275,6 +430,21 @@ sub fabric_properties {
                 'A prefix list that should be used for filtering routes that are to be installed into the kernel routing table',
             optional => 1,
         },
+        persistent_keepalive => {
+            type => 'number',
+            'type-property' => 'protocol',
+            'instance-types' => ['wireguard'],
+            description => 'A seconds interval, between 1 and 65535 inclusive, of how often to'
+                . ' send an authenticated empty packet to the peer for the purpose of keeping a'
+                . ' stateful firewall or NAT mapping valid persistently. For example, if the'
+                . ' interface very rarely sends traffic, but it might at anytime receive traffic'
+                . ' from another node, and it is behind NAT, the interface might benefit from'
+                . ' having a persistent keepalive interval of 25 seconds. If unset or set to 0, it'
+                . ' is turned off',
+            optional => 1,
+            minimum => 0,
+            maximum => 65535,
+        },
     };
 
     if ($update) {
@@ -298,6 +468,15 @@ sub fabric_properties {
                     items => {
                         type => 'string',
                         enum => ['area', 'redistribute', 'route_filter'],
+                    },
+                    optional => 1,
+                },
+                {
+                    type => 'array',
+                    'instance-types' => ['wireguard'],
+                    items => {
+                        type => 'string',
+                        enum => ['persistent_keepalive'],
                     },
                     optional => 1,
                 },

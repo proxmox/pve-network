@@ -512,6 +512,8 @@ sub encode_value {
         || $key eq 'entries'
         || $key eq 'match'
         || $key eq 'set'
+        || $key eq 'peers'
+        || $key eq 'allowed_ips'
     ) {
         if (ref($value) eq 'HASH') {
             return join(',', sort keys(%$value));
