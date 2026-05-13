@@ -43,6 +43,7 @@ our $ROUTE_MAP_MATCH_FORMAT = {
             'metric',
             'local-preference',
             'peer',
+            'tag',
         ],
     },
     value => {
