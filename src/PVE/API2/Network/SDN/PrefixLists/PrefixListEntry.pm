@@ -62,9 +62,11 @@ __PACKAGE__->register_method({
 
         my $prefix_list_id = extract_param($param, 'id');
         my $seq_nr = extract_param($param, 'url_seq');
-        my $prefix_list_entry = PVE::Network::SDN::PrefixLists::config()->get_entry($prefix_list_id, $seq_nr);
+        my $prefix_list_entry =
+            PVE::Network::SDN::PrefixLists::config()->get_entry($prefix_list_id, $seq_nr);
 
-        raise_param_exc({ 'id' => "entry $seq_nr in prefix list $prefix_list_id doesn't exist" })
+        raise_param_exc({
+            'id' => "entry $seq_nr in prefix list $prefix_list_id doesn't exist" })
             if !$prefix_list_entry;
 
         return $prefix_list_entry;

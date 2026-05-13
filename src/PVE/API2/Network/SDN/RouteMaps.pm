@@ -42,7 +42,7 @@ __PACKAGE__->register_method({
             type => "object",
             properties => {
                 id => get_standard_option('pve-sdn-route-map-id'),
-            }
+            },
         },
         links => [{ rel => 'child', href => "entries/{id}" }],
     },
@@ -59,8 +59,12 @@ __PACKAGE__->register_method({
         my @res;
         for my $route_map ($route_maps->@*) {
             next
-                if !$rpcenv->check_any($authuser, "/sdn/route-maps/$route_map->{id}",
-                    $route_map_privs, 1);
+                if !$rpcenv->check_any(
+                    $authuser,
+                    "/sdn/route-maps/$route_map->{id}",
+                    $route_map_privs,
+                    1,
+                );
 
             push @res, $route_map;
         }
@@ -68,7 +72,5 @@ __PACKAGE__->register_method({
         return \@res;
     },
 });
-
-
 
 1;
