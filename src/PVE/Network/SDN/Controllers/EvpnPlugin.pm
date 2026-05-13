@@ -37,6 +37,7 @@ sub properties {
             type => 'string',
             format => 'ip-list',
         },
+        nodes => get_standard_option('pve-node-list', { optional => 1 }),
     };
 }
 
@@ -47,6 +48,7 @@ sub options {
         'fabric' => { optional => 1 },
         'route-map-in' => { optional => 1 },
         'route-map-out' => { optional => 1 },
+        'nodes' => { optional => 1 },
     };
 }
 
@@ -55,6 +57,11 @@ sub generate_frr_config {
     my ($class, $plugin_config, $controller_cfg, $id, $uplinks, $config) = @_;
 
     my $local_node = PVE::INotify::nodename();
+
+    if (defined($plugin_config->{nodes})) {
+        my @nodes = PVE::Tools::split_list($plugin_config->{nodes});
+        return if !grep { $_ eq $local_node } @nodes;
+    }
 
     my @peers;
     my $asn = int($plugin_config->{asn});

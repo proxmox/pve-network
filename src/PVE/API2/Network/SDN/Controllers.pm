@@ -93,6 +93,7 @@ my $CONTROLLER_PROPERTIES = {
         type => 'string',
         format => 'pve-sdn-isis-net',
     },
+    nodes => get_standard_option('pve-node-list', { optional => 1 }),
 };
 
 __PACKAGE__->register_method({
