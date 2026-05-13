@@ -296,7 +296,7 @@ sub node_properties {
                 'A list of IPs that are routable via this node in the WireGuard fabric.',
             items => {
                 type => 'string',
-                format => 'CIDR',
+                format => 'FullRangeCIDR',
             },
         },
         peers => {
