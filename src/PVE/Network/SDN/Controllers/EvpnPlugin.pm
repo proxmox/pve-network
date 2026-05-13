@@ -69,6 +69,32 @@ sub options {
     };
 }
 
+=head3 skip_route_target_filtering(\%controller_config)
+
+When multiple EVPN controllers are configured for multiple zones, outgoing
+routes need to get filtered, since otherwise EVPN controllers would simply
+announce all routes for all zones located on the node. To preserve
+backwards-compatibility and unnecessary filtering when only one EVPN controller
+is defined, this function can be used to check whether route target filtering
+should be performed or not.
+
+=cut
+
+sub skip_route_target_filtering {
+    my ($controller_config) = @_;
+
+    my $evpn_controller = undef;
+
+    for my $controller (values $controller_config->{ids}->%*) {
+        next if $controller->{type} ne 'evpn';
+
+        return 0 if $evpn_controller;
+        $evpn_controller = $controller;
+    }
+
+    return 1;
+}
+
 # Plugin implementation
 sub generate_frr_config {
     my ($class, $plugin_config, $controller_cfg, $id, $uplinks, $config) = @_;
@@ -231,8 +257,27 @@ sub generate_frr_config {
     }
 
     if (!$config->{frr}->{routemaps}->{$route_map_out}) {
-        my $entry = { seq => 1, action => "permit" };
-        $entry->{call} = $plugin_config->{'route-map-out'} if $plugin_config->{'route-map-out'};
+        my $entry = {
+            seq => 1,
+            action => "permit",
+        };
+
+        # only filter outgoing routes if there are multiple EVPN controllers, to
+        # preserve backwards-compatibility
+
+        if ($plugin_config->{'route-map-out'}) {
+            $entry->{call} = $plugin_config->{'route-map-out'};
+        } elsif (!skip_route_target_filtering($controller_cfg)) {
+            $entry->{matches} = [
+                {
+                    key => 'extcommunity',
+                    value => {
+                        name => "pve_controller_$id",
+                        mode => 'any',
+                    },
+                },
+            ];
+        }
 
         push($config->{frr}->{routemaps}->{$route_map_out}->@*, $entry);
     }
@@ -541,8 +586,14 @@ sub on_delete_hook {
     # verify that zone is associated to this controller
     foreach my $id (keys %{ $zone_cfg->{ids} }) {
         my $zone = $zone_cfg->{ids}->{$id};
+
         die "controller $controllerid is used by $id"
             if (defined($zone->{controller}) && $zone->{controller} eq $controllerid);
+
+        for my $secondary_controller ($zone->{'secondary-controllers'}->@*) {
+            die "controller $controllerid is used by $id"
+                if $secondary_controller eq $controllerid;
+        }
     }
 }
 

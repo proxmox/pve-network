@@ -103,23 +103,53 @@ sub generate_frr_config {
         }
     }
 
+    my $allowed_communities = {};
+
     foreach my $id (sort keys %{ $controller_cfg->{ids} }) {
         my $plugin_config = $controller_cfg->{ids}->{$id};
         my $plugin = PVE::Network::SDN::Controllers::Plugin->lookup($plugin_config->{type});
         $plugin->generate_frr_config($plugin_config, $controller_cfg, $id, $uplinks, $frr_config);
+
+        if ($plugin_config->{type} eq 'evpn') {
+            $allowed_communities->{$id} = {
+                type => 'standard',
+            },
+        }
     }
 
     foreach my $id (sort keys %{ $zone_cfg->{ids} }) {
         my $plugin_config = $zone_cfg->{ids}->{$id};
+
         my $controllerid = $plugin_config->{controller};
         next if !$controllerid;
+
         my $controller = $controller_cfg->{ids}->{$controllerid};
+
         if ($controller) {
             my $controller_plugin =
                 PVE::Network::SDN::Controllers::Plugin->lookup($controller->{type});
             $controller_plugin->generate_zone_frr_config(
                 $plugin_config, $controller, $controller_cfg, $id, $uplinks, $frr_config,
             );
+
+        }
+
+        my @route_targets;
+
+        if ($plugin_config->{'rt-import'}) {
+            @route_targets = PVE::Tools::split_list($plugin_config->{'rt-import'});
+        } else {
+            $allowed_communities->{$controllerid}->{type} = 'expanded';
+            push @route_targets, ".*:$plugin_config->{'vrf-vxlan'}";
+        }
+
+        push($allowed_communities->{$controllerid}->{entries}->@*, @route_targets);
+
+        if ($plugin_config->{'secondary-controllers'}) {
+            for my $id ($plugin_config->{'secondary-controllers'}->@*) {
+                $allowed_communities->{$id}->{type} = 'expanded' if !$plugin_config->{'rt-import'};
+                push $allowed_communities->{$id}->{entries}->@*, @route_targets;
+            }
         }
     }
 
@@ -133,12 +163,69 @@ sub generate_frr_config {
         next if !$controllerid;
         my $controller = $controller_cfg->{ids}->{$controllerid};
 
+        my $route_target = ".*:$plugin_config->{'tag'}";
+
         if ($controller) {
             my $controller_plugin =
                 PVE::Network::SDN::Controllers::Plugin->lookup($controller->{type});
             $controller_plugin->generate_vnet_frr_config(
                 $plugin_config, $controller, $zone, $zoneid, $id, $frr_config,
             );
+
+            if (!$zone->{'rt-import'}) {
+                push $allowed_communities->{$controllerid}->{entries}->@*, $route_target;
+            }
+        }
+
+        if ($zone->{'secondary-controllers'} && !$zone->{'rt-import'}) {
+            for my $id ($zone->{'secondary-controllers'}->@*) {
+                push $allowed_communities->{$id}->{entries}->@*, $route_target;
+            }
+        }
+    }
+
+    if (!PVE::Network::SDN::Controllers::EvpnPlugin::skip_route_target_filtering($controller_cfg)) {
+        $frr_config->{frr}->{bgp}->{ext_community_lists} = {};
+
+        for my $controller_id (sort keys $allowed_communities->%*) {
+            my $community_list_type = $allowed_communities->{$controller_id}->{type};
+            my $route_targets = $allowed_communities->{$controller_id}->{entries};
+
+            my $community_list_name = "pve_controller_$controller_id";
+
+            if (defined($route_targets) && scalar($route_targets->@*)) {
+                my @entries = map { {
+                    action => 'permit',
+                    match_entry => ($community_list_type eq 'expanded') ? "^RT:$_\$" : {
+                        type => 'rt',
+                        value => $_,
+                    },
+                } } $route_targets->@*;
+
+                $frr_config->{frr}->{bgp}->{ext_community_lists}->{$community_list_name} = {
+                    type => $community_list_type,
+                    entries => \@entries,
+                };
+            } else {
+                # Since it's impossible to create empty community lists create a
+                # community list with one deny entry instead. This works,
+                # because the default verdict is to deny any extcommunity that
+                # doesn't match an entry in the community list. So this
+                # extcommunity-list effectively blocks *every* route.
+
+                $frr_config->{frr}->{bgp}->{ext_community_lists}->{$community_list_name} = {
+                    type => 'standard',
+                    entries => [
+                        {
+                            action => 'deny',
+                            match_entry => {
+                                type => 'rt',
+                                value => "0:0",
+                            },
+                        },
+                    ],
+                };
+            }
         }
     }
 }

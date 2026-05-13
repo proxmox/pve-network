@@ -53,6 +53,17 @@ sub properties {
             type => 'string',
             description => 'Controller for this zone.',
         },
+        'secondary-controllers' => {
+            type => 'array',
+            description => 'Additional controllers.',
+            items => {
+                type => 'string',
+                minLength => 2,
+                maxLength => 64,
+                pattern => '[a-zA-Z][a-zA-Z0-9_-]*[a-zA-Z0-9]',
+            },
+            optional => 1,
+        },
         'mac' => {
             type => 'string',
             description => "Anycast logical router mac address.",
@@ -97,6 +108,7 @@ sub options {
         nodes => { optional => 1 },
         'vrf-vxlan' => { optional => 0 },
         controller => { optional => 0 },
+        'secondary-controllers' => { optional => 1 },
         exitnodes => { optional => 1 },
         'exitnodes-local-routing' => { optional => 1 },
         'exitnodes-primary' => { optional => 1 },
@@ -348,13 +360,28 @@ sub generate_sdn_config {
 sub on_update_hook {
     my ($class, $zoneid, $zone_cfg, $controller_cfg) = @_;
 
+    my $controllers = {};
+
     # verify that controller exist
-    my $controller = $zone_cfg->{ids}->{$zoneid}->{controller};
-    if (!defined($controller_cfg->{ids}->{$controller})) {
-        die "controller $controller don't exist";
-    } else {
-        die "$controller is not a evpn controller type"
-            if $controller_cfg->{ids}->{$controller}->{type} ne 'evpn';
+    my $zone = $zone_cfg->{ids}->{$zoneid};
+    my $controller = $zone->{controller};
+
+    $controllers->{$controller} = undef;
+
+    for my $secondary_controller ($zone->{'secondary-controllers'}->@*) {
+        die "can not configure the same controller twice"
+            if exists($controllers->{$secondary_controller});
+
+        $controllers->{$secondary_controller} = undef;
+    }
+
+    for my $controller_id (keys $controllers->%*) {
+        if (!defined($controller_cfg->{ids}->{$controller_id})) {
+            die "controller $controller don't exist";
+        } else {
+            die "$controller_id is not a evpn controller type"
+                if $controller_cfg->{ids}->{$controller_id}->{type} ne 'evpn';
+        }
     }
 
     #vrf-vxlan need to be defined

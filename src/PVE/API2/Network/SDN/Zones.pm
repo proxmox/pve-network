@@ -202,6 +202,17 @@ my $ZONE_PROPERTIES = {
         description => "Disable auto mac learning. VLAN zone only.",
         optional => 1,
     },
+    'secondary-controllers' => {
+        type => 'array',
+        description => 'Additional controllers.',
+        items => {
+            type => 'string',
+            minLength => 2,
+            maxLength => 64,
+            pattern => '[a-zA-Z][a-zA-Z0-9_-]*[a-zA-Z0-9]',
+        },
+        optional => 1,
+    },
 };
 
 __PACKAGE__->register_method({
