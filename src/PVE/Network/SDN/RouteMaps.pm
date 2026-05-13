@@ -189,7 +189,9 @@ sub route_map_properties {
                         'on-match-goto', 'on-match-next', 'continue',
                     ],
                 },
-                value => get_standard_option('pve-sdn-route-map-order'),
+                value => get_standard_option('pve-sdn-route-map-order', {
+                        optional => 1,
+                }),
             },
             optional => 1,
         },
