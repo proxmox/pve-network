@@ -445,6 +445,41 @@ sub fabric_properties {
             minimum => 0,
             maximum => 65535,
         },
+        redistribute => {
+            # coerce this value into an array before parsing (oneOf workaround)
+            type => 'array',
+            'type-property' => 'protocol',
+            oneOf => [
+                {
+                    type => 'array',
+                    'instance-types' => ['ospf'],
+                    items => {
+                        type => 'string',
+                        format => {
+                            source => {
+                                type => 'string',
+                                description =>
+                                    'The protocol from which to redistribute routes from.',
+                                enum => [
+                                    'bgp',
+                                    'connected',
+                                    'kernel',
+                                    'static',
+                                ],
+                            },
+                            'route-map' => {
+                                type => 'string',
+                                format => 'pve-sdn-route-map-id',
+                                description =>
+                                    'Route map to filter or transform redistributed routes from this source.',
+                                optional => 1,
+                            },
+                        },
+                    },
+                    optional => 1,
+                },
+            ],
+        },
     };
 
     if ($update) {
