@@ -1,0 +1,60 @@
+{
+    version => 1,
+    zones   => {
+        ids => {
+            myzone => {
+                ipam => "pve",
+                type => "evpn",
+                controller => "cluster",
+                'vrf-vxlan' => 1000,
+                'secondary-controllers' => ['wan'],
+                'rt-import' => '65000:1000,65010:10000'
+            }
+        },
+    },
+    vnets   => {
+        ids => {
+            myvnet => {
+                tag => "100",
+                type => "vnet",
+                zone => "myzone"
+            },
+        },
+    },
+    subnets => {
+        ids => {
+            'myzone-10.0.0.0-24' => {
+                'type' => 'subnet',
+                'vnet' => 'myvnet',
+                'gateway' => '10.0.0.1',
+            }
+        }
+    },
+    controllers  => {
+        ids => {
+            cluster => {
+                type => "evpn",
+                peers => '203.0.113.1,203.0.113.2,203.0.113.4',
+                asn => "65000",
+                'bgp-mode' => 'internal',
+            },
+            bgp => {
+                type => "bgp",
+                'peers' => '198.51.100.10',
+                ebgp => "1",
+                asn => "65001",
+                loopback => 'dummy1',
+                node => "localhost",
+            },
+            wan => {
+                type => "evpn",
+                peers => '203.0.113.100,203.0.113.101',
+                asn => "65000",
+                nodes => 'localhost',
+                'bgp-mode' => 'external',
+                'peer-group-name' => 'wan',
+            }
+        },
+    }
+}
+

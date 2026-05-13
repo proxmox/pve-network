@@ -1,0 +1,90 @@
+frr version 10.6.1
+frr defaults datacenter
+hostname localhost
+log syslog informational
+service integrated-vtysh-config
+!
+vrf vrf_myzone
+ vni 1000
+exit-vrf
+!
+router bgp 65000
+ bgp router-id 203.0.113.1
+ no bgp default ipv4-unicast
+ coalesce-time 1000
+ bgp disable-ebgp-connected-route-check
+ neighbor BGP peer-group
+ neighbor BGP remote-as external
+ neighbor BGP local-as 65001 no-prepend replace-as
+ neighbor BGP bfd
+ neighbor 198.51.100.10 peer-group BGP
+ neighbor VTEP peer-group
+ neighbor VTEP remote-as 65000
+ neighbor VTEP bfd
+ neighbor 203.0.113.2 peer-group VTEP
+ neighbor 203.0.113.4 peer-group VTEP
+ neighbor wan peer-group
+ neighbor wan remote-as external
+ neighbor wan bfd
+ neighbor 203.0.113.100 peer-group wan
+ neighbor 203.0.113.101 peer-group wan
+ !
+ address-family ipv4 unicast
+  network 203.0.113.1/32
+  neighbor BGP activate
+  neighbor BGP soft-reconfiguration inbound
+ exit-address-family
+ !
+ address-family l2vpn evpn
+  neighbor VTEP activate
+  neighbor VTEP route-map MAP_VTEP_IN in
+  neighbor VTEP route-map MAP_VTEP_OUT out
+  neighbor wan activate
+  neighbor wan route-map MAP_VTEP_IN_wan in
+  neighbor wan route-map MAP_VTEP_OUT_wan out
+  advertise-all-vni
+ exit-address-family
+exit
+!
+router bgp 65000 vrf vrf_myzone
+ bgp router-id 203.0.113.1
+ no bgp hard-administrative-reset
+ no bgp graceful-restart notification
+ !
+ address-family l2vpn evpn
+  route-target import 65000:1000
+  route-target import 65010:10000
+ exit-address-family
+exit
+!
+bgp extcommunity-list standard pve_controller_cluster permit rt 65000:1000
+bgp extcommunity-list standard pve_controller_cluster permit rt 65010:10000
+!
+bgp extcommunity-list standard pve_controller_wan permit rt 65000:1000
+bgp extcommunity-list standard pve_controller_wan permit rt 65010:10000
+!
+ip prefix-list loopbacks_ips seq 10 permit 0.0.0.0/0 le 32
+!
+route-map MAP_VTEP_IN permit 1
+exit
+!
+route-map MAP_VTEP_IN_wan permit 1
+exit
+!
+route-map MAP_VTEP_OUT permit 1
+ match extcommunity pve_controller_cluster any
+exit
+!
+route-map MAP_VTEP_OUT_wan permit 1
+ match extcommunity pve_controller_wan any
+exit
+!
+route-map correct_src permit 1
+ match ip address prefix-list loopbacks_ips
+ set src 203.0.113.1
+exit
+!
+ip protocol bgp route-map correct_src
+!
+line vty
+!
