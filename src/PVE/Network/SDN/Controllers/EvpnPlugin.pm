@@ -65,6 +65,7 @@ sub options {
         'route-map-out' => { optional => 1 },
         'nodes' => { optional => 1 },
         'peer-group-name' => { optional => 1 },
+        'ebgp-multihop' => { optional => 1 },
         'bgp-mode' => { optional => 1 },
     };
 }
@@ -208,7 +209,12 @@ sub generate_frr_config {
         interfaces => [],
     };
 
-    $neighbor_group->{ebgp_multihop} = 10 if $ebgp && $loopback && $bgp_mode eq 'auto';
+    if ($bgp_mode eq 'auto') {
+        $neighbor_group->{ebgp_multihop} = 10 if $ebgp && $loopback;
+    } elsif ($bgp_mode eq 'external') {
+        $neighbor_group->{ebgp_multihop} = int($plugin_config->{'ebgp-multihop'})
+            if $ebgp && $plugin_config->{'ebgp-multihop'};
+    }
 
     if ($asn != int($bgp_router->{asn})) {
         # should never trigger due to validation, but asserting it here nonetheless

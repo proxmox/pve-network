@@ -30,11 +30,6 @@ sub properties {
             optional => 1,
             description => "Enable eBGP (remote-as external).",
         },
-        'ebgp-multihop' => {
-            type => 'integer',
-            optional => 1,
-            description => 'Set maximum amount of hops for eBGP peers.',
-        },
         loopback => {
             description => "Name of the loopback/dummy interface that provides the Router-IP.",
             type => 'string',
