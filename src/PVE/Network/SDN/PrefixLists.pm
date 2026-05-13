@@ -156,7 +156,7 @@ sub prefix_list_entry_properties {
         },
         prefix => {
             type => 'string',
-            format => 'CIDR',
+            format => 'FullRangeCIDR',
             optional => $update,
         },
         le => {
