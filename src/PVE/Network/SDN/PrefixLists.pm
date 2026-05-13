@@ -5,6 +5,7 @@ use warnings;
 
 use PVE::Cluster qw(cfs_register_file cfs_read_file cfs_lock_file cfs_write_file);
 use PVE::JSONSchema qw(get_standard_option);
+use PVE::Tools;
 use PVE::INotify;
 use PVE::Network::SDN;
 use PVE::Network::SDN::RouteMaps;
@@ -38,6 +39,45 @@ PVE::JSONSchema::register_standard_option(
         format => 'pve-sdn-prefix-list-id',
     },
 );
+
+PVE::JSONSchema::register_format('FullRangeCIDRv6', \&pve_verify_fullrangecidrv6);
+
+sub pve_verify_fullrangecidrv6 {
+    my ($cidr, $noerr) = @_;
+
+    if ($cidr =~ m!^(?:$PVE::Tools::IPV6RE)(?:/(\d+))$! && ($1 >= 0) && ($1 <= 128)) {
+        return $cidr;
+    }
+
+    return undef if $noerr;
+    die "value does not look like a valid IPv6 CIDR network\n";
+}
+
+PVE::JSONSchema::register_format('FullRangeCIDRv4', \&pve_verify_fullrangecidrv4);
+
+sub pve_verify_fullrangecidrv4 {
+    my ($cidr, $noerr) = @_;
+
+    if ($cidr =~ m!^(?:$PVE::Tools::IPV4RE)(?:/(\d+))$! && ($1 >= 0) && ($1 <= 32)) {
+        return $cidr;
+    }
+
+    return undef if $noerr;
+    die "value does not look like a valid IPv4 CIDR network\n";
+}
+
+PVE::JSONSchema::register_format('FullRangeCIDR', \&pve_verify_fullrangecidr);
+
+sub pve_verify_fullrangecidr {
+    my ($cidr, $noerr) = @_;
+
+    if (!(pve_verify_fullrangecidrv4($cidr, 1) || pve_verify_fullrangecidrv6($cidr, 1))) {
+        return undef if $noerr;
+        die "value does not look like a valid CIDR network\n";
+    }
+
+    return $cidr;
+}
 
 cfs_register_file(
     'sdn/prefix-lists.cfg', \&parse_prefix_lists_config, \&write_prefix_lists_config,
