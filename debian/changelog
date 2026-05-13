@@ -1,3 +1,17 @@
+libpve-network-perl (1.4.2) trixie; urgency=medium
+
+  * api: route maps: add the missing format_description on the value property
+    of the match and set sub-keys and switch the exit-action 'on-match-goto'
+    and 'continue' values over to the dedicated route-map order type, fixing
+    the JSON schema's upper bound to match what FRR accepts (u16) and what the
+    section config type already enforced.
+
+  * include fabrics when checking for pending changes, so locking the SDN
+    config is rejected when a fabric has pending changes (it accepted such a
+    lock before).
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 13 May 2026 05:13:01 +0200
+
 libpve-network-perl (1.4.1) trixie; urgency=medium
 
   * api: refactor route map endpoints. The /route-maps endpoint now returns
