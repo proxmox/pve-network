@@ -1,0 +1,51 @@
+{
+    version => 1,
+    zones   => {
+        ids => {
+            myzone => {
+                ipam => "pve",
+                type => "evpn",
+                controller => "cluster",
+                'vrf-vxlan' => 1000,
+                'secondary-controllers' => ['uplink'],
+            }
+        },
+    },
+    vnets   => {
+        ids => {
+            myvnet => {
+                tag => "100",
+                type => "vnet",
+                zone => "myzone"
+            },
+        },
+    },
+    subnets => {
+        ids => {
+            'myzone-10.0.0.0-24' => {
+                'type' => 'subnet',
+                'vnet' => 'myvnet',
+                'gateway' => '10.0.0.1',
+            }
+        }
+    },
+    controllers  => {
+        ids => {
+            cluster => {
+                type => "evpn",
+                peers => '192.168.0.1,192.168.0.2,192.168.0.3',
+                asn => "65000",
+                'bgp-mode' => 'internal',
+            },
+            uplink => {
+                type => "evpn",
+                peers => '198.51.100.1,198.51.100.2',
+                asn => "65000",
+                nodes => 'localhost',
+                'bgp-mode' => 'external',
+                'peer-group-name' => 'uplink',
+            }
+        },
+    }
+}
+
