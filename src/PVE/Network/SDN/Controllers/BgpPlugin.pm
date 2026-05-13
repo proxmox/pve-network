@@ -83,7 +83,9 @@ sub generate_frr_config {
 
     # Initialize router if not already configured
     if (!keys %{$bgp_router}) {
-        $bgp_router->{asn} = $asn;
+        $bgp_router->{asn} =
+            PVE::Network::SDN::Controllers::Plugin::get_default_router_asn($local_node,
+                $controller);
         $bgp_router->{router_id} = $routerid;
         $bgp_router->{default_ipv4_unicast} = 0;
         $bgp_router->{coalesce_time} = 1000;
@@ -104,7 +106,20 @@ sub generate_frr_config {
             ips => \@peers,
             interfaces => [],
         };
+
         $neighbor_group->{ebgp_multihop} = int($ebgp_multihop) if $ebgp && $ebgp_multihop;
+
+        if ($asn != int($bgp_router->{asn})) {
+            # should never trigger due to validation, but asserting it here nonetheless
+            die
+                "cannot set local_as to $asn - since this is the default router ASN and therefore an iBGP session"
+                if !$ebgp;
+
+            $neighbor_group->{local_as} = {
+                asn => $asn,
+                mode => 'no-prepend replace-as',
+            };
+        }
 
         push @{ $bgp_router->{neighbor_groups} }, $neighbor_group;
 

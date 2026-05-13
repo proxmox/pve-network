@@ -99,6 +99,14 @@ my $CONTROLLER_PROPERTIES = {
         type => 'string',
         optional => 1,
     },
+    'bgp-mode' => {
+        description =>
+            "Whether to use eBGP or iBGP. Auto mode chooses depending on BGP controller or falls back to iBGP.",
+        type => 'string',
+        enum => ['auto', 'external', 'internal'],
+        default => 'auto',
+        optional => 1,
+    },
 };
 
 __PACKAGE__->register_method({

@@ -45,6 +45,14 @@ sub properties {
             default => 'VTEP',
             format => 'pve-configid',
         },
+        'bgp-mode' => {
+            description =>
+                "Whether to use eBGP or iBGP. Auto mode chooses depending on BGP controller or falls back to iBGP.",
+            type => 'string',
+            enum => ['auto', 'external', 'internal'],
+            optional => 1,
+            default => 'auto',
+        },
     };
 }
 
@@ -57,6 +65,7 @@ sub options {
         'route-map-out' => { optional => 1 },
         'nodes' => { optional => 1 },
         'peer-group-name' => { optional => 1 },
+        'bgp-mode' => { optional => 1 },
     };
 }
 
@@ -78,6 +87,7 @@ sub generate_frr_config {
     my $autortas = undef;
     my $ifaceip = undef;
     my $routerid = undef;
+    my $bgp_mode = $plugin_config->{'bgp-mode'} // 'auto';
 
     my $bgp_controller = find_bgp_controller($local_node, $controller_cfg);
     my $isis_controller = find_isis_controller($local_node, $controller_cfg);
@@ -133,10 +143,12 @@ sub generate_frr_config {
         return;
     }
 
-    if ($bgp_controller) {
+    if ($bgp_controller && $bgp_mode eq 'auto') {
         $ebgp = 1 if $plugin_config->{'asn'} ne $bgp_controller->{asn};
         $asn = int($bgp_controller->{asn}) if $bgp_controller->{asn};
         $autortas = $plugin_config->{'asn'} if $ebgp;
+    } else {
+        $ebgp = $bgp_mode eq 'external';
     }
 
     return if !$asn || !$routerid;
@@ -145,7 +157,9 @@ sub generate_frr_config {
 
     # Initialize router if not already configured
     if (!keys %{$bgp_router}) {
-        $bgp_router->{asn} = $asn;
+        $bgp_router->{asn} = PVE::Network::SDN::Controllers::Plugin::get_default_router_asn(
+            $local_node, $controller_cfg,
+        );
         $bgp_router->{router_id} = $routerid;
         $bgp_router->{default_ipv4_unicast} = 0;
         $bgp_router->{hard_administrative_reset} = 0;
@@ -167,8 +181,24 @@ sub generate_frr_config {
         ips => \@vtep_ips,
         interfaces => [],
     };
-    $neighbor_group->{ebgp_multihop} = 10 if $ebgp && $loopback;
-    $neighbor_group->{update_source} = $loopback if $loopback;
+
+    $neighbor_group->{ebgp_multihop} = 10 if $ebgp && $loopback && $bgp_mode eq 'auto';
+
+    if ($asn != int($bgp_router->{asn})) {
+        # should never trigger due to validation, but asserting it here nonetheless
+        die
+            "cannot set local_as to $asn - since this is the default router ASN and therefore an iBGP session"
+            if !$ebgp;
+
+        $neighbor_group->{local_as} = {
+            asn => $asn,
+            mode => 'no-prepend replace-as',
+        };
+    }
+
+    if ($bgp_mode eq 'auto') {
+        $neighbor_group->{update_source} = $loopback if $loopback;
+    }
 
     push @{ $bgp_router->{neighbor_groups} }, $neighbor_group;
 
@@ -300,7 +330,8 @@ sub generate_zone_frr_config {
 
     # Configure VRF
     my $vrf_router = $config->{frr}->{bgp}->{vrf_router}->{$vrf} //= {};
-    $vrf_router->{asn} = $asn;
+    $vrf_router->{asn} = PVE::Network::SDN::Controllers::Plugin::get_default_router_asn($local_node,
+        $controller_cfg);
     $vrf_router->{router_id} = $routerid;
     $vrf_router->{hard_administrative_reset} = 0;
     $vrf_router->{graceful_restart_notification} = 0;
@@ -344,7 +375,7 @@ sub generate_zone_frr_config {
     $vrf_router->{address_families} = {};
 
     # Configure L2VPN EVPN address family with route targets
-    if ($autortas) {
+    if ($autortas && $autortas ne $vrf_router->{asn}) {
         $vrf_router->{address_families}->{l2vpn_evpn} //= {};
         $vrf_router->{address_families}->{l2vpn_evpn}->{route_targets} = {
             import => ["$autortas:$vrfvxlan"],
@@ -519,6 +550,21 @@ sub on_update_hook {
     my ($class, $controllerid, $controller_cfg) = @_;
 
     my $controller = $controller_cfg->{ids}->{$controllerid};
+
+    my @nodes;
+    if (defined($controller->{nodes})) {
+        @nodes = PVE::Tools::split_list($controller->{nodes});
+    } else {
+        @nodes = PVE::Cluster::get_nodelist()->@*;
+    }
+
+    # check if there is a unambiguous default router ASN on every node with the
+    # updated controller - this method dies if there isn't one and we can use
+    # that behavior for validation purposes to avoid re-implementing the same
+    # logic here. For more information see the documentation of the method.
+    for my $node (@nodes) {
+        PVE::Network::SDN::Controllers::Plugin::get_default_router_asn($node, $controller_cfg);
+    }
 
     foreach my $id (keys %{ $controller_cfg->{ids} }) {
         next if $id eq $controllerid;
