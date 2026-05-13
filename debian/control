@@ -32,6 +32,7 @@ Depends: libpve-common-perl (>= 9.1.1),
          ${misc:Depends},
          ${perl:Depends},
 Recommends: frr-pythontools (>= 10.3.1-1+pve2~),
+            wireguard-tools,
 Suggests: dnsmasq,
 Description: Proxmox VE's SDN (Software Defined Network) stack
  This package contains the perl side of the Software Defined Network
