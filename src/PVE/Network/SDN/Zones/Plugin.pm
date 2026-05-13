@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use PVE::Tools qw(run_command);
+use Net::IP qw(ip_get_version);
 use PVE::IPRoute2;
 use PVE::JSONSchema;
 use PVE::Cluster;
@@ -267,6 +268,43 @@ sub del_bridge_fdb {
 
 #helper
 
+sub normalize_ip {
+    my ($ip) = @_;
+
+    return undef if !defined($ip);
+    $ip =~ s!/.*$!!;
+    return $ip;
+}
+
+# Return 4 or 6 for the IP family of $address (with optional /prefix), or undef
+# if $address is not parseable. Net::IP::ip_get_version rejects strings with a
+# /prefix, so strip that first via normalize_ip.
+sub ip_family {
+    my ($address) = @_;
+
+    my $ip = normalize_ip($address);
+    return defined($ip) ? ip_get_version($ip) : undef;
+}
+
+sub get_iface_addresses {
+    my ($iface_cfg) = @_;
+
+    return () if !$iface_cfg;
+
+    my @addrs;
+    for my $key (qw(address address6)) {
+        my $val = $iface_cfg->{$key};
+        next if !defined($val);
+        if (ref($val) eq 'ARRAY') {
+            push @addrs, @$val;
+        } else {
+            push @addrs, $val;
+        }
+    }
+
+    return @addrs;
+}
+
 sub get_local_route_ip {
     my ($targetip) = @_;
 
@@ -291,21 +329,39 @@ sub get_local_route_ip {
 sub find_local_ip_interface_peers {
     my ($peers, $iface) = @_;
 
+    $peers //= [];
+
     my $network_config = PVE::INotify::read_file('interfaces');
     my $ifaces = $network_config->{ifaces};
 
     #if iface is defined, return ip if exist (if not,try to find it on other ifaces)
     if ($iface) {
-        my $ip = $ifaces->{$iface}->{address};
-        return ($ip, $iface) if $ip;
+        my @iface_addrs = get_iface_addresses($ifaces->{$iface});
+        if (!@$peers && @iface_addrs) {
+            my $ip = normalize_ip($iface_addrs[0]);
+            return ($ip, $iface) if $ip;
+        }
+        foreach my $address (@$peers) {
+            my $family = ip_family($address) // next;
+            foreach my $iface_addr (@iface_addrs) {
+                next if ip_family($iface_addr) != $family;
+                my $ip = normalize_ip($iface_addr);
+                return ($ip, $iface) if $ip;
+            }
+        }
     }
 
     #is a local ip member of peers list ?
-    foreach my $address (@{$peers}) {
-        while (my $interface = each %$ifaces) {
-            my $ip = $ifaces->{$interface}->{address};
-            if ($ip && $ip eq $address) {
-                return ($ip, $interface);
+    foreach my $address (@$peers) {
+        my $peer_ip = normalize_ip($address);
+        my $family = ip_family($peer_ip) // next;
+        foreach my $interface (keys %$ifaces) {
+            foreach my $iface_addr (get_iface_addresses($ifaces->{$interface})) {
+                next if ip_family($iface_addr) != $family;
+                my $ip = normalize_ip($iface_addr);
+                if ($ip && $ip eq $peer_ip) {
+                    return ($ip, $interface);
+                }
             }
         }
     }
