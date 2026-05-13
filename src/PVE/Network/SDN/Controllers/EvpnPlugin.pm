@@ -38,6 +38,13 @@ sub properties {
             format => 'ip-list',
         },
         nodes => get_standard_option('pve-node-list', { optional => 1 }),
+        'peer-group-name' => {
+            description => "Name of the peer group for this EVPN controller",
+            type => 'string',
+            optional => 1,
+            default => 'VTEP',
+            format => 'pve-configid',
+        },
     };
 }
 
@@ -49,6 +56,7 @@ sub options {
         'route-map-in' => { optional => 1 },
         'route-map-out' => { optional => 1 },
         'nodes' => { optional => 1 },
+        'peer-group-name' => { optional => 1 },
     };
 }
 
@@ -147,11 +155,13 @@ sub generate_frr_config {
         $bgp_router->{address_families} = {};
     }
 
+    my $peer_group_name = $plugin_config->{'peer-group-name'} // 'VTEP';
+
     # Build VTEP neighbor group
     my @vtep_ips = grep { $_ ne $ifaceip } @peers;
 
     my $neighbor_group = {
-        name => "VTEP",
+        name => $peer_group_name,
         bfd => 1,
         remote_as => $ebgp ? "external" : $asn,
         ips => \@vtep_ips,
@@ -164,28 +174,37 @@ sub generate_frr_config {
 
     # Configure l2vpn evpn address family
     $bgp_router->{address_families}->{l2vpn_evpn} //= {
-        neighbors => [{
-            name => "VTEP",
-            route_map_in => 'MAP_VTEP_IN',
-            route_map_out => 'MAP_VTEP_OUT',
-        }],
+        neighbors => [],
         advertise_all_vni => 1,
     };
 
+    my $route_map_in = 'MAP_VTEP_IN';
+    $route_map_in .= "_$peer_group_name" if $plugin_config->{'peer-group-name'};
+
+    my $route_map_out = 'MAP_VTEP_OUT';
+    $route_map_out .= "_$peer_group_name" if $plugin_config->{'peer-group-name'};
+
+    push $bgp_router->{address_families}->{l2vpn_evpn}->{neighbors}->@*,
+        {
+            name => $peer_group_name,
+            route_map_in => $route_map_in,
+            route_map_out => $route_map_out,
+        };
+
     $bgp_router->{address_families}->{l2vpn_evpn}->{autort_as} = $autortas if $autortas;
 
-    if (!$config->{frr}->{routemaps}->{'MAP_VTEP_IN'}) {
+    if (!$config->{frr}->{routemaps}->{$route_map_in}) {
         my $entry = { seq => 1, action => "permit" };
         $entry->{call} = $plugin_config->{'route-map-in'} if $plugin_config->{'route-map-in'};
 
-        push($config->{frr}->{routemaps}->{'MAP_VTEP_IN'}->@*, $entry);
+        push($config->{frr}->{routemaps}->{$route_map_in}->@*, $entry);
     }
 
-    if (!$config->{frr}->{routemaps}->{'MAP_VTEP_OUT'}) {
+    if (!$config->{frr}->{routemaps}->{$route_map_out}) {
         my $entry = { seq => 1, action => "permit" };
         $entry->{call} = $plugin_config->{'route-map-out'} if $plugin_config->{'route-map-out'};
 
-        push($config->{frr}->{routemaps}->{'MAP_VTEP_OUT'}->@*, $entry);
+        push($config->{frr}->{routemaps}->{$route_map_out}->@*, $entry);
     }
 
     return $config;
@@ -343,6 +362,12 @@ sub generate_zone_frr_config {
             { seq => 1, action => 'permit', network => '::/0', is_ipv6 => 1 },
         ) if !defined($config->{frr}->{prefix_lists}->{only_default_v6});
 
+        my $route_map_in = 'MAP_VTEP_IN';
+        $route_map_in .= "_$controller->{'peer-group-name'}" if $controller->{'peer-group-name'};
+
+        my $route_map_out = 'MAP_VTEP_OUT';
+        $route_map_out .= "_$controller->{'peer-group-name'}" if $controller->{'peer-group-name'};
+
         if (!$exitnodes_primary || $exitnodes_primary eq $local_node) {
             # Filter default route coming from other exit nodes on primary node
             my $routemap_config_v6 = {
@@ -351,7 +376,7 @@ sub generate_zone_frr_config {
             };
             my $routemap_v6 = { seq => 1, matches => [$routemap_config_v6], action => "deny" };
             unshift(
-                @{ $config->{frr}->{routemaps}->{'MAP_VTEP_IN'} }, $routemap_v6,
+                @{ $config->{frr}->{routemaps}->{$route_map_in} }, $routemap_v6,
             );
 
             my $routemap_config = {
@@ -359,7 +384,7 @@ sub generate_zone_frr_config {
                 value => 'only_default',
             };
             my $routemap = { seq => 1, matches => [$routemap_config], action => "deny" };
-            unshift(@{ $config->{frr}->{routemaps}->{'MAP_VTEP_IN'} }, $routemap);
+            unshift(@{ $config->{frr}->{routemaps}->{$route_map_in} }, $routemap);
 
         } elsif ($exitnodes_primary ne $local_node) {
             my $routemap_config_v6 = {
@@ -373,7 +398,7 @@ sub generate_zone_frr_config {
                 action => "permit",
             };
             unshift(
-                @{ $config->{frr}->{routemaps}->{'MAP_VTEP_OUT'} }, $routemap_v6,
+                @{ $config->{frr}->{routemaps}->{$route_map_out} }, $routemap_v6,
             );
 
             my $routemap_config = {
@@ -386,7 +411,7 @@ sub generate_zone_frr_config {
                 sets => [{ key => 'metric', value => "200" }],
                 action => "permit",
             };
-            unshift(@{ $config->{frr}->{routemaps}->{'MAP_VTEP_OUT'} }, $routemap);
+            unshift(@{ $config->{frr}->{routemaps}->{$route_map_out} }, $routemap);
         }
 
         if (!$exitnodes_local_routing) {
@@ -493,18 +518,20 @@ sub on_delete_hook {
 sub on_update_hook {
     my ($class, $controllerid, $controller_cfg) = @_;
 
-    # we can only have 1 evpn controller / 1 asn by server
+    my $controller = $controller_cfg->{ids}->{$controllerid};
 
-    my $controllernb = 0;
     foreach my $id (keys %{ $controller_cfg->{ids} }) {
         next if $id eq $controllerid;
-        my $controller = $controller_cfg->{ids}->{$id};
-        next if $controller->{type} ne "evpn";
-        $controllernb++;
-        die "only 1 global evpn controller can be defined" if $controllernb >= 1;
+        my $other_controller = $controller_cfg->{ids}->{$id};
+        next if $other_controller->{type} ne "evpn";
+
+        my $peer_group_name_self = $controller->{'peer-group-name'} // 'VTEP';
+        my $peer_group_name_other = $other_controller->{'peer-group-name'} // 'VTEP';
+
+        die "cannot have two controllers with same peer-group-name configured ($peer_group_name_self)"
+            if $peer_group_name_self eq $peer_group_name_other;
     }
 
-    my $controller = $controller_cfg->{ids}->{$controllerid};
     my $route_map_config = PVE::Network::SDN::RouteMaps::config(0);
 
     if ($controller->{'route-map-in'}) {

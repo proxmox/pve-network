@@ -94,6 +94,11 @@ my $CONTROLLER_PROPERTIES = {
         format => 'pve-sdn-isis-net',
     },
     nodes => get_standard_option('pve-node-list', { optional => 1 }),
+    'peer-group-name' => {
+        description => "Name of the peer group for this EVPN controller",
+        type => 'string',
+        optional => 1,
+    },
 };
 
 __PACKAGE__->register_method({
