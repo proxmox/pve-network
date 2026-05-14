@@ -248,9 +248,14 @@ __PACKAGE__->register_method({
 
                 my $old_node = $config->get_node($fabric_id, $node_id);
 
-                # required so rust can parse the proper wireguard node
-                # variant
-                $param->{role} = $old_node->{role} if $old_node->{protocol} eq 'wireguard';
+                if ($old_node->{protocol} eq 'wireguard') {
+                    if (defined($param->{role}) && $param->{role} ne $old_node->{role}) {
+                        die "cannot change role of existing WireGuard node\n";
+                    }
+                    # required so rust can parse the proper wireguard node
+                    # variant
+                    $param->{role} = $old_node->{role};
+                }
 
                 if (is_internal_wireguard_node($param)) {
                     my $private_keys = PVE::Network::SDN::WireGuard::private_keys();
