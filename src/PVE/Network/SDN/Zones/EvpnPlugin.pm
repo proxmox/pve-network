@@ -188,17 +188,23 @@ sub generate_sdn_config {
         my $current_node = eval { $config->get_node($controller->{fabric}, $local_node) };
         die "could not configure EVPN zone $plugin_config->{id}: $@" if $@;
 
-        die "Node $local_node requires an IP in the fabric $fabric->{id} to configure the EVPN zone"
-            if !$current_node->{ip};
+        my $addr_key = PVE::Network::SDN::Controllers::EvpnPlugin::fabric_addr_key($nodes);
+        die
+            "Fabric $fabric->{id} has no consistent address family for all nodes (need all v6 or all v4)"
+            if !$addr_key;
+
+        die
+            "Node $local_node requires a $addr_key address in the fabric $fabric->{id} to configure the EVPN zone"
+            if !$current_node->{$addr_key};
 
         for my $node (values %$nodes) {
-            push @peers, $node->{ip} if $node->{ip};
+            push @peers, $node->{$addr_key};
         }
 
         $loopback = "dummy_$fabric->{id}";
 
-        $ifaceip = $current_node->{ip};
-        $routerid = $current_node->{ip};
+        $ifaceip = $current_node->{$addr_key};
+        $routerid = $current_node->{$addr_key};
     } else {
         die "neither fabric nor peers configured for EVPN controller $controller->{id}";
     }

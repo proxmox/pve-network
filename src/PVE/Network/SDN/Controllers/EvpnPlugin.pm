@@ -136,22 +136,30 @@ sub generate_frr_config {
             return;
         }
 
-        if (!$current_node->{ip}) {
+        my $addr_key = fabric_addr_key($nodes);
+        if (!$addr_key) {
             log_warn(
-                "Node $local_node requires an IP in the fabric $fabric->{id} to configure the EVPN controller"
+                "Fabric $fabric->{id} has no consistent address family for all nodes (need all v6 or all v4)"
+            );
+            return;
+        }
+
+        if (!$current_node->{$addr_key}) {
+            log_warn(
+                "Node $local_node requires a $addr_key address in the fabric $fabric->{id} to configure the EVPN controller"
             );
             return;
         }
 
         for my $node_id (sort keys %$nodes) {
             my $node = $nodes->{$node_id};
-            push @peers, $node->{ip} if $node->{ip};
+            push @peers, $node->{$addr_key};
         }
 
         $loopback = "dummy_$fabric->{id}";
 
-        $ifaceip = $current_node->{ip};
-        $routerid = $current_node->{ip};
+        $ifaceip = $current_node->{$addr_key};
+        $routerid = $current_node->{$addr_key};
 
     } elsif ($plugin_config->{'peers'}) {
         @peers = PVE::Tools::split_list($plugin_config->{'peers'});
@@ -335,21 +343,29 @@ sub generate_zone_frr_config {
             return;
         }
 
-        if (!$current_node->{ip}) {
+        my $addr_key = fabric_addr_key($nodes);
+        if (!$addr_key) {
             log_warn(
-                "Node $local_node requires an IP in the fabric $fabric->{id} to configure the EVPN controller"
+                "Fabric $fabric->{id} has no consistent address family for all nodes (need all v6 or all v4)"
+            );
+            return;
+        }
+
+        if (!$current_node->{$addr_key}) {
+            log_warn(
+                "Node $local_node requires a $addr_key address in the fabric $fabric->{id} to configure the EVPN controller"
             );
             return;
         }
 
         for my $node (values %$nodes) {
-            push @peers, $node->{ip} if $node->{ip};
+            push @peers, $node->{$addr_key};
         }
 
         $loopback = "dummy_$fabric->{id}";
 
-        $ifaceip = $current_node->{ip};
-        $routerid = $current_node->{ip};
+        $ifaceip = $current_node->{$addr_key};
+        $routerid = $current_node->{$addr_key};
 
     } elsif ($controller->{peers}) {
         @peers = PVE::Tools::split_list($controller->{'peers'}) if $controller->{'peers'};
@@ -651,6 +667,18 @@ sub on_update_hook {
         die "must have exactly one of peers / fabric defined"
             if ($controller->{peers} && $controller->{fabric})
             || !($controller->{peers} || $controller->{fabric});
+        if ($controller->{peers}) {
+            my @peers = PVE::Tools::split_list($controller->{peers});
+            my $family;
+
+            foreach my $peer (@peers) {
+                my $peer_family = Net::IP::ip_is_ipv6($peer) ? 6 : 4;
+                if (defined($family) && $family != $peer_family) {
+                    die "peers must contain only IPv4 or only IPv6 addresses\n";
+                }
+                $family = $peer_family;
+            }
+        }
     }
 }
 
@@ -680,6 +708,24 @@ sub find_isis_controller {
         last;
     }
     return $res;
+}
+
+# Returns 'ip6' if every node carries an ip6, 'ip' if every node carries an ip
+# (preferring v6 when both are present), or undef if the fabric has no
+# consistent address family across nodes.
+sub fabric_addr_key {
+    my ($nodes) = @_;
+
+    my $all_v6 = 1;
+    my $all_v4 = 1;
+    for my $node (values %$nodes) {
+        $all_v6 = 0 if !$node->{ip6};
+        $all_v4 = 0 if !$node->{ip};
+    }
+
+    return 'ip6' if $all_v6;
+    return 'ip' if $all_v4;
+    return undef;
 }
 
 1;
