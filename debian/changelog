@@ -1,3 +1,36 @@
+libpve-network-perl (1.5.0) trixie; urgency=medium
+
+  * fabrics: add WireGuard as a new fabric protocol. Internal nodes (cluster
+    members) carry the WireGuard interfaces to create and the peer references
+    for them, external nodes act as reusable peer definitions for arbitrary
+    inter-cluster peers. Keys are auto-generated per (node, interface) tuple
+    in cluster-replicated /etc/pve/priv/wg-keys.cfg and synchronously purged
+    on interface or node delete. Rejects mismatched role on update, validates
+    uniqueness of interface names and listen ports per fabric, and gates
+    deletion of interfaces still referenced by other nodes' peers.
+
+  * fabrics: wireguard: accept the full /0 IPv4 and /0 IPv6 prefix range in
+    node allowed_ips, so users can route everything through a fabric interface
+    without working around the schema.
+
+  * prefix-list: allow the full CIDR range in prefix list entries via new
+    pve-sdn-ipv4-cidr-fullrange and pve-sdn-ipv6-cidr-fullrange schema formats
+    that accept /0 and (on IPv6) /128. The schema previously rejected those
+    edges that FRR itself accepts.
+
+  * zones: pick a local underlay IP for IPv6 peer addresses too, matching the
+    IPv4 behaviour. Previously VXLAN peer lists with IPv6 endpoints fell back
+    to an empty local-underlay choice.
+
+  * api: route maps: make the value property optional on the exit-action
+    sub-key, since `continue` takes no value and `on-match-goto` takes a
+    sequence number that the section-config layer still enforces.
+
+  * d/control: recommend wireguard-tools so wg(8) is pulled in by default for
+    providing new WireGuard fabric support.
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 15 May 2026 06:25:06 +0200
+
 libpve-network-perl (1.4.2) trixie; urgency=medium
 
   * api: route maps: add the missing format_description on the value property
