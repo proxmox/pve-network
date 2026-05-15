@@ -115,6 +115,7 @@ sub generate_frr_config {
     my $ifaceip = undef;
     my $routerid = undef;
     my $bgp_mode = $plugin_config->{'bgp-mode'} // 'auto';
+    my $use_per_node_asn = 0;
 
     my $bgp_controller = find_bgp_controller($local_node, $controller_cfg);
     my $isis_controller = find_isis_controller($local_node, $controller_cfg);
@@ -160,6 +161,21 @@ sub generate_frr_config {
 
         $ifaceip = $current_node->{$addr_key};
         $routerid = PVE::Network::SDN::Controllers::Plugin::get_router_id($ifaceip, $loopback);
+
+        if ($fabric->{protocol} eq 'bgp' && $bgp_mode eq 'external') {
+            if (!$current_node->{asn}) {
+                log_warn(
+                    "Node $local_node has no ASN in BGP fabric $fabric->{id};"
+                    . " cannot configure eBGP VTEPs for EVPN controller"
+                    . " $plugin_config->{id}"
+                );
+                return;
+            }
+            $asn = int($current_node->{asn});
+            $ebgp = 1;
+            $autortas = $plugin_config->{asn};
+            $use_per_node_asn = 1;
+        }
 
     } elsif ($plugin_config->{'peers'}) {
         @peers = PVE::Tools::split_list($plugin_config->{'peers'});
@@ -220,8 +236,14 @@ sub generate_frr_config {
     if ($bgp_mode eq 'auto') {
         $neighbor_group->{ebgp_multihop} = 10 if $ebgp && $loopback;
     } elsif ($bgp_mode eq 'external') {
-        $neighbor_group->{ebgp_multihop} = int($plugin_config->{'ebgp-multihop'})
-            if $ebgp && $plugin_config->{'ebgp-multihop'};
+        if ($ebgp && $plugin_config->{'ebgp-multihop'}) {
+            $neighbor_group->{ebgp_multihop} = int($plugin_config->{'ebgp-multihop'});
+        } elsif ($use_per_node_asn) {
+            # eBGP VTEPs over a BGP fabric reach each peer via the per-node
+            # fabric loopback. The peers are not directly connected, so the
+            # session needs multihop to form.
+            $neighbor_group->{ebgp_multihop} = 10;
+        }
     }
 
     if ($asn != int($bgp_router->{asn})) {
