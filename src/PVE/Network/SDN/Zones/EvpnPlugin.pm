@@ -196,8 +196,8 @@ sub generate_sdn_config {
             "Node $local_node requires a $addr_key address in the fabric $fabric->{id} to configure the EVPN zone"
             if !$current_node->{$addr_key};
 
-        for my $node (values %$nodes) {
-            push @peers, $node->{$addr_key};
+        for my $node_id (sort keys %$nodes) {
+            push @peers, $nodes->{$node_id}->{$addr_key};
         }
 
         $loopback = "dummy_$fabric->{id}";

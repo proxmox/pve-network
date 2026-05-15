@@ -358,8 +358,8 @@ sub generate_zone_frr_config {
             return;
         }
 
-        for my $node (values %$nodes) {
-            push @peers, $node->{$addr_key};
+        for my $node_id (sort keys %$nodes) {
+            push @peers, $nodes->{$node_id}->{$addr_key};
         }
 
         $loopback = "dummy_$fabric->{id}";

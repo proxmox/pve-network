@@ -127,7 +127,7 @@ sub generate_sdn_config {
     my @iface_config = ();
     push @iface_config, "vxlan-id $tag";
 
-    for my $address (@peers) {
+    for my $address (sort @peers) {
         next if $address eq $ifaceip;
         push @iface_config, "vxlan_remoteip $address";
     }
