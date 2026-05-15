@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use PVE::Network::SDN;
+use PVE::Network::SDN::Controllers;
 use PVE::Network::SDN::Fabrics;
 
 use PVE::JSONSchema qw(get_standard_option);
@@ -146,6 +147,15 @@ __PACKAGE__->register_method({
 
                 my $digest = extract_param($param, 'digest');
                 PVE::Tools::assert_if_modified($config->digest(), $digest) if $digest;
+
+                if (($param->{protocol} // '') eq 'bgp') {
+                    my $controller_cfg = PVE::Network::SDN::Controllers::config();
+                    for my $id (keys %{ $controller_cfg->{ids} // {} }) {
+                        die "cannot add a BGP fabric while BGP controller '$id' exists:"
+                            . " both target the default-VRF BGP router\n"
+                            if $controller_cfg->{ids}->{$id}->{type} eq 'bgp';
+                    }
+                }
 
                 $config->add_fabric($param);
                 PVE::Network::SDN::Fabrics::write_config($config);

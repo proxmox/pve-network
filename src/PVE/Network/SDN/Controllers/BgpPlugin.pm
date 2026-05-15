@@ -8,6 +8,7 @@ use PVE::JSONSchema qw(get_standard_option);
 use PVE::Tools qw(run_command file_set_contents file_get_contents);
 
 use PVE::Network::SDN::Controllers::Plugin;
+use PVE::Network::SDN::Fabrics;
 use PVE::Network::SDN::Zones::Plugin;
 use Net::IP;
 
@@ -199,6 +200,14 @@ sub on_update_hook {
         next if $controller->{node} ne $local_node;
         $controllernb++;
         die "only 1 bgp controller can be defined" if $controllernb > 1;
+    }
+
+    my $fabric_config = PVE::Network::SDN::Fabrics::config();
+    my $fabrics = $fabric_config->list_fabrics();
+    for my $id (keys %$fabrics) {
+        die "cannot configure a BGP controller while BGP fabric '$id' exists:"
+            . " both target the default-VRF BGP router\n"
+            if $fabrics->{$id}->{protocol} eq 'bgp';
     }
 
     my $controller = $controller_cfg->{ids}->{$controllerid};
