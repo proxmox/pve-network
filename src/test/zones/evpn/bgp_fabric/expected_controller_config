@@ -1,0 +1,73 @@
+frr version 10.6.1
+frr defaults datacenter
+hostname localhost
+log syslog informational
+service integrated-vtysh-config
+!
+vrf vrf_evpn
+ vni 100
+exit-vrf
+!
+router bgp 65000
+ bgp router-id 10.10.10.1
+ no bgp hard-administrative-reset
+ no bgp default ipv4-unicast
+ coalesce-time 1000
+ no bgp graceful-restart notification
+ neighbor VTEP peer-group
+ neighbor VTEP remote-as 65000
+ neighbor VTEP bfd
+ neighbor VTEP update-source dummy_test
+ neighbor 10.10.10.2 peer-group VTEP
+ neighbor 10.10.10.3 peer-group VTEP
+ neighbor test peer-group
+ neighbor test remote-as external
+ neighbor test local-as 65100 no-prepend replace-as
+ neighbor ens18 interface peer-group test
+ neighbor ens19 interface peer-group test
+ !
+ address-family ipv4 unicast
+  network 10.10.10.1/32
+  neighbor test activate
+  neighbor test soft-reconfiguration inbound
+  neighbor test route-map pve_bgp_test_in in
+ exit-address-family
+ !
+ address-family l2vpn evpn
+  neighbor VTEP activate
+  neighbor VTEP route-map MAP_VTEP_IN in
+  neighbor VTEP route-map MAP_VTEP_OUT out
+  advertise-all-vni
+ exit-address-family
+exit
+!
+router bgp 65000 vrf vrf_evpn
+ bgp router-id 10.10.10.1
+ no bgp hard-administrative-reset
+ no bgp graceful-restart notification
+exit
+!
+access-list pve_bgp_test_ips permit 10.10.10.0/24
+!
+route-map MAP_VTEP_IN permit 1
+exit
+!
+route-map MAP_VTEP_OUT permit 1
+exit
+!
+route-map pve_bgp permit 100
+ match ip address pve_bgp_test_ips
+ set src 10.10.10.1
+exit
+!
+route-map pve_bgp permit 65535
+exit
+!
+route-map pve_bgp_test_in permit 10
+ match ip address pve_bgp_test_ips
+exit
+!
+ip protocol bgp route-map pve_bgp
+!
+line vty
+!

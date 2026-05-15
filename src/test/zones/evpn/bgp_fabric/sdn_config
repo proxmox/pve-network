@@ -1,0 +1,85 @@
+{
+          'zones' => {
+                       'ids' => {
+                                  'evpn' => {
+                                              'type' => 'evpn',
+                                              'ipam' => 'pve',
+                                              'mac' => 'BC:24:11:3B:39:34',
+                                              'controller' => 'ctrl',
+                                              'vrf-vxlan' => 100
+                                            }
+                                }
+                     },
+          'vnets' => {
+                       'ids' => {
+                                  'vnet0' => {
+                                               'zone' => 'evpn',
+                                               'type' => 'vnet',
+                                               'tag' => 123456
+                                             }
+                                }
+                     },
+          'version' => 1,
+          'subnets' => {
+                         'ids' => {
+                                    'evpn-10.123.123.0-24' => {
+                                                                'vnet' => 'vnet0',
+                                                                'type' => 'subnet',
+                                                                'gateway' => '10.123.123.1'
+                                                              }
+                                  }
+                       },
+          'controllers' => {
+                             'ids' => {
+                                        'ctrl' => {
+                                                    'fabric' => 'test',
+                                                    'asn' => 65000,
+                                                    'type' => 'evpn'
+                                                  }
+                                      }
+                           },
+           'fabrics' => {
+                 'ids' => {
+                               'test' => {
+                                           'type' => 'bgp_fabric',
+                                           'id' => 'test',
+                                           'bfd' => 0,
+                                           'ip_prefix' => '10.10.10.0/24',
+                                         },
+                               'test_localhost' => {
+                                                   'asn' => 65100,
+                                                   'interfaces' => [
+                                                                    'name=ens18',
+                                                                    'name=ens19'
+                                                                  ],
+                                                   'id' => 'test_localhost',
+                                                   'type' => 'bgp_node',
+                                                   'ip' => '10.10.10.1',
+                                                   'role' => 'internal',
+                                                 },
+                               'test_pathfinder' => {
+                                                      'asn' => 65101,
+                                                      'id' => 'test_pathfinder',
+                                                      'interfaces' => [
+                                                                       'name=ens18',
+                                                                       'name=ens19'
+                                                                     ],
+                                                      'ip' => '10.10.10.2',
+                                                      'type' => 'bgp_node',
+                                                      'role' => 'internal',
+                                                    },
+                               'test_raider' => {
+                                                  'asn' => 65102,
+                                                  'ip' => '10.10.10.3',
+                                                  'type' => 'bgp_node',
+                                                  'interfaces' => [
+                                                                   'name=ens18',
+                                                                   'name=ens19'
+                                                                 ],
+                                                  'id' => 'test_raider',
+                                                  'role' => 'internal',
+                                                }
+                                     }
+              }
+        };
+
