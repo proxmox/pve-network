@@ -159,7 +159,7 @@ sub generate_frr_config {
         $loopback = "dummy_$fabric->{id}";
 
         $ifaceip = $current_node->{$addr_key};
-        $routerid = $current_node->{$addr_key};
+        $routerid = PVE::Network::SDN::Controllers::Plugin::get_router_id($ifaceip, $loopback);
 
     } elsif ($plugin_config->{'peers'}) {
         @peers = PVE::Tools::split_list($plugin_config->{'peers'});
@@ -365,7 +365,7 @@ sub generate_zone_frr_config {
         $loopback = "dummy_$fabric->{id}";
 
         $ifaceip = $current_node->{$addr_key};
-        $routerid = $current_node->{$addr_key};
+        $routerid = PVE::Network::SDN::Controllers::Plugin::get_router_id($ifaceip, $loopback);
 
     } elsif ($controller->{peers}) {
         @peers = PVE::Tools::split_list($controller->{'peers'}) if $controller->{'peers'};

@@ -157,7 +157,6 @@ sub generate_sdn_config {
     my $loopback = undef;
     my $ifaceip = undef;
     my $iface = undef;
-    my $routerid = undef;
 
     if ($controller->{peers}) {
         @peers = PVE::Tools::split_list($controller->{'peers'});
@@ -204,7 +203,6 @@ sub generate_sdn_config {
         $loopback = "dummy_$fabric->{id}";
 
         $ifaceip = $current_node->{$addr_key};
-        $routerid = $current_node->{$addr_key};
     } else {
         die "neither fabric nor peers configured for EVPN controller $controller->{id}";
     }
