@@ -1,0 +1,6 @@
+auto vmbr0
+iface vmbr0 inet static
+	address 172.20.3.1/32
+    bridge-ports eth0
+    bridge-stp off
+    bridge-fd 0

@@ -1,0 +1,85 @@
+frr version 10.6.1
+frr defaults datacenter
+hostname localhost
+log syslog informational
+service integrated-vtysh-config
+!
+vrf vrf_evpn
+ vni 100
+exit-vrf
+!
+router bgp 65000
+ bgp router-id 17.29.105.96
+ no bgp hard-administrative-reset
+ no bgp default ipv4-unicast
+ coalesce-time 1000
+ no bgp graceful-restart notification
+ neighbor VTEP peer-group
+ neighbor VTEP remote-as 65000
+ neighbor VTEP bfd
+ neighbor VTEP update-source dummy_test
+ neighbor fd00::2 peer-group VTEP
+ neighbor fd00::3 peer-group VTEP
+ !
+ address-family l2vpn evpn
+  neighbor VTEP activate
+  neighbor VTEP route-map MAP_VTEP_IN in
+  neighbor VTEP route-map MAP_VTEP_OUT out
+  advertise-all-vni
+ exit-address-family
+exit
+!
+router bgp 65000 vrf vrf_evpn
+ bgp router-id 17.29.105.96
+ no bgp hard-administrative-reset
+ no bgp graceful-restart notification
+exit
+!
+router openfabric test
+ net 49.0001.1720.2000.3001.00
+exit
+!
+interface dummy_test
+ ip router openfabric test
+ ipv6 router openfabric test
+ openfabric passive
+exit
+!
+interface ens20
+ ip router openfabric test
+ ipv6 router openfabric test
+ openfabric hello-interval 1
+exit
+!
+interface ens21
+ ip router openfabric test
+ ipv6 router openfabric test
+ openfabric hello-interval 1
+exit
+!
+ipv6 access-list pve_openfabric_test_ip6s permit fd00::/64
+!
+access-list pve_openfabric_test_ips permit 172.20.3.0/24
+!
+route-map MAP_VTEP_IN permit 1
+exit
+!
+route-map MAP_VTEP_OUT permit 1
+exit
+!
+route-map pve_openfabric permit 100
+ match ip address pve_openfabric_test_ips
+ set src 172.20.3.1
+exit
+!
+route-map pve_openfabric6 permit 110
+ match ipv6 address pve_openfabric_test_ip6s
+ set src fd00::1
+exit
+!
+ip protocol openfabric route-map pve_openfabric
+!
+ipv6 protocol openfabric route-map pve_openfabric6
+!
+line vty
+!
