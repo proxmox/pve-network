@@ -126,6 +126,21 @@ sub check_references {
                 if $controller->{'route-map-out'} eq $route_map_id;
         }
     }
+
+    my $fabrics = PVE::Network::SDN::Fabrics::config()->list_fabrics();
+    for my $fabric_id (keys $fabrics->%*) {
+        my $fabric = $fabrics->{$fabric_id};
+
+        if ($fabric->{route_map_in}) {
+            die "route map $route_map_id still referenced by fabric $fabric_id"
+                if $fabric->{route_map_in} eq $route_map_id;
+        }
+
+        if ($fabric->{route_map_out}) {
+            die "route map $route_map_id still referenced by fabric $fabric_id"
+                if $fabric->{route_map_out} eq $route_map_id;
+        }
+    }
 }
 
 sub route_map_properties {

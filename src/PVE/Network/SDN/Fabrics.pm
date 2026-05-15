@@ -51,7 +51,7 @@ PVE::JSONSchema::register_standard_option(
     {
         description => "Type of configuration entry in an SDN Fabric section config",
         type => 'string',
-        enum => ['openfabric', 'ospf', 'wireguard'],
+        enum => ['openfabric', 'ospf', 'wireguard', 'bgp'],
     },
 );
 
@@ -263,6 +263,21 @@ sub node_properties {
                     description => 'List of WireGuard network interfaces for this node.',
                     optional => 1,
                 },
+                {
+                    'instance-types' => ['bgp'],
+                    items => {
+                        type => 'string',
+                        format => {
+                            name => {
+                                type => 'string',
+                                format => 'pve-iface',
+                                description => 'Name of the network interface',
+                            },
+                        },
+                    },
+                    description => 'BGP network interface',
+                    optional => 1,
+                },
             ],
         },
         public_key => {
@@ -350,6 +365,15 @@ sub node_properties {
             type => 'array',
             'type-property' => 'protocol',
             oneOf => [
+                {
+                    type => 'array',
+                    'instance-types' => ['bgp'],
+                    items => {
+                        type => 'string',
+                        enum => ['interfaces', 'ip', 'ip6'],
+                    },
+                    optional => 1,
+                },
                 {
                     type => 'array',
                     'instance-types' => ['openfabric', 'ospf'],
@@ -478,6 +502,34 @@ sub fabric_properties {
                     },
                     optional => 1,
                 },
+                {
+                    type => 'array',
+                    'instance-types' => ['bgp'],
+                    items => {
+                        type => 'string',
+                        format => {
+                            source => {
+                                type => 'string',
+                                description =>
+                                    'The protocol from which to redistribute routes from.',
+                                enum => [
+                                    'connected',
+                                    'kernel',
+                                    'ospf',
+                                    'static',
+                                ],
+                            },
+                            'route-map' => {
+                                type => 'string',
+                                format => 'pve-sdn-route-map-id',
+                                description =>
+                                    'Route map to filter or transform redistributed routes from this source.',
+                                optional => 1,
+                            },
+                        },
+                    },
+                    optional => 1,
+                },
             ],
         },
     };
@@ -494,6 +546,15 @@ sub fabric_properties {
                     items => {
                         type => 'string',
                         enum => ['hello_interval', 'csnp_interval', 'route_filter'],
+                    },
+                    optional => 1,
+                },
+                {
+                    type => 'array',
+                    'instance-types' => ['bgp'],
+                    items => {
+                        type => 'string',
+                        enum => ['redistribute', 'route_filter', 'route_map_in', 'route_map_out'],
                     },
                     optional => 1,
                 },
