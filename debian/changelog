@@ -1,3 +1,24 @@
+libpve-network-perl (1.5.1) trixie; urgency=medium
+
+  * evpn controller: support multiple EVPN controllers per cluster, with
+    per-controller node restriction, BGP session mode and eBGP-multihop
+    settings. A new 'peer-group-name' (default 'VTEP') keeps existing
+    single-controller configurations compatible, and the new 'bgp-mode'
+    (default 'auto') keeps the previous behavior of inheriting the BGP session
+    type from the BGP controller.
+
+  * evpn zone: allow a zone to be advertised through multiple EVPN controllers
+    via a new 'secondary-controllers' list. The existing 'controller' field
+    still acts as the primary and drives VTEP IP and MTU auto-derivation.
+
+  * evpn: filter outgoing EVPN routes by zone and VNet route-target when more
+    than one EVPN controller is configured, so each controller only announces
+    routes for the zones it serves. Single-controller setups stay unfiltered
+    for backwards compatibility, and a zone's 'rt-import' setting overrides
+        the default filter.
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 15 May 2026 12:22:20 +0200
+
 libpve-network-perl (1.5.0) trixie; urgency=medium
 
   * fabrics: add WireGuard as a new fabric protocol. Internal nodes (cluster
