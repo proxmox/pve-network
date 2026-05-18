@@ -1,3 +1,14 @@
+libpve-network-perl (1.6.1) trixie; urgency=medium
+
+  * fabrics: wireguard: defer private key cleanup to SDN apply so the
+    rollback API endpoint can restore a deleted node or interface without
+    losing its matching private key.
+
+  * route maps: add `tag` to the allowed match-key list so users can match
+    on the route tag attribute through the API and UI.
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 18 May 2026 19:30:00 +0200
+
 libpve-network-perl (1.6.0) trixie; urgency=medium
 
   * fabrics: add BGP as a third fabric protocol, supporting eBGP unnumbered
