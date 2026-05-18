@@ -304,18 +304,8 @@ __PACKAGE__->register_method({
                         die $err;
                     }
 
-                    # purge keys for interfaces the update removed; the entries
-                    # would otherwise linger in cluster-replicated wg-keys.cfg
-                    # until the next SDN apply runs cleanup_private_keys
-                    my @removed_interfaces =
-                        grep { !exists($new_interfaces{$_}) } keys %old_interfaces;
-                    if (@removed_interfaces) {
-                        for my $interface_name (@removed_interfaces) {
-                            $private_keys->delete($node_id, $interface_name);
-                        }
-                        eval { PVE::Network::SDN::WireGuard::write_private_keys($private_keys) };
-                        warn "could not purge orphan private keys: $@\n" if $@;
-                    }
+                    # rely on cleanup_private_keys() at SDN apply time so a rollback can
+                    # restore a deleted interface without losing its private key
                 } else {
                     $config->update_node($fabric_id, $node_id, $param);
                     PVE::Network::SDN::Fabrics::write_config($config);
@@ -364,23 +354,11 @@ __PACKAGE__->register_method({
                 my $digest = extract_param($param, 'digest');
                 PVE::Tools::assert_if_modified($config->digest(), $digest) if $digest;
 
-                my $old_node = $config->get_node($fabric_id, $node_id);
-
                 $config->delete_node($fabric_id, $node_id);
                 PVE::Network::SDN::Fabrics::write_config($config);
 
-                # purge private keys this node owned so they don't linger in
-                # the cluster-replicated wg-keys.cfg until the next SDN apply
-                if (is_internal_wireguard_node($old_node) && $old_node->{interfaces}) {
-                    my $private_keys = PVE::Network::SDN::WireGuard::private_keys();
-                    for my $iface_propstr ($old_node->{interfaces}->@*) {
-                        my $iface =
-                            PVE::RS::SDN::Fabrics::parse_wireguard_interface($iface_propstr);
-                        $private_keys->delete($node_id, $iface->{name});
-                    }
-                    eval { PVE::Network::SDN::WireGuard::write_private_keys($private_keys) };
-                    warn "could not purge private keys after node delete: $@\n" if $@;
-                }
+                # rely on cleanup_private_keys() at SDN apply time so a rollback can
+                # restore a deleted node without losing its private keys
             },
             "deleting node failed",
             $lock_token,
