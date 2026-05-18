@@ -1,3 +1,27 @@
+libpve-network-perl (1.6.0) trixie; urgency=medium
+
+  * fabrics: add BGP as a third fabric protocol, supporting eBGP unnumbered
+    underlays where each node carries a unique ASN and peers with its
+    neighbors over physical interfaces without IP assignment on the fabric
+    links. Coexists with the EVPN controller's BGP instance in the default VRF
+    via local-as. Combining a BGP controller with a BGP fabric on the same
+    node is rejected since both target the same FRR BGP instance.
+
+  * evpn: support eBGP VTEPs over BGP fabric underlays. When the EVPN underlay
+    is a BGP fabric and the controller uses bgp-mode=external, each VTEP
+    advertises under its own per-node ASN, while the EVPN controller's ASN is
+    still used for autoderived route-target values to keep RTs consistent
+    across the fabric.
+
+  * evpn: support IPv6-only underlays. Sort the generated peer-IP list so
+    config output stays deterministic across reruns, and derive a valid
+    router-id even when the loopback only carries an IPv6 address.
+
+  * fabrics: ospf: add the `redistribute` property to the schema for the new
+    OSPF route-redistribution feature.
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 18 May 2026 11:07:12 +0200
+
 libpve-network-perl (1.5.1) trixie; urgency=medium
 
   * evpn controller: support multiple EVPN controllers per cluster, with
