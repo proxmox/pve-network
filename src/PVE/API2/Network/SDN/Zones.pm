@@ -207,6 +207,7 @@ my $ZONE_PROPERTIES = {
         description => 'Additional controllers.',
         items => {
             type => 'string',
+            description => 'Controller ID.',
             minLength => 2,
             maxLength => 64,
             pattern => '[a-zA-Z][a-zA-Z0-9_-]*[a-zA-Z0-9]',
