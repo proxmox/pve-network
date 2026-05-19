@@ -125,6 +125,7 @@ sub restart {
 my $SDN_DAEMONS_DEFAULT = {
     ospfd => 0,
     fabricd => 0,
+    bgpd => 1,
 };
 
 =head3 set_daemon_status(\%daemons, $set_default)
