@@ -1,3 +1,11 @@
+libpve-network-perl (1.6.2) trixie; urgency=medium
+
+  * frr: add bgpd to SDN-managed daemons to ensure applying SDN changes with a
+    node that has a BGP fabric configured doesn't trips a perl-side guard even
+    though the rust implementation can handle this.
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 19 May 2026 18:42:08 +0200
+
 libpve-network-perl (1.6.1) trixie; urgency=medium
 
   * fabrics: wireguard: defer private key cleanup to SDN apply so the
