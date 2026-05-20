@@ -601,7 +601,13 @@ sub fabric_properties {
                     'instance-types' => ['openfabric'],
                     items => {
                         type => 'string',
-                        enum => ['hello_interval', 'csnp_interval', 'route_filter'],
+                        enum => [
+                            'ip_prefix',
+                            'ip6_prefix',
+                            'hello_interval',
+                            'csnp_interval',
+                            'route_filter',
+                        ],
                     },
                     optional => 1,
                 },
@@ -610,8 +616,14 @@ sub fabric_properties {
                     'instance-types' => ['bgp'],
                     items => {
                         type => 'string',
-                        enum =>
-                            ['redistribute', 'route_filter', 'route_map_in', 'route_map_out'],
+                        enum => [
+                            'ip_prefix',
+                            'ip6_prefix',
+                            'redistribute',
+                            'route_filter',
+                            'route_map_in',
+                            'route_map_out',
+                        ],
                     },
                     optional => 1,
                 },
