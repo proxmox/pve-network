@@ -3,6 +3,8 @@ package PVE::Network::SDN::Fabrics;
 use strict;
 use warnings;
 
+use Socket qw(inet_pton AF_INET6);
+
 use PVE::Cluster qw(cfs_register_file cfs_read_file cfs_lock_file cfs_write_file);
 use PVE::JSONSchema qw(get_standard_option);
 use PVE::INotify;
@@ -111,12 +113,68 @@ cfs_register_file(
 
 sub parse_fabrics_config {
     my ($filename, $raw) = @_;
-    return $raw // '';
+    return migrate_legacy_wireguard_endpoints($raw // '');
 }
 
 sub write_fabrics_config {
     my ($filename, $config) = @_;
     return $config // '';
+}
+
+# FIXME: remove with PVE 10
+#
+# WireGuard fabrics from libpve-network-perl 1.5.0 stored a port-less endpoint
+# and derived the port from the interface's listen_port; the endpoint is now a
+# full host:port. On read, append the node's listen port to such legacy
+# node-level endpoints (a bare IPv6 is bracketed). A port-less per-peer
+# endpoint override cannot be expressed anymore and its target port is not
+# available here, so it is dropped - the peer then falls back to the
+# referenced node's (migrated) endpoint. Values already carrying a port, and
+# external nodes (no interface, no port), are left for the strict parser.
+sub migrate_legacy_wireguard_endpoints {
+    my ($raw) = @_;
+
+    return $raw if !length($raw // '');
+    return $raw if $raw !~ /^wireguard_node:/m;
+
+    # a port-less endpoint is a colon-free bare IPv4/hostname or a bare IPv6
+    my $is_portless = sub { $_[0] !~ /:/ || defined(inet_pton(AF_INET6, $_[0])) };
+
+    my @lines = split(/\n/, $raw, -1);
+
+    my ($endpoint_idx, $host, $listen_port, $in_wg_node);
+    my $flush = sub {
+        if (defined($endpoint_idx) && defined($listen_port)) {
+            $host = "[$host]" if defined(inet_pton(AF_INET6, $host));
+            $lines[$endpoint_idx] =~ s/\S+$/$host:$listen_port/;
+        }
+        ($endpoint_idx, $host, $listen_port) = (undef, undef, undef);
+    };
+
+    for my $i (0 .. $#lines) {
+        if ($lines[$i] =~ /^\S/) { # section header: only act on wireguard nodes
+            $flush->();
+            $in_wg_node = $lines[$i] =~ /^wireguard_node:/;
+        } elsif (!$in_wg_node) {
+            next;
+        } elsif ($lines[$i] =~ /^\s+endpoint\s+(\S+)$/) {
+            my $value = $1;
+            ($endpoint_idx, $host) = ($i, $value) if $is_portless->($value);
+        } elsif ($lines[$i] =~ /^(\s+peers\s+)(\S.*)$/) {
+            my ($prefix, $props) = ($1, $2);
+            if (my ($value) = $props =~ /(?:^|,)endpoint=([^,]+)/) {
+                $props = join(',', grep { $_ ne "endpoint=$value" } split(/,/, $props))
+                    if $is_portless->($value);
+                $lines[$i] = "$prefix$props";
+            }
+        } elsif ($lines[$i] =~ /^\s+interfaces\s+\S/) {
+            my ($port) = $lines[$i] =~ /(?:^|,)listen_port=(\d+)/;
+            $listen_port //= $port;
+        }
+    }
+    $flush->();
+
+    return join("\n", @lines);
 }
 
 sub config {
