@@ -1,3 +1,15 @@
+libpve-network-perl (1.6.3) trixie; urgency=medium
+
+  * sdn: fabrics: wireguard: migrate legacy port-less endpoints stored by
+    libpve-network-perl 1.5.0 to the new host:port format on read, so existing
+    fabrics keep working after the endpoint format change.
+
+  * sdn: zones: evpn: add a description to the secondary-controllers schema
+    array items so consumers that walk the schema can document the per-entry
+    type.
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 20 May 2026 04:21:17 +0200
+
 libpve-network-perl (1.6.2) trixie; urgency=medium
 
   * frr: add bgpd to SDN-managed daemons to ensure applying SDN changes with a
