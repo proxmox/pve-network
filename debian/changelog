@@ -1,3 +1,10 @@
+libpve-network-perl (1.6.4) trixie; urgency=medium
+
+  * fabrics: add ospf `network_type` property to interface, which lets users
+    choose all the possible network types frr supports on an ospf interface.
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 20 May 2026 11:10:31 +0200
+
 libpve-network-perl (1.6.3) trixie; urgency=medium
 
   * sdn: fabrics: wireguard: migrate legacy port-less endpoints stored by
