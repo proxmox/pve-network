@@ -554,10 +554,7 @@ sub fabric_properties {
                                 description =>
                                     'The protocol from which to redistribute routes from.',
                                 enum => [
-                                    'bgp',
-                                    'connected',
-                                    'kernel',
-                                    'static',
+                                    'bgp', 'connected', 'kernel', 'static',
                                 ],
                             },
                             'route-map' => {
@@ -582,10 +579,7 @@ sub fabric_properties {
                                 description =>
                                     'The protocol from which to redistribute routes from.',
                                 enum => [
-                                    'connected',
-                                    'kernel',
-                                    'ospf',
-                                    'static',
+                                    'connected', 'kernel', 'ospf', 'static',
                                 ],
                             },
                             'route-map' => {
@@ -623,7 +617,8 @@ sub fabric_properties {
                     'instance-types' => ['bgp'],
                     items => {
                         type => 'string',
-                        enum => ['redistribute', 'route_filter', 'route_map_in', 'route_map_out'],
+                        enum =>
+                            ['redistribute', 'route_filter', 'route_map_in', 'route_map_out'],
                     },
                     optional => 1,
                 },

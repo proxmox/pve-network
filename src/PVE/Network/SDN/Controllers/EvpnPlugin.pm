@@ -164,11 +164,9 @@ sub generate_frr_config {
 
         if ($fabric->{protocol} eq 'bgp' && $bgp_mode eq 'external') {
             if (!$current_node->{asn}) {
-                log_warn(
-                    "Node $local_node has no ASN in BGP fabric $fabric->{id};"
+                log_warn("Node $local_node has no ASN in BGP fabric $fabric->{id};"
                     . " cannot configure eBGP VTEPs for EVPN controller"
-                    . " $plugin_config->{id}"
-                );
+                    . " $plugin_config->{id}");
                 return;
             }
             $asn = int($current_node->{asn});
@@ -669,7 +667,8 @@ sub on_update_hook {
         my $peer_group_name_self = $controller->{'peer-group-name'} // 'VTEP';
         my $peer_group_name_other = $other_controller->{'peer-group-name'} // 'VTEP';
 
-        die "cannot have two controllers with same peer-group-name configured ($peer_group_name_self)"
+        die
+            "cannot have two controllers with same peer-group-name configured ($peer_group_name_self)"
             if $peer_group_name_self eq $peer_group_name_other;
     }
 

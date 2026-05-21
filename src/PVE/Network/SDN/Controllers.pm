@@ -113,7 +113,7 @@ sub generate_frr_config {
         if ($plugin_config->{type} eq 'evpn') {
             $allowed_communities->{$id} = {
                 type => 'standard',
-            },
+            };
         }
     }
 
@@ -196,7 +196,9 @@ sub generate_frr_config {
             if (defined($route_targets) && scalar($route_targets->@*)) {
                 my @entries = map { {
                     action => 'permit',
-                    match_entry => ($community_list_type eq 'expanded') ? "^RT:$_\$" : {
+                    match_entry => ($community_list_type eq 'expanded')
+                    ? "^RT:$_\$"
+                    : {
                         type => 'rt',
                         value => $_,
                     },
