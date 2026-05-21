@@ -1,3 +1,12 @@
+libpve-network-perl (1.6.6) trixie; urgency=medium
+
+  * fabrics: make ip_prefix and ip6_prefix deletable. This allows users to
+    update (and remove) the prefixes of fabrics which don't have any nodes
+    configured. There still has to be at least one IPv6 or IPv4 prefix on the
+    fabric.
+
+ -- Proxmox Support Team <support@proxmox.com>  Thu, 21 May 2026 14:04:39 +0200
+
 libpve-network-perl (1.6.5) trixie; urgency=medium
 
   * sdn: fabrics: wireguard: re-migrate internal-node endpoints back to a
