@@ -138,7 +138,7 @@ __PACKAGE__->register_method({
         raise_param_exc({
             zone => "zone $vnet->{zone} of vnet $vnet_id does not exist on node $node_id",
         })
-            if defined($zone->{nodes}) && !grep { $_ eq $node_id } $zone->{nodes}->@*;
+            if defined($zone->{nodes}) && !$zone->{nodes}->{$node_id};
 
         return PVE::RS::SDN::Fabrics::l2vpn_routes($vnet_id);
     },

@@ -376,7 +376,7 @@ __PACKAGE__->register_method({
         raise_param_exc({
             zone => "zone does not exist on node $node_id",
         })
-            if defined($zone->{nodes}) && !grep { $_ eq $node_id } $zone->{nodes}->@*;
+            if defined($zone->{nodes}) && !$zone->{nodes}->{$node_id};
 
         return PVE::RS::SDN::Fabrics::l3vpn_routes($zone_id);
     },
