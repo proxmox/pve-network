@@ -11,6 +11,7 @@ use PVE::INotify;
 use PVE::Cluster;
 use PVE::Tools;
 use Net::IP;
+use PVE::RESTEnvironment qw(log_warn);
 
 use PVE::Network::SDN::Controllers::EvpnPlugin;
 
@@ -269,8 +270,16 @@ sub generate_sdn_config {
         if ($subnet->{snat}) {
 
             #find outgoing interface
-            my ($outip, $outiface) =
-                PVE::Network::SDN::Zones::Plugin::get_local_route_ip($checkrouteip);
+            my ($outip, $outiface);
+            eval {
+                ($outip, $outiface) =
+                    PVE::Network::SDN::Zones::Plugin::get_local_route_ip($checkrouteip);
+            };
+            if ($@) {
+                my $msg = "interface for SNAT could not be resolved: $@";
+                log_warn($msg);
+                next;
+            }
             if ($outip && $outiface && $is_evpn_gateway) {
                 #use snat, faster than masquerade
                 push @iface_config,

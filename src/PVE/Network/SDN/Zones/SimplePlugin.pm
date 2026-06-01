@@ -7,6 +7,7 @@ use PVE::Network::SDN::Dhcp;
 use PVE::Exception qw(raise raise_param_exc);
 use PVE::Cluster;
 use PVE::Tools;
+use PVE::RESTEnvironment qw(log_warn);
 
 use base('PVE::Network::SDN::Zones::Plugin');
 
@@ -112,8 +113,16 @@ sub generate_sdn_config {
         push @iface_config, "up ip route add $cidr dev $vnetid" if $mask == 32 && $ipversion == 4;
         if ($subnet->{snat}) {
             #find outgoing interface
-            my ($outip, $outiface) =
-                PVE::Network::SDN::Zones::Plugin::get_local_route_ip($checkrouteip);
+            my ($outip, $outiface);
+            eval {
+                ($outip, $outiface) =
+                    PVE::Network::SDN::Zones::Plugin::get_local_route_ip($checkrouteip);
+            };
+            if ($@) {
+                my $msg = "interface for SNAT could not be resolved: $@";
+                log_warn($msg);
+                next;
+            }
             if ($outip && $outiface) {
                 #use snat, faster than masquerade
                 push @iface_config,
