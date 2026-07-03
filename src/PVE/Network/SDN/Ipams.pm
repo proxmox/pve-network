@@ -93,7 +93,7 @@ sub sdn_ipams_config {
     die "no sdn ipam ID specified\n" if !$id;
 
     my $scfg = $cfg->{ids}->{$id};
-    die "sdn '$id' does not exist\n" if (!$noerr && !$scfg);
+    die "sdn ipam '$id' does not exist\n" if (!$noerr && !$scfg);
 
     return $scfg;
 }

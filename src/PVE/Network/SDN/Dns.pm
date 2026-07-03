@@ -21,7 +21,7 @@ sub sdn_dns_config {
     die "no sdn dns ID specified\n" if !$id;
 
     my $scfg = $cfg->{ids}->{$id};
-    die "sdn '$id' does not exist\n" if (!$noerr && !$scfg);
+    die "sdn dns '$id' does not exist\n" if (!$noerr && !$scfg);
 
     return $scfg;
 }
