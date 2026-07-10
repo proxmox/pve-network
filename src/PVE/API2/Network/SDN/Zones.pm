@@ -187,7 +187,7 @@ my $ZONE_PROPERTIES = {
         description =>
             "UDP port that should be used for the VXLAN tunnel (default 4789). VXLAN zone only.",
         minimum => 1,
-        maximum => 65536,
+        maximum => 65535,
         type => 'integer',
         optional => 1,
         default => 4789,

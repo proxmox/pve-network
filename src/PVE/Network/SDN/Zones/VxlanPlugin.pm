@@ -35,7 +35,7 @@ sub properties {
         'vxlan-port' => {
             description => "UDP port that should be used for the VXLAN tunnel (default 4789).",
             minimum => 1,
-            maximum => 65536,
+            maximum => 65535,
             type => 'integer',
             default => 4789,
         },
