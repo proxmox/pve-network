@@ -196,7 +196,7 @@ sub compile_running_cfg {
     my ($skip_version_bump) = @_;
     $skip_version_bump = $skip_version_bump // 0;
 
-    my $cfg = cfs_read_file($RUNNING_CFG_FILENAME);
+    my $cfg = running_config();
     my $version = $cfg->{version};
 
     if ($version) {
