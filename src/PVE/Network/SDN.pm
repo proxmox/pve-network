@@ -10,6 +10,7 @@ use LWP::UserAgent;
 use Net::SSLeay;
 use UUID;
 
+use PVE::AccessControl;
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 use PVE::INotify;
 use PVE::RESTEnvironment qw(log_warn);
@@ -238,9 +239,123 @@ sub compile_running_cfg {
 }
 
 sub commit_config {
+    my $old_cfg = running_config();
     my $cfg = compile_running_cfg();
 
+    cleanup_access_control($old_cfg, $cfg);
+
     cfs_write_file($RUNNING_CFG_FILENAME, $cfg);
+}
+
+sub cleanup_access_control {
+    my ($old_cfg, $cfg) = @_;
+
+    my $route_map_paths = diff_route_maps($old_cfg, $cfg);
+    my $generic_paths = diff_generic_resources($old_cfg, $cfg);
+    my ($vnet_delete_paths, $vnet_move_paths) = diff_vnets($old_cfg, $cfg);
+
+    if (@$vnet_move_paths) {
+        PVE::AccessControl::migrate_sdn_resource_access($vnet_move_paths);
+    }
+
+    my @paths_to_delete = (@$vnet_delete_paths, @$route_map_paths, @$generic_paths);
+    if (@paths_to_delete) {
+        PVE::AccessControl::remove_sdn_resource_access(\@paths_to_delete);
+    }
+}
+
+sub diff_generic_resources {
+    my ($old_cfg, $cfg) = @_;
+
+    my @paths_to_delete = ();
+
+    my @types = qw(zones controllers fabrics prefix-lists);
+    for my $type (@types) {
+        if (!defined($old_cfg->{$type}) || !defined($old_cfg->{$type}->{ids})) {
+            next;
+        }
+
+        my $old_ids = $old_cfg->{$type}->{ids};
+        my $new_ids = $cfg->{$type}->{ids};
+
+        for my $id (keys %$old_ids) {
+            next if defined($new_ids->{$id});
+
+            push(@paths_to_delete, "$type/$id");
+        }
+    }
+
+    return \@paths_to_delete;
+}
+
+sub diff_route_maps {
+    my ($old_cfg, $cfg) = @_;
+
+    my @paths_to_delete = ();
+
+    if (defined($old_cfg->{'route-maps'}) && defined($old_cfg->{'route-maps'}->{ids})) {
+        my $old_route_maps = $old_cfg->{'route-maps'}->{ids};
+        my $route_map_suffix_regex = qr/_[0-9]+$/;
+
+        my %active_route_maps = ();
+        if (defined($cfg->{'route-maps'}->{ids})) {
+            for my $id (keys $cfg->{'route-maps'}->{ids}->%*) {
+                (my $base_name = $id) =~ s/$route_map_suffix_regex//;
+                $active_route_maps{$base_name} = 1;
+            }
+        }
+
+        my %queued_route_maps = ();
+        for my $id (keys %$old_route_maps) {
+            next if defined($cfg->{'route-maps'}->{ids}->{$id});
+
+            (my $base_name = $id) =~ s/$route_map_suffix_regex//;
+
+            next if ($active_route_maps{$base_name});
+
+            next if ($queued_route_maps{$base_name});
+
+            push(@paths_to_delete, "route-maps/$base_name");
+            $queued_route_maps{$base_name} = 1;
+        }
+    }
+
+    return \@paths_to_delete;
+}
+
+sub diff_vnets {
+    my ($old_cfg, $cfg) = @_;
+
+    my @paths_to_delete = ();
+    my @paths_to_move = ();
+
+    if (defined($old_cfg->{vnets}->{ids})) {
+        my $old_vnets = $old_cfg->{vnets}->{ids};
+        my $new_vnets = $cfg->{vnets}->{ids};
+
+        for my $vnetid (keys %$old_vnets) {
+            my $old_zone = $old_vnets->{$vnetid}->{zone};
+
+            if (!defined($new_vnets->{$vnetid})) {
+                push(@paths_to_delete, "zones/$old_zone/$vnetid");
+                next;
+            }
+
+            my $new_zone = $new_vnets->{$vnetid}->{zone};
+
+            if ($old_zone ne $new_zone) {
+                push(
+                    @paths_to_move,
+                    {
+                        src_path => "zones/$old_zone/$vnetid",
+                        dest_path => "zones/$new_zone/$vnetid",
+                    },
+                );
+            }
+        }
+    }
+
+    return (\@paths_to_delete, \@paths_to_move);
 }
 
 sub has_pending_changes {
