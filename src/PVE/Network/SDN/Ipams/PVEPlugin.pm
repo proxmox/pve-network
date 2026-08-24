@@ -287,8 +287,9 @@ sub get_ips_from_mac {
     my $subnets = $dbzone->{subnets};
 
     for my $subnet (keys %$subnets) {
-        next if Net::IP::ip_is_ipv4($subnet) && $ip4;
-        next if $ip6;
+        # subnet keys are CIDRs, Net::IP only recognizes bare IPs
+        my ($network) = split(m|/|, $subnet);
+        next if Net::IP::ip_is_ipv4($network) ? $ip4 : $ip6;
         my $ips = $subnets->{$subnet}->{ips};
         for my $ip (keys %$ips) {
             my $ipobject = $ips->{$ip};
