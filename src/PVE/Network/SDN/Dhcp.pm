@@ -63,7 +63,7 @@ sub regenerate_config {
     my $zone_cfg = $cfg->{zones};
     my $vnet_cfg = $cfg->{vnets};
     my $subnet_cfg = $cfg->{subnets};
-    return if !$zone_cfg && !$subnet_cfg;
+    return if !$zone_cfg || !$vnet_cfg || !$subnet_cfg;
 
     my $nodename = PVE::INotify::nodename();
 
