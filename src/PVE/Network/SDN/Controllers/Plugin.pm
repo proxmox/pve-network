@@ -161,8 +161,8 @@ needs to always use the EVPN ASN in its router definition to ensure correct
 generation for Route Targets (if not using the autort patch).
 
 The FRR config generation logic utilizes the local-as directive for specifying
-alternate ASN numbers. Since local-as is only applicable for eBGP sessions, the
-internal ASN number always needs to be used for the router definition. So if
+alternate ASNs. Since local-as is only applicable for eBGP sessions, the
+internal ASN always needs to be used for the router definition. So if
 there are no EVPN controllers, but iBGP BGP sessions, utilize the ASN configured
 there.
 
