@@ -7,6 +7,7 @@ use PVE::Tools qw($IPV4RE);
 use PVE::INotify;
 use PVE::Network::SDN::Controllers::EvpnPlugin;
 use PVE::Exception qw(raise raise_param_exc);
+use PVE::RESTEnvironment qw(log_warn);
 
 use base('PVE::Network::SDN::Zones::Plugin');
 
@@ -92,6 +93,8 @@ sub generate_sdn_config {
         @peers = PVE::Tools::split_list($plugin_config->{'peers'}) if $plugin_config->{'peers'};
         ($ifaceip, $iface) =
             PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers);
+        log_warn("VXLAN zone $zoneid, VNet $vnetid: no local address found for peers")
+            if !defined($ifaceip);
     } elsif ($plugin_config->{fabric}) {
         my $local_node = PVE::INotify::nodename();
         my $config = PVE::Network::SDN::Fabrics::config(1);
@@ -128,7 +131,7 @@ sub generate_sdn_config {
     push @iface_config, "vxlan-id $tag";
 
     for my $address (sort @peers) {
-        next if $address eq $ifaceip;
+        next if defined($ifaceip) && $address eq $ifaceip;
         push @iface_config, "vxlan_remoteip $address";
     }
     push @iface_config, "vxlan-port $vxlanport" if $vxlanport;

@@ -182,6 +182,8 @@ sub generate_sdn_config {
 
         ($ifaceip, $iface) =
             PVE::Network::SDN::Zones::Plugin::find_local_ip_interface_peers(\@peers, $loopback);
+        log_warn("EVPN zone $zoneid, VNet $vnetid: no local address found for peers")
+            if !defined($ifaceip);
     } elsif ($controller->{fabric}) {
         my $config = PVE::Network::SDN::Fabrics::config(1);
 

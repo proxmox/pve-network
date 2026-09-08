@@ -368,9 +368,11 @@ sub find_local_ip_interface_peers {
 
     #if peer is remote, find source with ip route
     foreach my $address (@{$peers}) {
-        my ($ip, $interface) = get_local_route_ip($address);
-        return ($ip, $interface);
+        my ($ip, $interface) = eval { get_local_route_ip($address) };
+        return ($ip, $interface) if $ip;
     }
+
+    return;
 }
 
 sub find_bridge {
