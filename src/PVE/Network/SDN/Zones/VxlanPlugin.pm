@@ -129,6 +129,7 @@ sub generate_sdn_config {
     #vxlan interface
     my @iface_config = ();
     push @iface_config, "vxlan-id $tag";
+    push @iface_config, "vxlan-local-tunnelip $ifaceip" if $ifaceip;
 
     for my $address (sort @peers) {
         next if defined($ifaceip) && $address eq $ifaceip;

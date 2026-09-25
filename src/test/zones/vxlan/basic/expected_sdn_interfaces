@@ -10,6 +10,7 @@ iface myvnet
 auto vxlan_myvnet
 iface vxlan_myvnet
 	vxlan-id 100
+	vxlan-local-tunnelip 192.168.0.1
 	vxlan_remoteip 192.168.0.2
 	vxlan_remoteip 192.168.0.3
 	mtu 1450
