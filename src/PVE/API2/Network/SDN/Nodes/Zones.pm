@@ -1,5 +1,8 @@
 package PVE::API2::Network::SDN::Nodes::Zones;
 
+use strict;
+use warnings;
+
 use PVE::API2::Network::SDN::Nodes::Zone;
 use PVE::INotify;
 use PVE::JSONSchema qw(get_standard_option);
