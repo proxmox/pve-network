@@ -5,7 +5,6 @@ use warnings;
 
 use PVE::Tools qw(run_command);
 use Net::IP qw(ip_get_version);
-use PVE::IPRoute2;
 use PVE::JSONSchema;
 use PVE::Cluster;
 use PVE::Network;
@@ -112,6 +111,7 @@ sub generate_sdn_config {
         $subnet_cfg,
         $interfaces_config,
         $config,
+        $bridge_ports,
     ) = @_;
 
     die "please implement inside plugin";
@@ -383,11 +383,6 @@ sub is_vlanaware {
     my ($bridge) = @_;
 
     return PVE::Tools::file_read_firstline("/sys/class/net/$bridge/bridge/vlan_filtering");
-}
-
-sub get_bridge_ifaces {
-    my ($bridge) = @_;
-    return PVE::IPRoute2::get_physical_bridge_ports($bridge);
 }
 
 sub datacenter_config {

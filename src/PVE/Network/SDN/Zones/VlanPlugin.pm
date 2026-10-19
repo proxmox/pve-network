@@ -63,6 +63,7 @@ sub generate_sdn_config {
         $subnet_cfg,
         $interfaces_config,
         $config,
+        $bridge_ports,
     ) = @_;
 
     my $bridge = $plugin_config->{bridge};
@@ -112,10 +113,10 @@ sub generate_sdn_config {
 
         my $bridgevlan = $bridge . "v" . $tag;
 
-        my @bridge_ifaces = PVE::Network::SDN::Zones::Plugin::get_bridge_ifaces($bridge);
+        my $bridge_ifaces = $bridge_ports->{$bridge};
 
         my $bridge_ports = "";
-        foreach my $bridge_iface (@bridge_ifaces) {
+        foreach my $bridge_iface ($bridge_ifaces->@*) {
             $bridge_ports .= " $bridge_iface.$tag";
         }
 

@@ -64,6 +64,7 @@ sub generate_sdn_config {
         $subnet_cfg,
         $interfaces_config,
         $config,
+        $bridge_ports,
     ) = @_;
 
     my ($bridge, $mtu, $stag) = $plugin_config->@{ 'bridge', 'mtu', 'tag' };
@@ -128,9 +129,9 @@ sub generate_sdn_config {
     } else {
         # eth--->eth.x(svlan)----->vlanwarebridge-(tag)----->vnet---->vnet
 
-        my @bridge_ifaces = PVE::Network::SDN::Zones::Plugin::get_bridge_ifaces($bridge);
+        my $bridge_ifaces = $bridge_ports->{$bridge};
 
-        for my $bridge_iface (@bridge_ifaces) {
+        for my $bridge_iface ($bridge_ifaces->@*) {
             # use named vlan interface to avoid too long names
             my $svlan_iface = "sv_$zoneid";
 

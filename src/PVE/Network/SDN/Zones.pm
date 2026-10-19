@@ -7,6 +7,7 @@ use JSON;
 
 use PVE::Tools qw(extract_param dir_glob_regex run_command);
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
+use PVE::IPRoute2;
 use PVE::Network;
 
 use PVE::Network::SDN::Vnets;
@@ -117,6 +118,7 @@ sub generate_etc_network_config {
     return if !$vnet_cfg && !$zone_cfg;
 
     my $interfaces_config = PVE::INotify::read_file('interfaces');
+    my $bridge_ports = PVE::IPRoute2::get_bridge_port_mapping();
 
     #generate configuration
     my $config = {};
@@ -157,6 +159,7 @@ sub generate_etc_network_config {
                 $subnet_cfg,
                 $interfaces_config,
                 $config,
+                $bridge_ports,
             );
         };
         if (my $err = $@) {

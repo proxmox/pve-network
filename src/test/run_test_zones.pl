@@ -55,6 +55,16 @@ foreach my $test (@tests) {
         },
     );
 
+    my $pve_common_iproute;
+    $pve_common_iproute = Test::MockModule->new('PVE::IPRoute2');
+    $pve_common_iproute->mock(
+        get_bridge_port_mapping => sub {
+            return {
+                vmbr0 => ["eth0"],
+            },;
+        },
+    );
+
     my $pve_common_network;
     $pve_common_network = Test::MockModule->new('PVE::Network');
     $pve_common_network->mock(
@@ -93,9 +103,6 @@ foreach my $test (@tests) {
         },
         is_vlanaware => sub {
             return $interfaces_config->{ifaces}->{vmbr0}->{'bridge_vlan_aware'};
-        },
-        get_bridge_ifaces => sub {
-            return ('eth0');
         },
         find_bridge => sub {
             return;
