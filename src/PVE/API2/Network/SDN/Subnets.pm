@@ -78,8 +78,13 @@ __PACKAGE__->register_method({
         my @sids = PVE::Network::SDN::Subnets::sdn_subnets_ids($cfg);
         my $res = [];
         foreach my $id (@sids) {
-            my $scfg = PVE::Network::SDN::Subnets::api_get_subnet($cfg, $id);
-            next if !$scfg->{vnet} || $scfg->{vnet} ne $vnetid;
+            my $scfg = eval {
+                PVE::Network::SDN::Subnets::api_get_subnet_in_vnet_checked(
+                    $vnetid, $id, $privs, $cfg,
+                );
+            };
+            next if $@;
+
             push @$res, $scfg;
         }
 
@@ -139,11 +144,9 @@ __PACKAGE__->register_method({
             $cfg = PVE::Network::SDN::Subnets::config();
         }
 
-        my $scfg = PVE::Network::SDN::Subnets::api_get_subnet($cfg, $param->{subnet});
-
-        raise_param_exc({ vnet => "wrong vnet" }) if $vnet ne $scfg->{vnet};
-
-        return $scfg;
+        return PVE::Network::SDN::Subnets::api_get_subnet_in_vnet_checked(
+            $vnet, $param->{subnet}, $privs, $cfg,
+        );
     },
 });
 
@@ -245,14 +248,17 @@ __PACKAGE__->register_method({
 
         PVE::Network::SDN::lock_sdn_config(
             sub {
-
                 my $cfg = PVE::Network::SDN::Subnets::config();
+
+                my $privs = ['SDN.Allocate'];
+                my $scfg = PVE::Network::SDN::Subnets::api_get_subnet_in_vnet_checked(
+                    $vnet, $id, $privs, $cfg,
+                );
+
                 my $zone_cfg = PVE::Network::SDN::Zones::config();
                 my $vnet_cfg = PVE::Network::SDN::Vnets::config();
                 my $zoneid = $vnet_cfg->{ids}->{$vnet}->{zone};
                 my $zone = $zone_cfg->{ids}->{$zoneid};
-
-                my $scfg = PVE::Network::SDN::Subnets::api_get_subnet($cfg, $id);
 
                 PVE::SectionConfig::assert_if_modified($cfg, $digest);
 
@@ -319,7 +325,9 @@ __PACKAGE__->register_method({
             sub {
                 my $cfg = PVE::Network::SDN::Subnets::config();
 
-                my $scfg = PVE::Network::SDN::Subnets::sdn_subnets_config($cfg, $id, 1);
+                my $scfg = PVE::Network::SDN::Subnets::api_get_subnet_in_vnet_checked(
+                    $vnet, $id, $privs, $cfg,
+                );
 
                 my $vnets_cfg = PVE::Network::SDN::Vnets::config();
 

@@ -458,4 +458,54 @@ sub api_get_subnet {
     return $subnet;
 }
 
+=head3 api_get_subnet_checked($subnetid, $privs, $cfg)
+
+Returns the API-formatted version from C<api_get_subnet()>, if the current user
+has the permissions specified in C<$privs> on the parent vnet and the vnet
+exists in the configuration.
+
+It uses the passed C<$cfg> which can either be a pending, running or normal SDN
+configuration. The permission check honors pending changes to the parent zone.
+If no configuration is passed, the staged one is used.
+
+The same error message is returned in all cases, preventing information leaks.
+
+=cut
+
+sub api_get_subnet_checked {
+    my ($subnetid, $privs, $cfg) = @_;
+
+    $cfg = PVE::Network::SDN::Subnets::config() if !defined($cfg);
+
+    my $subnet = api_get_subnet($cfg, $subnetid);
+
+    # in pending configurations, newly created subnets have the vnet only
+    # available in the pending hash.
+    my $subnet_vnet = $subnet->{vnet} // $subnet->{pending}->{vnet};
+    PVE::Network::SDN::Vnets::api_get_vnet_checked($subnet_vnet, $privs);
+
+    return $subnet;
+}
+
+=head3 api_get_subnet_in_vnet_checked($vnetid, $subnetid, $privs, $cfg)
+
+Obtains the subnet via C<api_get_subnet_checked()>, but additionally checks if
+the subnet is contained in the vnet supplied via C<$vnetid>. The subnet API
+endpoints contain the vnet, so this function is intended as a helper for the
+API for checking if the vnet supplied in the path matches the actual vnet of the
+subnet.
+
+=cut
+
+sub api_get_subnet_in_vnet_checked {
+    my ($vnetid, $subnetid, $privs, $cfg) = @_;
+
+    my $subnet = api_get_subnet_checked($subnetid, $privs, $cfg);
+
+    raise_param_exc({ subnet => "could not find subnet '$subnetid'" })
+        if $subnet->{vnet} ne $vnetid;
+
+    return $subnet;
+}
+
 1;
