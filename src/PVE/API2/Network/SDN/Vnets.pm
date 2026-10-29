@@ -39,19 +39,6 @@ __PACKAGE__->register_method({
     path => '{vnet}/ips',
 });
 
-my $api_sdn_vnets_deleted_config = sub {
-    my ($cfg, $running_cfg, $id) = @_;
-
-    if (!$cfg->{ids}->{$id}) {
-
-        my $vnet_cfg =
-            dclone(PVE::Network::SDN::Vnets::sdn_vnets_config($running_cfg->{vnets}, $id));
-        $vnet_cfg->{state} = "deleted";
-        $vnet_cfg->{vnet} = $id;
-        return $vnet_cfg;
-    }
-};
-
 my $VNET_PROPERTIES = {
     alias => {
         type => 'string',
