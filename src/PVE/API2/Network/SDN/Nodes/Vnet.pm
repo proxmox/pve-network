@@ -3,7 +3,6 @@ package PVE::API2::Network::SDN::Nodes::Vnet;
 use strict;
 use warnings;
 
-use PVE::API2::Network::SDN::Vnets;
 use PVE::Exception qw(raise_param_exc);
 use PVE::JSONSchema qw(get_standard_option);
 use PVE::Network::SDN::Vnets;
@@ -49,7 +48,7 @@ __PACKAGE__->register_method({
         my ($param) = @_;
 
         my $vnet_id = extract_param($param, 'vnet');
-        $PVE::API2::Network::SDN::Vnets::check_vnet_access->($vnet_id, ['SDN.Audit']);
+        my $_vnet = PVE::Network::SDN::Vnets::api_get_vnet_checked($vnet_id, ['SDN.Audit']);
 
         my $res = [
             { subdir => 'mac-vrf' },
@@ -111,10 +110,9 @@ __PACKAGE__->register_method({
         my ($param) = @_;
 
         my $vnet_id = extract_param($param, 'vnet');
-
-        $PVE::API2::Network::SDN::Vnets::check_vnet_access->($vnet_id, ['SDN.Audit']);
-
-        my $vnet = PVE::Network::SDN::Vnets::get_vnet($vnet_id, 1);
+        my $running_config = PVE::Network::SDN::Vnets::config(1);
+        my $vnet = PVE::Network::SDN::Vnets::api_get_vnet_checked($vnet_id, ['SDN.Audit'],
+            $running_config);
 
         raise_param_exc({
             vnet => "vnet does not exist",

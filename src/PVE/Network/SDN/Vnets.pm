@@ -4,8 +4,10 @@ use strict;
 use warnings;
 
 use Net::IP;
+use Storable qw(dclone);
 
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
+use PVE::Exception qw(raise_param_exc);
 use PVE::Network::SDN;
 use PVE::Network::SDN::Dhcp;
 use PVE::Network::SDN::Subnets;
@@ -230,6 +232,59 @@ sub add_dhcp_mapping {
 
     ($ip4, $ip6) = PVE::Network::SDN::Vnets::get_ips_from_mac($vnetid, $mac);
     PVE::Network::SDN::Dhcp::add_mapping($vnetid, $mac, $ip4, $ip6) if $ip4 || $ip6;
+}
+
+=head3 api_get_vnet($cfg, $id)
+
+Returns the vnet with ID C<$id> from C<$cfg>, with API-specific fields (vnet,
+digest) added.
+
+Throws an error if the vnet does not exist.
+
+=cut
+
+sub api_get_vnet {
+    my ($cfg, $id) = @_;
+
+    my $vnet = eval { sdn_vnets_config($cfg, $id) };
+    raise_param_exc({ vnet => "could not find vnet '$id'" }) if $@;
+
+    $vnet = dclone($vnet);
+    $vnet->{vnet} = $id;
+    $vnet->{digest} = $cfg->{digest};
+
+    return $vnet;
+}
+
+=head3 api_get_vnet_checked($vnetid, $privs, $cfg)
+
+Returns the API-formatted version from C<api_get_vnet()>, if the current user has
+the permissions specified in C<$privs> and the vnet exists in the configuration.
+
+It uses the passed C<$cfg> which can either be a pending, running or normal SDN
+configuration. The permission check honors pending changes to the parent zone.
+
+The same error message is returned in all cases, preventing information leaks.
+
+=cut
+
+sub api_get_vnet_checked {
+    my ($vnetid, $privs, $cfg) = @_;
+
+    $cfg = config() if !defined($cfg);
+
+    my $rpcenv = PVE::RPCEnvironment::get();
+    my $authuser = $rpcenv->get_user();
+
+    my $vnet = api_get_vnet($cfg, $vnetid);
+
+    # in pending configurations, newly created vnets have the zone only
+    # available in the pending hash.
+    my $zoneid = $vnet->{zone} // $vnet->{pending}->{zone};
+    raise_param_exc({ vnet => "could not find vnet '$vnetid'" })
+        if !$rpcenv->check_any($authuser, "/sdn/zones/$zoneid/$vnetid", $privs, 1);
+
+    return $vnet;
 }
 
 1;

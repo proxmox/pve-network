@@ -34,27 +34,6 @@ my $api_sdn_subnets_config = sub {
     return $scfg;
 };
 
-my $api_sdn_vnets_config = sub {
-    my ($cfg, $id) = @_;
-
-    my $scfg = dclone(PVE::Network::SDN::Vnets::sdn_vnets_config($cfg, $id));
-    $scfg->{vnet} = $id;
-    $scfg->{digest} = $cfg->{digest};
-
-    return $scfg;
-};
-
-my $check_vnet_access = sub {
-    my ($vnet, $privs) = @_;
-
-    my $cfg = PVE::Network::SDN::Vnets::config();
-    my $rpcenv = PVE::RPCEnvironment::get();
-    my $authuser = $rpcenv->get_user();
-    my $scfg = &$api_sdn_vnets_config($cfg, $vnet);
-    my $zoneid = $scfg->{zone};
-    $rpcenv->check_any($authuser, "/sdn/zones/$zoneid/$vnet", $privs);
-};
-
 __PACKAGE__->register_method({
     name => 'index',
     path => '',
@@ -94,7 +73,7 @@ __PACKAGE__->register_method({
 
         my $vnetid = $param->{vnet};
         my $privs = ['SDN.Audit', 'SDN.Allocate'];
-        &$check_vnet_access($vnetid, $privs);
+        my $_vnet = PVE::Network::SDN::Vnets::api_get_vnet_checked($vnetid, $privs);
 
         my $cfg = {};
         if ($param->{pending}) {
@@ -158,7 +137,7 @@ __PACKAGE__->register_method({
 
         my $vnet = extract_param($param, 'vnet');
         my $privs = ['SDN.Audit', 'SDN.Allocate'];
-        &$check_vnet_access($vnet, $privs);
+        my $_vnet = PVE::Network::SDN::Vnets::api_get_vnet_checked($vnet, $privs);
 
         my $cfg = {};
         if ($param->{pending}) {
@@ -206,7 +185,7 @@ __PACKAGE__->register_method({
 
         my $vnet = $param->{vnet};
         my $privs = ['SDN.Allocate'];
-        &$check_vnet_access($vnet, $privs);
+        my $_vnet = PVE::Network::SDN::Vnets::api_get_vnet_checked($vnet, $privs);
 
         # create /etc/pve/sdn directory
         PVE::Cluster::check_cfs_quorum();
@@ -273,9 +252,8 @@ __PACKAGE__->register_method({
         my $lock_token = extract_param($param, 'lock-token');
 
         my $vnet = $param->{vnet};
-
         my $privs = ['SDN.Allocate'];
-        &$check_vnet_access($vnet, $privs);
+        my $_vnet = PVE::Network::SDN::Vnets::api_get_vnet_checked($vnet, $privs);
 
         PVE::Network::SDN::lock_sdn_config(
             sub {
@@ -347,7 +325,7 @@ __PACKAGE__->register_method({
         my $lock_token = extract_param($param, 'lock-token');
 
         my $privs = ['SDN.Allocate'];
-        &$check_vnet_access($vnet, $privs);
+        my $_vnet = PVE::Network::SDN::Vnets::api_get_vnet_checked($vnet, $privs);
 
         PVE::Network::SDN::lock_sdn_config(
             sub {

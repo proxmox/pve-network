@@ -16,7 +16,6 @@ use PVE::API2::Network::SDN::Subnets;
 use PVE::API2::Network::SDN::Ips;
 use PVE::API2::Firewall::Vnet;
 
-use Storable qw(dclone);
 use PVE::JSONSchema qw(get_standard_option);
 use PVE::RPCEnvironment;
 use PVE::Exception qw(raise raise_param_exc);
@@ -40,16 +39,6 @@ __PACKAGE__->register_method({
     path => '{vnet}/ips',
 });
 
-my $api_sdn_vnets_config = sub {
-    my ($cfg, $id) = @_;
-
-    my $scfg = dclone(PVE::Network::SDN::Vnets::sdn_vnets_config($cfg, $id));
-    $scfg->{vnet} = $id;
-    $scfg->{digest} = $cfg->{digest};
-
-    return $scfg;
-};
-
 my $api_sdn_vnets_deleted_config = sub {
     my ($cfg, $running_cfg, $id) = @_;
 
@@ -61,17 +50,6 @@ my $api_sdn_vnets_deleted_config = sub {
         $vnet_cfg->{vnet} = $id;
         return $vnet_cfg;
     }
-};
-
-our $check_vnet_access = sub {
-    my ($vnet, $privs) = @_;
-
-    my $cfg = PVE::Network::SDN::Vnets::config();
-    my $rpcenv = PVE::RPCEnvironment::get();
-    my $authuser = $rpcenv->get_user();
-    my $scfg = &$api_sdn_vnets_config($cfg, $vnet);
-    my $zoneid = $scfg->{zone};
-    $rpcenv->check_any($authuser, "/sdn/zones/$zoneid/$vnet", $privs);
 };
 
 my $VNET_PROPERTIES = {
@@ -189,9 +167,9 @@ __PACKAGE__->register_method({
         my $res = [];
         foreach my $id (@sids) {
             my $privs = ['SDN.Audit', 'SDN.Allocate'];
-            my $scfg = &$api_sdn_vnets_config($cfg, $id);
-            my $zoneid = $scfg->{zone} // $scfg->{pending}->{zone};
-            next if !$rpcenv->check_any($authuser, "/sdn/zones/$zoneid/$id", $privs, 1);
+            my $scfg =
+                eval { PVE::Network::SDN::Vnets::api_get_vnet_checked($id, $privs, $cfg) };
+            next if $@;
 
             push @$res, $scfg;
         }
@@ -266,7 +244,7 @@ __PACKAGE__->register_method({
         my $id = extract_param($param, 'vnet');
 
         my $privs = ['SDN.Audit', 'SDN.Allocate'];
-        &$check_vnet_access($id, $privs);
+        my $_vnet = PVE::Network::SDN::Vnets::api_get_vnet_checked($id, $privs);
 
         my $cfg = {};
         if ($param->{pending}) {
@@ -280,7 +258,7 @@ __PACKAGE__->register_method({
             $cfg = PVE::Network::SDN::Vnets::config();
         }
 
-        return $api_sdn_vnets_config->($cfg, $id);
+        return PVE::Network::SDN::Vnets::api_get_vnet($cfg, $id);
     },
 });
 
@@ -365,7 +343,7 @@ __PACKAGE__->register_method({
         my $lock_token = extract_param($param, 'lock-token');
 
         my $privs = ['SDN.Allocate'];
-        &$check_vnet_access($id, $privs);
+        my $_vnet = PVE::Network::SDN::Vnets::api_get_vnet_checked($id, $privs);
 
         if ($delete) {
             $delete = [PVE::Tools::split_list($delete)];
@@ -445,7 +423,7 @@ __PACKAGE__->register_method({
         my $lock_token = extract_param($param, 'lock-token');
 
         my $privs = ['SDN.Allocate'];
-        &$check_vnet_access($id, $privs);
+        my $_vnet = PVE::Network::SDN::Vnets::api_get_vnet_checked($id, $privs);
 
         PVE::Network::SDN::lock_sdn_config(
             sub {
