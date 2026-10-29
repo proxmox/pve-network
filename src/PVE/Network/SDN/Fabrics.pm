@@ -6,9 +6,13 @@ use warnings;
 use Socket qw(inet_pton AF_INET AF_INET6);
 
 use PVE::Cluster qw(cfs_register_file cfs_read_file cfs_lock_file cfs_write_file);
+use PVE::Exception qw(raise_param_exc);
 use PVE::JSONSchema qw(get_standard_option);
 use PVE::INotify;
 use PVE::ParseUtils qw($IPV4RE);
+
+use PVE::Network::SDN::PrefixLists;
+use PVE::Network::SDN::RouteMaps;
 
 use PVE::RS::SDN;
 use PVE::RS::SDN::Fabrics;
@@ -690,6 +694,79 @@ sub fabric_properties {
     }
 
     return $properties;
+}
+
+=head3 api_validate_property_references($fabric, $privs, $rpcenv, $authuser)
+
+For properties that reference another SDN entity in C<$fabric> this function
+checks if they exist and if the C<$authuser> has the permissions in C<$privs>
+for that entity.
+
+If C<$authuser> and C<$rpcenv> are not given, they are obtained via
+C<PVE::RPCEnvironment::get>.
+
+=cut
+
+sub api_validate_property_references {
+    my ($fabric, $privs, $rpcenv, $authuser) = @_;
+
+    $rpcenv = PVE::RPCEnvironment::get() if !defined($rpcenv);
+    $authuser = $rpcenv->get_user() if !defined($authuser);
+
+    my $prefix_list_config = PVE::Network::SDN::PrefixLists::config();
+    my $route_map_config = PVE::Network::SDN::RouteMaps::config();
+
+    if (my $route_filter = $fabric->{'route_filter'}) {
+        raise_param_exc({ route_filter => "could not find prefix list $route_filter" })
+            if !$prefix_list_config->get($route_filter);
+
+        raise_param_exc({ route_filter => "could not find prefix list $route_filter" })
+            if !$rpcenv->check_any($authuser, "/sdn/prefix-lists/$route_filter", $privs, 1);
+    }
+
+    if (my $route_map_in = $fabric->{'route_map_in'}) {
+        raise_param_exc({ route_map_in => "could not find route map $route_map_in" })
+            if !scalar($route_map_config->list_route_map($route_map_in));
+
+        raise_param_exc({ route_map_in => "could not find route map $route_map_in" })
+            if !$rpcenv->check_any($authuser, "/sdn/route-maps/$route_map_in", $privs, 1);
+    }
+
+    if (my $route_map_out = $fabric->{'route_map_out'}) {
+        raise_param_exc({ route_map_out => "could not find route map $route_map_out" })
+            if !scalar($route_map_config->list_route_map($route_map_out));
+
+        raise_param_exc({ route_map_out => "could not find route map $route_map_out" })
+            if !$rpcenv->check_any($authuser, "/sdn/route-maps/$route_map_out", $privs, 1);
+    }
+
+    if (my $route_redistribution = $fabric->{redistribute}) {
+        raise_param_exc({ protocol => "no protocol specified" })
+            if !$fabric->{protocol};
+
+        for my $redistribution ($route_redistribution->@*) {
+            my $parsed;
+            if ($fabric->{protocol} eq 'bgp') {
+                $parsed = PVE::RS::SDN::Fabrics::parse_bgp_redistribute($redistribution);
+            } elsif ($fabric->{protocol} eq 'ospf') {
+                $parsed = PVE::RS::SDN::Fabrics::parse_ospf_redistribute($redistribution);
+            } else {
+                raise_param_exc({
+                    redistribute =>
+                        "protocol $fabric->{protocol} cannot have redistribution configured",
+                });
+            }
+
+            if (my $route_map = $parsed->{'route-map'}) {
+                raise_param_exc({ redistribute => "could not find route map $route_map" })
+                    if !scalar($route_map_config->list_route_map($route_map));
+
+                raise_param_exc({ redistribute => "could not find route map $route_map" })
+                    if !$rpcenv->check_any($authuser, "/sdn/route-maps/$route_map", $privs, 1);
+            }
+        }
+
+    }
 }
 
 1;

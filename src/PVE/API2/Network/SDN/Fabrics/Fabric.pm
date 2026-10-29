@@ -157,6 +157,9 @@ __PACKAGE__->register_method({
                     }
                 }
 
+                my $privs = ['SDN.Use', 'SDN.Allocate'];
+                PVE::Network::SDN::Fabrics::api_validate_property_references($param, $privs);
+
                 $config->add_fabric($param);
                 PVE::Network::SDN::Fabrics::write_config($config);
             },
@@ -193,6 +196,9 @@ __PACKAGE__->register_method({
 
                 my $digest = extract_param($param, 'digest');
                 PVE::Tools::assert_if_modified($config->digest(), $digest) if $digest;
+
+                my $privs = ['SDN.Use', 'SDN.Allocate'];
+                PVE::Network::SDN::Fabrics::api_validate_property_references($param, $privs);
 
                 $config->update_fabric($id, $param);
                 PVE::Network::SDN::Fabrics::write_config($config);
