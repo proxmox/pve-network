@@ -327,9 +327,6 @@ __PACKAGE__->register_method({
         my $delete = extract_param($param, 'delete');
         my $lock_token = extract_param($param, 'lock-token');
 
-        my $privs = ['SDN.Allocate'];
-        my $_vnet = PVE::Network::SDN::Vnets::api_get_vnet_checked($id, $privs);
-
         if ($delete) {
             $delete = [PVE::Tools::split_list($delete)];
         }
@@ -338,10 +335,14 @@ __PACKAGE__->register_method({
             sub {
                 my $cfg = PVE::Network::SDN::Vnets::config();
 
+                my $privs = ['SDN.Allocate'];
+                my $_vnet = PVE::Network::SDN::Vnets::api_get_vnet_checked($id, $privs, $cfg);
+
                 PVE::SectionConfig::assert_if_modified($cfg, $digest);
 
                 my $opts = PVE::Network::SDN::VnetPlugin->check_config($id, $param, 0, 1);
 
+                # cannot reuse get_vnet data here, as it is a deep clone
                 my $data = $cfg->{ids}->{$id};
                 my $old_zone = $data->{zone};
 
@@ -407,16 +408,14 @@ __PACKAGE__->register_method({
         my $id = extract_param($param, 'vnet');
         my $lock_token = extract_param($param, 'lock-token');
 
-        my $privs = ['SDN.Allocate'];
-        my $_vnet = PVE::Network::SDN::Vnets::api_get_vnet_checked($id, $privs);
-
         PVE::Network::SDN::lock_sdn_config(
             sub {
                 my $cfg = PVE::Network::SDN::Vnets::config();
-                my $scfg = PVE::Network::SDN::Vnets::sdn_vnets_config($cfg, $id); # check if exists
-                my $vnet_cfg = PVE::Network::SDN::Vnets::config();
 
-                PVE::Network::SDN::VnetPlugin->on_delete_hook($id, $vnet_cfg);
+                my $privs = ['SDN.Allocate'];
+                my $scfg = PVE::Network::SDN::Vnets::api_get_vnet_checked($id, $privs, $cfg);
+
+                PVE::Network::SDN::VnetPlugin->on_delete_hook($id, $cfg);
 
                 delete $cfg->{ids}->{$id};
                 PVE::Network::SDN::Vnets::write_config($cfg);

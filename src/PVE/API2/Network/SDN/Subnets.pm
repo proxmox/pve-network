@@ -176,8 +176,6 @@ __PACKAGE__->register_method({
         my $lock_token = extract_param($param, 'lock-token');
 
         my $vnet = $param->{vnet};
-        my $privs = ['SDN.Allocate'];
-        my $_vnet = PVE::Network::SDN::Vnets::api_get_vnet_checked($vnet, $privs);
 
         # create /etc/pve/sdn directory
         PVE::Cluster::check_cfs_quorum();
@@ -185,10 +183,13 @@ __PACKAGE__->register_method({
 
         PVE::Network::SDN::lock_sdn_config(
             sub {
+                my $vnet_cfg = PVE::Network::SDN::Vnets::config();
+                my $privs = ['SDN.Allocate'];
+                my $_vnet =
+                    PVE::Network::SDN::Vnets::api_get_vnet_checked($vnet, $privs, $vnet_cfg);
 
                 my $cfg = PVE::Network::SDN::Subnets::config();
                 my $zone_cfg = PVE::Network::SDN::Zones::config();
-                my $vnet_cfg = PVE::Network::SDN::Vnets::config();
                 my $vnet = $param->{vnet};
                 my $zoneid = $vnet_cfg->{ids}->{$vnet}->{zone};
                 my $zone = $zone_cfg->{ids}->{$zoneid};
@@ -244,20 +245,21 @@ __PACKAGE__->register_method({
         my $lock_token = extract_param($param, 'lock-token');
 
         my $vnet = $param->{vnet};
-        my $privs = ['SDN.Allocate'];
-        my $_vnet = PVE::Network::SDN::Vnets::api_get_vnet_checked($vnet, $privs);
 
         PVE::Network::SDN::lock_sdn_config(
             sub {
                 my $cfg = PVE::Network::SDN::Subnets::config();
 
+                my $vnet_cfg = PVE::Network::SDN::Vnets::config();
                 my $privs = ['SDN.Allocate'];
+                my $_vnet =
+                    PVE::Network::SDN::Vnets::api_get_vnet_checked($vnet, $privs, $vnet_cfg);
+
                 my $scfg = PVE::Network::SDN::Subnets::api_get_subnet_in_vnet_checked(
                     $vnet, $id, $privs, $cfg,
                 );
 
                 my $zone_cfg = PVE::Network::SDN::Zones::config();
-                my $vnet_cfg = PVE::Network::SDN::Vnets::config();
                 my $zoneid = $vnet_cfg->{ids}->{$vnet}->{zone};
                 my $zone = $zone_cfg->{ids}->{$zoneid};
 
@@ -319,18 +321,18 @@ __PACKAGE__->register_method({
         my $vnet = extract_param($param, 'vnet');
         my $lock_token = extract_param($param, 'lock-token');
 
-        my $privs = ['SDN.Allocate'];
-        my $_vnet = PVE::Network::SDN::Vnets::api_get_vnet_checked($vnet, $privs);
-
         PVE::Network::SDN::lock_sdn_config(
             sub {
+                my $vnets_cfg = PVE::Network::SDN::Vnets::config();
+                my $privs = ['SDN.Allocate'];
+                my $_vnet =
+                    PVE::Network::SDN::Vnets::api_get_vnet_checked($vnet, $privs, $vnets_cfg);
+
                 my $cfg = PVE::Network::SDN::Subnets::config();
 
                 my $scfg = PVE::Network::SDN::Subnets::api_get_subnet_in_vnet_checked(
                     $vnet, $id, $privs, $cfg,
                 );
-
-                my $vnets_cfg = PVE::Network::SDN::Vnets::config();
 
                 PVE::Network::SDN::SubnetPlugin->on_delete_hook($id, $cfg, $vnets_cfg);
 
