@@ -4,7 +4,9 @@ use strict;
 use warnings;
 
 use JSON;
+use Storable qw(dclone);
 
+use PVE::Exception qw(raise_param_exc);
 use PVE::Tools qw(extract_param dir_glob_regex run_command);
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 use PVE::IPRoute2;
@@ -382,6 +384,76 @@ sub get_mtu {
 
     my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($zone_config->{type});
     return $plugin->get_mtu($zone_config) // $default_mtu;
+}
+
+=head3 api_get_zone($cfg, $id)
+
+Returns the zone with ID C<$id> from C<$cfg>, with API-specific fields (zone,
+digest) added.
+
+Throws an error if the zone does not exist.
+
+=cut
+
+sub api_get_zone {
+    my ($cfg, $id) = @_;
+
+    my $zone = eval { PVE::Network::SDN::Zones::sdn_zones_config($cfg, $id) };
+    raise_param_exc({ zone => "could not find zone '$id'" }) if $@;
+
+    $zone = dclone($zone);
+    $zone->{zone} = $id;
+    $zone->{digest} = $cfg->{digest};
+
+    if ($zone->{nodes}) {
+        $zone->{nodes} =
+            PVE::Network::SDN::encode_value($zone->{type}, 'nodes', $zone->{nodes});
+    }
+
+    if ($zone->{exitnodes}) {
+        $zone->{exitnodes} =
+            PVE::Network::SDN::encode_value($zone->{type}, 'exitnodes', $zone->{exitnodes});
+    }
+
+    my $pending = $zone->{pending};
+    if ($pending->{nodes}) {
+        $pending->{nodes} =
+            PVE::Network::SDN::encode_value($zone->{type}, 'nodes', $pending->{nodes});
+    }
+
+    if ($pending->{exitnodes}) {
+        $pending->{exitnodes} =
+            PVE::Network::SDN::encode_value($zone->{type}, 'exitnodes', $pending->{exitnodes});
+    }
+
+    return $zone;
+}
+
+=head3 api_get_zone_checked($zoneid, $privs, $cfg)
+
+Returns the API-formatted version from C<api_get_zone()>, if the current user
+has the permissions specified in C<$privs> and the zone exists in the
+configuration.
+
+It uses the passed C<$cfg> which can either be a pending, running or normal SDN
+configuration. The permission check honors pending changes to the parent zone.
+
+The same error message is returned in all cases, preventing information leaks.
+
+=cut
+
+sub api_get_zone_checked {
+    my ($zoneid, $privs, $cfg) = @_;
+
+    $cfg = config() if !defined($cfg);
+
+    my $rpcenv = PVE::RPCEnvironment::get();
+    my $authuser = $rpcenv->get_user();
+
+    raise_param_exc({ zone => "could not find zone '$zoneid'" })
+        if !$rpcenv->check_any($authuser, "/sdn/zones/$zoneid", $privs, 1);
+
+    return api_get_zone($cfg, $zoneid);
 }
 
 1;

@@ -3,8 +3,6 @@ package PVE::API2::Network::SDN::Zones;
 use strict;
 use warnings;
 
-use Storable qw(dclone);
-
 use PVE::Cluster qw(cfs_read_file cfs_write_file);
 use PVE::Exception qw(raise raise_param_exc);
 use PVE::JSONSchema qw(get_standard_option);
@@ -30,37 +28,6 @@ use PVE::RESTHandler;
 use base qw(PVE::RESTHandler);
 
 my $sdn_zones_type_enum = PVE::Network::SDN::Zones::Plugin->lookup_types();
-
-my $api_sdn_zones_config = sub {
-    my ($cfg, $id) = @_;
-
-    my $scfg = dclone(PVE::Network::SDN::Zones::sdn_zones_config($cfg, $id));
-    $scfg->{zone} = $id;
-    $scfg->{digest} = $cfg->{digest};
-
-    if ($scfg->{nodes}) {
-        $scfg->{nodes} =
-            PVE::Network::SDN::encode_value($scfg->{type}, 'nodes', $scfg->{nodes});
-    }
-
-    if ($scfg->{exitnodes}) {
-        $scfg->{exitnodes} =
-            PVE::Network::SDN::encode_value($scfg->{type}, 'exitnodes', $scfg->{exitnodes});
-    }
-
-    my $pending = $scfg->{pending};
-    if ($pending->{nodes}) {
-        $pending->{nodes} =
-            PVE::Network::SDN::encode_value($scfg->{type}, 'nodes', $pending->{nodes});
-    }
-
-    if ($pending->{exitnodes}) {
-        $pending->{exitnodes} =
-            PVE::Network::SDN::encode_value($scfg->{type}, 'exitnodes', $pending->{exitnodes});
-    }
-
-    return $scfg;
-};
 
 my $ZONE_PROPERTIES = {
     mtu => {
@@ -301,9 +268,9 @@ __PACKAGE__->register_method({
         my $res = [];
         for my $id (@sids) {
             my $privs = ['SDN.Audit', 'SDN.Allocate'];
-            next if !$rpcenv->check_any($authuser, "/sdn/zones/$id", $privs, 1);
-
-            my $scfg = &$api_sdn_zones_config($cfg, $id);
+            my $scfg =
+                eval { PVE::Network::SDN::Zones::api_get_zone_checked($id, $privs, $cfg) };
+            next if $@;
             next if $param->{type} && $param->{type} ne $scfg->{type};
 
             my $plugin_config = $cfg->{ids}->{$id};
@@ -382,7 +349,7 @@ __PACKAGE__->register_method({
             $cfg = PVE::Network::SDN::Zones::config();
         }
 
-        return &$api_sdn_zones_config($cfg, $param->{zone});
+        return PVE::Network::SDN::Zones::api_get_zone($cfg, $param->{zone});
     },
 });
 
