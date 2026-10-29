@@ -80,6 +80,11 @@ __PACKAGE__->register_method({
                 my $order = extract_param($param, 'order');
                 my $delete = extract_param($param, 'delete');
 
+                my $privs = ['SDN.Use', 'SDN.Allocate'];
+                PVE::Network::SDN::RouteMaps::api_validate_entry_property_references(
+                    $param, $privs,
+                );
+
                 $config->update($route_map_id, $order, $param, $delete);
                 PVE::Network::SDN::RouteMaps::write_config($config);
             },

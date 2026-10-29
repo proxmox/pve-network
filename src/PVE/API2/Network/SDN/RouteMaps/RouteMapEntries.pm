@@ -128,6 +128,11 @@ __PACKAGE__->register_method({
                 my $digest = extract_param($param, 'digest');
                 PVE::Tools::assert_if_modified($config->digest(), $digest) if $digest;
 
+                my $privs = ['SDN.Use', 'SDN.Allocate'];
+                PVE::Network::SDN::RouteMaps::api_validate_entry_property_references(
+                    $param, $privs,
+                );
+
                 $config->create($param);
                 PVE::Network::SDN::RouteMaps::write_config($config);
             },

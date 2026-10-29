@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use PVE::Cluster qw(cfs_register_file cfs_read_file cfs_lock_file cfs_write_file);
+use PVE::Exception qw(raise_param_exc);
 use PVE::JSONSchema qw(get_standard_option);
 use PVE::INotify;
 use PVE::Network::SDN;
@@ -230,6 +231,58 @@ sub route_map_properties {
     }
 
     return $properties;
+}
+
+=head3 api_validate_entry_property_references($entry, $privs, $rpcenv, $authuser)
+
+For properties that reference another SDN entity in C<$entry> this function
+checks if they exist and if the C<$authuser> has the permissions in C<$privs>
+for that entity.
+
+If C<$authuser> and C<$rpcenv> are not given, they are obtained via
+C<PVE::RPCEnvironment::get>.
+
+=cut
+
+sub api_validate_entry_property_references {
+    my ($entry, $privs, $rpcenv, $authuser) = @_;
+
+    $rpcenv = PVE::RPCEnvironment::get() if !defined($rpcenv);
+    $authuser = $rpcenv->get_user() if !defined($authuser);
+
+    my $prefix_list_config = PVE::Network::SDN::PrefixLists::config();
+    my $route_map_config = PVE::Network::SDN::RouteMaps::config();
+
+    if (my $route_map = $entry->{'call'}) {
+        raise_param_exc({ call => "could not find route map $route_map" })
+            if !scalar($route_map_config->list_route_map($route_map));
+
+        raise_param_exc({ call => "could not find route map $route_map" })
+            if !$rpcenv->check_any($authuser, "/sdn/route-maps/$route_map", $privs, 1);
+    }
+
+    if (my $match_statements = $entry->{'match'}) {
+        for my $match_statement ($match_statements->@*) {
+            my $parsed_statement = PVE::RS::SDN::RouteMaps::parse_match($match_statement);
+
+            if ($parsed_statement->{key} =~
+                m/\A(?:ip-address-prefix-list|ip6-address-prefix-list|ip-next-hop-prefix-list|ip6-next-hop-prefix-list)\z/
+            ) {
+                raise_param_exc({
+                    match => "could not find prefix list $parsed_statement->{value}" })
+                    if !$prefix_list_config->get($parsed_statement->{value});
+
+                raise_param_exc({
+                    match => "could not find prefix list $parsed_statement->{value}" })
+                    if !$rpcenv->check_any(
+                        $authuser,
+                        "/sdn/prefix-lists/$parsed_statement->{value}",
+                        $privs,
+                        1,
+                    );
+            }
+        }
+    }
 }
 
 1;
