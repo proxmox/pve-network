@@ -484,6 +484,17 @@ sub api_get_subnet_checked {
     my $subnet_vnet = $subnet->{vnet} // $subnet->{pending}->{vnet};
     PVE::Network::SDN::Vnets::api_get_vnet_checked($subnet_vnet, $privs);
 
+    if ($subnet->{vnet} && $subnet->{pending} && $subnet->{pending}->{vnet}) {
+        # do not show pending changes if user does not have access to pending
+        # vnet, show as deleted instead.
+        eval { PVE::Network::SDN::Vnets::api_get_vnet_checked($subnet->{pending}->{vnet}, $privs) };
+
+        if ($@) {
+            delete $subnet->{pending};
+            $subnet->{state} = 'deleted';
+        }
+    }
+
     return $subnet;
 }
 

@@ -284,6 +284,17 @@ sub api_get_vnet_checked {
     raise_param_exc({ vnet => "could not find vnet '$vnetid'" })
         if !$rpcenv->check_any($authuser, "/sdn/zones/$zoneid/$vnetid", $privs, 1);
 
+    if ($vnet->{zone} && $vnet->{pending} && $vnet->{pending}->{zone}) {
+        # do not show pending changes if user does not have access to pending
+        # zone, show as deleted instead.
+        eval { PVE::Network::SDN::Zones::api_get_zone_checked($vnet->{pending}->{zone}, $privs) };
+
+        if ($@) {
+            delete $vnet->{pending};
+            $vnet->{state} = 'deleted';
+        }
+    }
+
     return $vnet;
 }
 
