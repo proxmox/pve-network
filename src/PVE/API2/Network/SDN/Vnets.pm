@@ -336,7 +336,12 @@ __PACKAGE__->register_method({
                 my $cfg = PVE::Network::SDN::Vnets::config();
 
                 my $privs = ['SDN.Allocate'];
-                my $_vnet = PVE::Network::SDN::Vnets::api_get_vnet_checked($id, $privs, $cfg);
+                my $vnet = PVE::Network::SDN::Vnets::api_get_vnet_checked($id, $privs, $cfg);
+
+                if (defined($param->{zone}) && $param->{zone} ne $vnet->{zone}) {
+                    my $_zone =
+                        PVE::Network::SDN::Zones::api_get_zone_checked($param->{zone}, $privs);
+                }
 
                 PVE::SectionConfig::assert_if_modified($cfg, $digest);
 

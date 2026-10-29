@@ -963,4 +963,18 @@ run_test(
     2,
 );
 
+sub test_update_vnet_without_zone {
+    my $test_name = (split(/::/, (caller(0))[3]))[-1];
+    my $zoneid = "TESTZONE";
+    my $vnetid = "testvnet";
+
+    create_zone({ type => "simple", ipam => "pve", zone => $zoneid });
+    create_vnet({ type => "vnet", zone => $zoneid, vnet => $vnetid });
+
+    eval { PVE::API2::Network::SDN::Vnets->update({ vnet => $vnetid, alias => "renamed" }) };
+    ok(!$@, "$test_name: updating a vnet without passing its zone works") or diag($@);
+    is(get_vnet($vnetid)->{alias}, "renamed", "$test_name: the alias got updated");
+}
+run_test(\&test_update_vnet_without_zone);
+
 done_testing();
