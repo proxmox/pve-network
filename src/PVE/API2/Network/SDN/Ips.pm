@@ -20,12 +20,21 @@ __PACKAGE__->register_method({
     description => 'Delete IP Mappings in a VNet',
     protected => 1,
     permissions => {
-        check => ['perm', '/sdn/zones/{zone}/{vnet}', ['SDN.Allocate']],
+        description => "Requires 'SDN.Allocate' on '/sdn/zones/<zone>/<vnet>'",
+        user => 'all',
     },
     parameters => {
         additionalProperties => 0,
         properties => {
-            zone => get_standard_option('pve-sdn-zone-id'),
+            # FIXME: Remove with PVE 10 as it is unused.
+            zone => get_standard_option(
+                'pve-sdn-zone-id',
+                {
+                    description =>
+                        'DEPRECATED: value is ignored and parameter will be removed with PVE 10',
+                    optional => 1,
+                },
+            ),
             vnet => get_standard_option('pve-sdn-vnet-id'),
             mac => get_standard_option('mac-addr'),
             ip => {
@@ -40,6 +49,9 @@ __PACKAGE__->register_method({
         my ($param) = @_;
 
         my $vnet = extract_param($param, 'vnet');
+        my $privs = ['SDN.Allocate'];
+        PVE::Network::SDN::Vnets::api_get_vnet_checked($vnet, $privs);
+
         my $mac = extract_param($param, 'mac');
         my $ip = extract_param($param, 'ip');
 
@@ -57,12 +69,21 @@ __PACKAGE__->register_method({
     description => 'Create IP Mapping in a VNet',
     protected => 1,
     permissions => {
-        check => ['perm', '/sdn/zones/{zone}/{vnet}', ['SDN.Allocate']],
+        description => "Requires 'SDN.Allocate' on '/sdn/zones/<zone>/<vnet>'",
+        user => 'all',
     },
     parameters => {
         additionalProperties => 0,
         properties => {
-            zone => get_standard_option('pve-sdn-zone-id'),
+            # FIXME: Remove with PVE 10 as it is unused.
+            zone => get_standard_option(
+                'pve-sdn-zone-id',
+                {
+                    description =>
+                        'DEPRECATED: value is ignored and parameter will be removed with PVE 10',
+                    optional => 1,
+                },
+            ),
             vnet => get_standard_option('pve-sdn-vnet-id'),
             mac => get_standard_option('mac-addr'),
             ip => {
@@ -77,6 +98,9 @@ __PACKAGE__->register_method({
         my ($param) = @_;
 
         my $vnet = extract_param($param, 'vnet');
+        my $privs = ['SDN.Allocate'];
+        PVE::Network::SDN::Vnets::api_get_vnet_checked($vnet, $privs);
+
         my $mac = extract_param($param, 'mac');
         my $ip = extract_param($param, 'ip');
 
@@ -92,12 +116,21 @@ __PACKAGE__->register_method({
     description => 'Update IP Mapping in a VNet',
     protected => 1,
     permissions => {
-        check => ['perm', '/sdn/zones/{zone}/{vnet}', ['SDN.Allocate']],
+        description => "Requires 'SDN.Allocate' on '/sdn/zones/<zone>/<vnet>'",
+        user => 'all',
     },
     parameters => {
         additionalProperties => 0,
         properties => {
-            zone => get_standard_option('pve-sdn-zone-id'),
+            # FIXME: Remove with PVE 10 as it is unused.
+            zone => get_standard_option(
+                'pve-sdn-zone-id',
+                {
+                    description =>
+                        'DEPRECATED: value is ignored and parameter will be removed with PVE 10',
+                    optional => 1,
+                },
+            ),
             vnet => get_standard_option('pve-sdn-vnet-id'),
             vmid => get_standard_option('pve-vmid', {
                     optional => 1,
@@ -115,6 +148,9 @@ __PACKAGE__->register_method({
         my ($param) = @_;
 
         my $vnet = extract_param($param, 'vnet');
+        my $privs = ['SDN.Allocate'];
+        PVE::Network::SDN::Vnets::api_get_vnet_checked($vnet, $privs);
+
         my $mac = extract_param($param, 'mac');
         my $vmid = extract_param($param, 'vmid');
         my $ip = extract_param($param, 'ip');
