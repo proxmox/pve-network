@@ -6,8 +6,10 @@ use warnings;
 use Net::Subnet qw(subnet_matcher);
 use Net::IP;
 use NetAddr::IP qw(:lower);
+use Storable qw(dclone);
 
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
+use PVE::Exception qw(raise_param_exc);
 use PVE::JSONSchema qw(parse_property_string);
 use PVE::Network::SDN::Dns;
 use PVE::Network::SDN::Ipams;
@@ -431,6 +433,29 @@ sub del_ip {
     if ($@) {
         warn $@;
     }
+}
+
+=head3 api_get_subnet($cfg, $id)
+
+Returns the subnet with ID C<$id> from C<$cfg>, with API-specific fields
+(subnet, dhcp-range, digest) added.
+
+Throws an error if the subnet does not exist.
+
+=cut
+
+sub api_get_subnet {
+    my ($cfg, $id) = @_;
+
+    my $subnet = eval { PVE::Network::SDN::Subnets::sdn_subnets_config($cfg, $id) };
+    raise_param_exc({ subnet => "could not find subnet '$id'" }) if $@;
+
+    $subnet = dclone($subnet);
+    $subnet->{subnet} = $id;
+    $subnet->{digest} = $cfg->{digest};
+    $subnet->{'dhcp-range'} = get_dhcp_ranges($subnet);
+
+    return $subnet;
 }
 
 1;

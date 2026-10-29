@@ -15,24 +15,12 @@ use PVE::Network::SDN::Zones;
 use PVE::Network::SDN::Ipams;
 use PVE::Network::SDN::Ipams::Plugin;
 
-use Storable qw(dclone);
 use PVE::JSONSchema qw(get_standard_option);
 use PVE::RPCEnvironment;
 
 use PVE::RESTHandler;
 
 use base qw(PVE::RESTHandler);
-
-my $api_sdn_subnets_config = sub {
-    my ($cfg, $id) = @_;
-
-    my $scfg = dclone(PVE::Network::SDN::Subnets::sdn_subnets_config($cfg, $id));
-    $scfg->{subnet} = $id;
-    $scfg->{digest} = $cfg->{digest};
-    $scfg->{'dhcp-range'} = PVE::Network::SDN::Subnets::get_dhcp_ranges($scfg);
-
-    return $scfg;
-};
 
 __PACKAGE__->register_method({
     name => 'index',
@@ -90,7 +78,7 @@ __PACKAGE__->register_method({
         my @sids = PVE::Network::SDN::Subnets::sdn_subnets_ids($cfg);
         my $res = [];
         foreach my $id (@sids) {
-            my $scfg = &$api_sdn_subnets_config($cfg, $id);
+            my $scfg = PVE::Network::SDN::Subnets::api_get_subnet($cfg, $id);
             next if !$scfg->{vnet} || $scfg->{vnet} ne $vnetid;
             push @$res, $scfg;
         }
@@ -151,7 +139,7 @@ __PACKAGE__->register_method({
             $cfg = PVE::Network::SDN::Subnets::config();
         }
 
-        my $scfg = &$api_sdn_subnets_config($cfg, $param->{subnet});
+        my $scfg = PVE::Network::SDN::Subnets::api_get_subnet($cfg, $param->{subnet});
 
         raise_param_exc({ vnet => "wrong vnet" }) if $vnet ne $scfg->{vnet};
 
@@ -264,7 +252,7 @@ __PACKAGE__->register_method({
                 my $zoneid = $vnet_cfg->{ids}->{$vnet}->{zone};
                 my $zone = $zone_cfg->{ids}->{$zoneid};
 
-                my $scfg = &$api_sdn_subnets_config($cfg, $id);
+                my $scfg = PVE::Network::SDN::Subnets::api_get_subnet($cfg, $id);
 
                 PVE::SectionConfig::assert_if_modified($cfg, $digest);
 
