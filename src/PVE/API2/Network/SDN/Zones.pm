@@ -397,22 +397,13 @@ __PACKAGE__->register_method({
                     die "sdn zone object ID '$id' already defined\n";
                 }
 
+                my $privs = ['SDN.Use', 'SDN.Allocate'];
+                PVE::Network::SDN::Zones::api_validate_property_references($opts, $privs);
+
                 my $dnsserver = $opts->{dns};
-                raise_param_exc({ dns => "$dnsserver don't exist" })
-                    if $dnsserver && !$dns_cfg->{ids}->{$dnsserver};
-
-                my $reversednsserver = $opts->{reversedns};
-                raise_param_exc({ reversedns => "$reversednsserver don't exist" })
-                    if $reversednsserver && !$dns_cfg->{ids}->{$reversednsserver};
-
                 my $dnszone = $opts->{dnszone};
                 raise_param_exc({ dnszone => "missing dns server" })
                     if $dnszone && !$dnsserver;
-
-                my $ipam = $opts->{ipam};
-                my $ipam_cfg = PVE::Network::SDN::Ipams::config();
-                raise_param_exc({ ipam => "$ipam not existing" })
-                    if $ipam && !$ipam_cfg->{ids}->{$ipam};
 
                 $zone_cfg->{ids}->{$id} = $opts;
                 $plugin->on_update_hook($id, $zone_cfg, $controller_cfg);
@@ -494,21 +485,12 @@ __PACKAGE__->register_method({
                     }
                 }
 
+                my $privs = ['SDN.Use', 'SDN.Allocate'];
+                PVE::Network::SDN::Zones::api_validate_property_references($opts, $privs);
+
                 my $dnsserver = $opts->{dns};
-                raise_param_exc({ dns => "$dnsserver don't exist" })
-                    if $dnsserver && !$dns_cfg->{ids}->{$dnsserver};
-
-                my $reversednsserver = $opts->{reversedns};
-                raise_param_exc({ reversedns => "$reversednsserver don't exist" })
-                    if $reversednsserver && !$dns_cfg->{ids}->{$reversednsserver};
-
                 my $dnszone = $opts->{dnszone};
                 raise_param_exc({ dnszone => "missing dns server" }) if $dnszone && !$dnsserver;
-
-                my $ipam = $opts->{ipam};
-                my $ipam_cfg = PVE::Network::SDN::Ipams::config();
-                raise_param_exc({ ipam => "$ipam not existing" })
-                    if $ipam && !$ipam_cfg->{ids}->{$ipam};
 
                 $plugin->on_update_hook($id, $zone_cfg, $controller_cfg);
 

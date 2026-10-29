@@ -12,6 +12,10 @@ use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 use PVE::IPRoute2;
 use PVE::Network;
 
+use PVE::Network::SDN::Controllers;
+use PVE::Network::SDN::Dns;
+use PVE::Network::SDN::Fabrics;
+use PVE::Network::SDN::Ipams;
 use PVE::Network::SDN::Vnets;
 use PVE::Network::SDN::Zones::VlanPlugin;
 use PVE::Network::SDN::Zones::QinQPlugin;
@@ -454,6 +458,79 @@ sub api_get_zone_checked {
         if !$rpcenv->check_any($authuser, "/sdn/zones/$zoneid", $privs, 1);
 
     return api_get_zone($cfg, $zoneid);
+}
+
+=head3 api_validate_property_references($zone, $privs, $rpcenv, $authuser)
+
+For properties that reference another SDN entity in C<$zone> this function
+checks if they exist and if the C<$authuser> has the permissions in C<$privs>
+for that entity.
+
+If C<$authuser> and C<$rpcenv> are not given, they are obtained via
+C<PVE::RPCEnvironment::get>.
+
+=cut
+
+sub api_validate_property_references {
+    my ($zone, $privs, $rpcenv, $authuser) = @_;
+
+    $rpcenv = PVE::RPCEnvironment::get() if !defined($rpcenv);
+    $authuser = $rpcenv->get_user() if !defined($authuser);
+
+    my $dns_config = PVE::Network::SDN::Dns::config();
+    my $controller_config = PVE::Network::SDN::Controllers::config();
+    my $ipam_config = PVE::Network::SDN::Ipams::config();
+    my $fabric_config = PVE::Network::SDN::Fabrics::config();
+
+    if (my $dns = $zone->{dns}) {
+        raise_param_exc({ dns => "could not find dns plugin $dns" })
+            if !$dns_config->{ids}->{$dns};
+
+        raise_param_exc({ dns => "could not find dns plugin $dns" })
+            if !$rpcenv->check_any($authuser, "/sdn/dns/$dns", $privs, 1);
+    }
+
+    if (my $dns = $zone->{reversedns}) {
+        raise_param_exc({ reversedns => "could not find dns plugin $dns" })
+            if !$dns_config->{ids}->{$dns};
+
+        raise_param_exc({ reversedns => "could not find dns plugin $dns" })
+            if !$rpcenv->check_any($authuser, "/sdn/dns/$dns", $privs, 1);
+    }
+
+    if (my $ipam = $zone->{ipam}) {
+        raise_param_exc({ ipam => "could not find ipam plugin $ipam" })
+            if $ipam ne 'pve' && !$ipam_config->{ids}->{$ipam};
+
+        raise_param_exc({ ipam => "could not find ipam plugin $ipam" })
+            if !$rpcenv->check_any($authuser, "/sdn/ipams/$ipam", $privs, 1);
+    }
+
+    if (my $controller = $zone->{controller}) {
+        raise_param_exc({ controller => "could not find controller $controller" })
+            if !$controller_config->{ids}->{$controller};
+
+        raise_param_exc({ controller => "could not find controller $controller" })
+            if !$rpcenv->check_any($authuser, "/sdn/controllers/$controller", $privs, 1);
+    }
+
+    if ($zone->{'secondary-controllers'}) {
+        for my $controller ($zone->{'secondary-controllers'}->@*) {
+            raise_param_exc({ 'secondary-controllers' => "could not find controller $controller" })
+                if !$controller_config->{ids}->{$controller};
+
+            raise_param_exc({ 'secondary-controllers' => "could not find controller $controller" })
+                if !$rpcenv->check_any($authuser, "/sdn/controllers/$controller", $privs, 1);
+        }
+    }
+
+    if (my $fabric = $zone->{fabric}) {
+        raise_param_exc({ fabric => "could not find fabric $fabric" })
+            if !$fabric_config->get_fabric($fabric);
+
+        raise_param_exc({ fabric => "could not find fabric $fabric" })
+            if !$rpcenv->check_any($authuser, "/sdn/fabrics/$fabric", $privs, 1);
+    }
 }
 
 1;

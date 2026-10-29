@@ -53,6 +53,7 @@ sub clear_test_state {
                 },
             },
         },
+        fabrics => {},
     };
     PVE::Tools::file_set_contents($TMP_ETHERS_FILE, "\n");
 }
@@ -222,6 +223,19 @@ $mocked_sdn_dhcp_dnsmasq->mock(
     ethers_file => sub { return "/tmp/ethers"; },
     systemctl_service => sub { },
     update_lease => sub { },
+);
+
+my $mocked_sdn_fabrics;
+$mocked_sdn_fabrics = Test::MockModule->new('PVE::Network::SDN::Fabrics');
+$mocked_sdn_fabrics->mock(
+    config => sub {
+        return $test_state->{fabric_config};
+    },
+    write_config => sub {
+        my ($cfg) = @_;
+        $test_state->{fabric_config} = $cfg;
+    },
+    cfs_lock_file => $mocked_cfs_lock_file,
 );
 
 my $mocked_api_zones = Test::MockModule->new('PVE::API2::Network::SDN::Zones');
