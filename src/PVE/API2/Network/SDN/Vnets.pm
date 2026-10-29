@@ -230,9 +230,6 @@ __PACKAGE__->register_method({
 
         my $id = extract_param($param, 'vnet');
 
-        my $privs = ['SDN.Audit', 'SDN.Allocate'];
-        my $_vnet = PVE::Network::SDN::Vnets::api_get_vnet_checked($id, $privs);
-
         my $cfg = {};
         if ($param->{pending}) {
             my $running_cfg = PVE::Network::SDN::running_config();
@@ -245,7 +242,8 @@ __PACKAGE__->register_method({
             $cfg = PVE::Network::SDN::Vnets::config();
         }
 
-        return PVE::Network::SDN::Vnets::api_get_vnet($cfg, $id);
+        my $privs = ['SDN.Audit', 'SDN.Allocate'];
+        return PVE::Network::SDN::Vnets::api_get_vnet_checked($id, $privs, $cfg);
     },
 });
 
