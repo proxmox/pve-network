@@ -5,9 +5,12 @@ use warnings;
 
 use JSON;
 
+use PVE::Exception qw(raise_param_exc);
 use PVE::Tools qw(extract_param dir_glob_regex run_command);
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 
+use PVE::Network::SDN::Fabrics;
+use PVE::Network::SDN::RouteMaps;
 use PVE::Network::SDN::Vnets;
 use PVE::Network::SDN::Zones;
 
@@ -229,6 +232,51 @@ sub generate_frr_config {
                 };
             }
         }
+    }
+}
+
+=head3 api_validate_property_references($controller, $privs, $rpcenv, $authuser)
+
+For properties that reference another SDN entity in C<$controller> this function
+checks if they exist and if the C<$authuser> has the permissions in C<$privs>
+for that entity.
+
+If C<$authuser> and C<$rpcenv> are not given, they are obtained via
+C<PVE::RPCEnvironment::get>.
+
+=cut
+
+sub api_validate_property_references {
+    my ($controller, $privs, $rpcenv, $authuser) = @_;
+
+    $rpcenv = PVE::RPCEnvironment::get() if !defined($rpcenv);
+    $authuser = $rpcenv->get_user() if !defined($authuser);
+
+    my $fabric_config = PVE::Network::SDN::Fabrics::config();
+    my $route_map_config = PVE::Network::SDN::RouteMaps::config();
+
+    if (my $fabric = $controller->{fabric}) {
+        raise_param_exc({ fabric => "could not find fabric $fabric" })
+            if !$fabric_config->get_fabric($fabric);
+
+        raise_param_exc({ fabric => "could not find fabric $fabric" })
+            if !$rpcenv->check_any($authuser, "/sdn/fabrics/$fabric", $privs, 1);
+    }
+
+    if (my $route_map_in = $controller->{'route-map-in'}) {
+        raise_param_exc({ 'route-map-in' => "could not find route map $route_map_in" })
+            if !scalar($route_map_config->list_route_map($route_map_in));
+
+        raise_param_exc({ 'route-map-in' => "could not find route map $route_map_in" })
+            if !$rpcenv->check_any($authuser, "/sdn/route-maps/$route_map_in", $privs, 1);
+    }
+
+    if (my $route_map_out = $controller->{'route-map-out'}) {
+        raise_param_exc({ 'route-map-out' => "could not find route map $route_map_out" })
+            if !scalar($route_map_config->list_route_map($route_map_out));
+
+        raise_param_exc({ 'route-map-out' => "could not find route map $route_map_out" })
+            if !$rpcenv->check_any($authuser, "/sdn/route-maps/$route_map_out", $privs, 1);
     }
 }
 

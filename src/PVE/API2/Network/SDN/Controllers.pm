@@ -323,6 +323,9 @@ __PACKAGE__->register_method({
                     die "sdn controller object ID '$id' already defined\n";
                 }
 
+                my $privs = ['SDN.Use', 'SDN.Allocate'];
+                PVE::Network::SDN::Controllers::api_validate_property_references($opts, $privs);
+
                 $controller_cfg->{ids}->{$id} = $opts;
                 $plugin->on_update_hook($id, $controller_cfg);
 
@@ -379,6 +382,9 @@ __PACKAGE__->register_method({
                     my $options = $plugin->private()->{options}->{ $scfg->{type} };
                     PVE::SectionConfig::delete_from_config($scfg, $options, $opts, $delete);
                 }
+
+                my $privs = ['SDN.Use', 'SDN.Allocate'];
+                PVE::Network::SDN::Controllers::api_validate_property_references($opts, $privs);
 
                 for my $k (keys %{$opts}) {
                     $scfg->{$k} = $opts->{$k};
