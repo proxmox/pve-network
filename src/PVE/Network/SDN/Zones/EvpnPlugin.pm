@@ -26,7 +26,7 @@ PVE::JSONSchema::register_format('pve-sdn-bgp-rt', \&pve_verify_sdn_bgp_rt);
 sub pve_verify_sdn_bgp_rt {
     my ($rt) = @_;
 
-    if ($rt =~ m/^(\d+):(\d+)$/) {
+    if ($rt =~ m/^(\d+):(\d+)\z/) {
         my $asn = $1;
         my $id = $2;
 

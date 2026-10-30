@@ -17,12 +17,12 @@ PVE::JSONSchema::register_format(
     sub {
         my ($id, $noerr) = @_;
 
-        if ($id =~ m/^(only_default|only_default_v6|loopbacks_ips)$/) {
+        if ($id =~ m/^(only_default|only_default_v6|loopbacks_ips)\z/) {
             return undef if $noerr;
             die "prefix list ID '$id' is currently reserved and cannot be used\n";
         }
 
-        if ($id !~ m/^[a-zA-Z0-9][a-zA-Z0-9-_]{0,30}[a-zA-Z0-9]?$/i) {
+        if ($id !~ m/^[a-zA-Z0-9][a-zA-Z0-9-_]{0,30}[a-zA-Z0-9]?\z/i) {
             return undef if $noerr;
             die "prefix list ID '$id' contains illegal characters\n";
         }
@@ -45,7 +45,7 @@ PVE::JSONSchema::register_format('FullRangeCIDRv6', \&pve_verify_fullrangecidrv6
 sub pve_verify_fullrangecidrv6 {
     my ($cidr, $noerr) = @_;
 
-    if ($cidr =~ m!^(?:$PVE::Tools::IPV6RE)(?:/(\d+))$! && ($1 >= 0) && ($1 <= 128)) {
+    if ($cidr =~ m!^(?:$PVE::Tools::IPV6RE)(?:/(\d+))\z! && ($1 >= 0) && ($1 <= 128)) {
         return $cidr;
     }
 
@@ -58,7 +58,7 @@ PVE::JSONSchema::register_format('FullRangeCIDRv4', \&pve_verify_fullrangecidrv4
 sub pve_verify_fullrangecidrv4 {
     my ($cidr, $noerr) = @_;
 
-    if ($cidr =~ m!^(?:$PVE::Tools::IPV4RE)(?:/(\d+))$! && ($1 >= 0) && ($1 <= 32)) {
+    if ($cidr =~ m!^(?:$PVE::Tools::IPV4RE)(?:/(\d+))\z! && ($1 >= 0) && ($1 <= 32)) {
         return $cidr;
     }
 
@@ -136,7 +136,7 @@ sub check_references {
                 $match_action_property_string,
             );
 
-            next if $match_action->{key} !~ m/^(.*)-prefix-list$/;
+            next if $match_action->{key} !~ m/^(.*)-prefix-list\z/;
 
             die
                 "prefix list $prefix_list_id is still referenced by route map entry $route_map_entry->{'route-map-id'} #$route_map_entry->{'order'}"

@@ -14,12 +14,12 @@ PVE::JSONSchema::register_format(
     sub {
         my ($id, $noerr) = @_;
 
-        if ($id =~ m/^(pve_.*|MAP_VTEP_IN|MAP_VTEP_OUT|correct_src)$/) {
+        if ($id =~ m/^(pve_.*|MAP_VTEP_IN|MAP_VTEP_OUT|correct_src)\z/) {
             return undef if $noerr;
             die "route map ID '$id' is currently reserved and cannot be used\n";
         }
 
-        if ($id !~ m/^[a-zA-Z0-9][a-zA-Z0-9-_]{0,30}[a-zA-Z0-9]?$/i) {
+        if ($id !~ m/^[a-zA-Z0-9][a-zA-Z0-9-_]{0,30}[a-zA-Z0-9]?\z/i) {
             return undef if $noerr;
             die "route map ID '$id' contains illegal characters\n";
         }

@@ -18,7 +18,7 @@ PVE::JSONSchema::register_format(
     sub {
         my ($id, $noerr) = @_;
 
-        if ($id !~ m/^[a-zA-Z0-9][a-zA-Z0-9-]{0,6}[a-zA-Z0-9]?$/i) {
+        if ($id !~ m/^[a-zA-Z0-9][a-zA-Z0-9-]{0,6}[a-zA-Z0-9]?\z/i) {
             return undef if $noerr;
             die "Fabric ID '$id' contains illegal characters\n";
         }
@@ -62,7 +62,7 @@ PVE::JSONSchema::register_format(
     sub {
         my ($name, $noerr) = @_;
 
-        if ($name !~ m/^[a-zA-Z0-9][a-zA-Z0-9-]{0,6}[a-zA-Z0-9]?$/) {
+        if ($name !~ m/^[a-zA-Z0-9][a-zA-Z0-9-]{0,6}[a-zA-Z0-9]?\z/) {
             return undef if $noerr;
             die "WireGuard interface name '$name' contains illegal characters"
                 . " or exceeds the eight character limit\n";

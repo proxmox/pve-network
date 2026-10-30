@@ -22,7 +22,7 @@ PVE::JSONSchema::register_format('pve-sdn-isis-net', \&pve_verify_sdn_isis_net);
 sub pve_verify_sdn_isis_net {
     my ($net) = @_;
 
-    if ($net !~ m/^[a-fA-F0-9]{2}(\.[a-fA-F0-9]{4}){3,9}\.[a-fA-F0-9]{2}$/) {
+    if ($net !~ m/^[a-fA-F0-9]{2}(\.[a-fA-F0-9]{4}){3,9}\.[a-fA-F0-9]{2}\z/) {
         die "value does not look like a valid isis net\n";
     }
     return $net;
