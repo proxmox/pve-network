@@ -34,6 +34,8 @@ sub properties {
         loopback => {
             description => "Name of the loopback/dummy interface that provides the Router-IP.",
             type => 'string',
+            format => 'pve-iface',
+            maxLength => 15,
         },
         node => get_standard_option('pve-node'),
     };
