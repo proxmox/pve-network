@@ -36,6 +36,10 @@ sub pve_verify_sdn_bgp_rt {
         if ($id < 0 || $id > 4294967295) {
             die "value does not look like a valid bgp route-target\n";
         }
+
+        if ($asn > 65535 && $id > 65535) {
+            die "either the ASN or the VNI must not exceed 65535\n";
+        }
     } else {
         die "value does not look like a valid bgp route-target\n";
     }
