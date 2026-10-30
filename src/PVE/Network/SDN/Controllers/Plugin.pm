@@ -58,6 +58,8 @@ my $defaultData = {
             type => 'integer',
             optional => 1,
             description => 'Set maximum amount of hops for eBGP peers.',
+            minimum => 1,
+            maximum => 255,
         },
     },
 };
