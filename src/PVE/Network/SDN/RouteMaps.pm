@@ -51,6 +51,7 @@ our $ROUTE_MAP_MATCH_FORMAT = {
         optional => 1,
         description => 'Value that the field <key> should be matched on.',
         format_description => '<key-dependent>',
+        pattern => '\S+',
     },
 };
 
@@ -183,6 +184,7 @@ sub route_map_properties {
                         optional => 1,
                         description => 'Value that the field <key> should be set to.',
                         format_description => '<key-dependent>',
+                        pattern => '\S+',
                     },
                 },
             },
