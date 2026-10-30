@@ -8,6 +8,7 @@ use Socket qw(inet_pton AF_INET AF_INET6);
 use PVE::Cluster qw(cfs_register_file cfs_read_file cfs_lock_file cfs_write_file);
 use PVE::JSONSchema qw(get_standard_option);
 use PVE::INotify;
+use PVE::ParseUtils qw($IPV4RE);
 
 use PVE::RS::SDN;
 use PVE::RS::SDN::Fabrics;
@@ -73,6 +74,37 @@ PVE::JSONSchema::register_format(
 );
 
 PVE::JSONSchema::register_format(
+    'pve-sdn-wireguard-key',
+    sub {
+        my ($key, $noerr) = @_;
+
+        if ($key !~ m/^[a-zA-Z0-9\+\/-]{43}=\z/) {
+            return undef if $noerr;
+            die "invalid wireguard key format\n";
+        }
+
+        return $key;
+    },
+);
+
+PVE::JSONSchema::register_format(
+    'pve-sdn-fabric-ospf-area',
+    sub {
+        my ($key, $noerr) = @_;
+
+        if (
+            $key !~ m/^$IPV4RE\z/
+            && !($key =~ m/^\d+\z/ && $key >= 0 && $key < 2**32)
+        ) {
+            return undef if $noerr;
+            die "ospf area must be either an ipv4 address or an unsigned 32-bit integer\n";
+        }
+
+        return $key;
+    },
+);
+
+PVE::JSONSchema::register_format(
     'pve-sdn-fabric-wireguard-interface',
     {
         name => {
@@ -82,6 +114,7 @@ PVE::JSONSchema::register_format(
         },
         public_key => {
             type => 'string',
+            format => 'pve-sdn-wireguard-key',
             description => 'The public key of this interface',
             optional => 1,
         },
@@ -347,6 +380,7 @@ sub node_properties {
             'instance-types' => ['wireguard'],
             description => 'The public key for the external node.',
             type => 'string',
+            format => 'pve-sdn-wireguard-key',
             optional => 1,
         },
         role => {
@@ -388,26 +422,31 @@ sub node_properties {
                         type => 'string',
                         enum => ['internal', 'external'],
                     },
-                    node => {
-                        description =>
-                            'The name of the referenced node section (the external node or the internal peer node).',
-                        type => 'string',
-                    },
+                    node => get_standard_option(
+                        'pve-sdn-fabric-node-id',
+                        {
+                            description =>
+                                'The name of the referenced node section (the external node or the internal peer node).',
+                        },
+                    ),
                     node_iface => {
                         description => 'The interface of the other node, if it is internal',
                         type => 'string',
                         optional => 1,
+                        format => 'pve-sdn-wireguard-iface-name',
                     },
                     iface => {
                         description =>
                             'The interface of this node that uses this peer definition.',
                         type => 'string',
+                        format => 'pve-sdn-wireguard-iface-name',
                     },
                     endpoint => {
                         description =>
                             'Override for the endpoint settings in the node section.',
                         optional => 1,
                         type => 'string',
+                        pattern => '\S+',
                     },
                     skip_route_generation => {
                         description =>
@@ -505,6 +544,7 @@ sub fabric_properties {
             'instance-types' => ['ospf'],
             description =>
                 'OSPF area. Either a IPv4 address or a 32-bit number. Gets validated in rust.',
+            format => 'pve-sdn-fabric-ospf-area',
             optional => 1,
         },
         route_filter => {
