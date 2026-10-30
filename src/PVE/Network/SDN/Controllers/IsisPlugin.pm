@@ -33,6 +33,7 @@ sub properties {
         'isis-domain' => {
             description => "Name of the IS-IS domain.",
             type => 'string',
+            pattern => '[a-zA-Z0-9][a-zA-Z0-9_.-]*',
         },
         'isis-ifaces' => {
             description => "Comma-separated list of interfaces where IS-IS should be active.",
