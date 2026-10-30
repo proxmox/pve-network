@@ -28,6 +28,8 @@ sub properties {
         'bridge' => {
             type => 'string',
             description => 'The bridge for which VLANs should be managed.',
+            format => 'pve-iface',
+            maxLength => 15,
         },
         'bridge-disable-mac-learning' => {
             type => 'boolean',
