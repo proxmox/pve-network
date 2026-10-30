@@ -16,9 +16,11 @@ sub properties {
     return {
         url => {
             type => 'string',
+            pattern => '\S+',
         },
         token => {
             type => 'string',
+            pattern => '\S+',
         },
         section => {
             type => 'integer',

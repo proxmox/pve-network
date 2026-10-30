@@ -21,9 +21,11 @@ sub properties {
     return {
         url => {
             type => 'string',
+            pattern => '\S+',
         },
         key => {
             type => 'string',
+            pattern => '\S+',
         },
         reversemaskv6 => {
             type => 'integer',
