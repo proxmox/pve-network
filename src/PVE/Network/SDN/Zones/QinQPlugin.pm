@@ -17,13 +17,16 @@ sub properties {
     return {
         tag => {
             type => 'integer',
-            minimum => 0,
             description => "Service-VLAN Tag (outer VLAN)",
+            minimum => 2,
+            maximum => 4094,
         },
         mtu => {
             type => 'integer',
             description => "MTU of the zone, will be used for the created VNet bridges.",
             optional => 1,
+            minimum => 68,
+            maximum => 65535,
         },
         'vlan-protocol' => {
             type => 'string',
