@@ -26,6 +26,7 @@ sub properties {
         key => {
             type => 'string',
             pattern => '\S+',
+            sensitive => 1,
         },
         reversemaskv6 => {
             type => 'integer',

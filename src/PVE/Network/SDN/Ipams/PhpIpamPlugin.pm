@@ -21,6 +21,7 @@ sub properties {
         token => {
             type => 'string',
             pattern => '\S+',
+            sensitive => 1,
         },
         section => {
             type => 'integer',
