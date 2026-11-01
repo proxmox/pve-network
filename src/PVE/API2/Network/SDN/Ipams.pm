@@ -84,6 +84,8 @@ __PACKAGE__->register_method({
 
             my $scfg = &$api_sdn_ipams_config($cfg, $id);
             next if $param->{type} && $param->{type} ne $scfg->{type};
+            delete $scfg->{token}
+                if !$rpcenv->check($authuser, "/sdn/ipams/$id", ['SDN.Allocate'], 1);
 
             my $plugin_config = $cfg->{ids}->{$id};
             my $plugin = PVE::Network::SDN::Ipams::Plugin->lookup($plugin_config->{type});

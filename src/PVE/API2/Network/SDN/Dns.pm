@@ -79,6 +79,8 @@ __PACKAGE__->register_method({
 
             my $scfg = &$api_sdn_dns_config($cfg, $id);
             next if $param->{type} && $param->{type} ne $scfg->{type};
+            delete $scfg->{key}
+                if !$rpcenv->check($authuser, "/sdn/dns/$id", ['SDN.Allocate'], 1);
 
             my $plugin_config = $cfg->{ids}->{$id};
             my $plugin = PVE::Network::SDN::Dns::Plugin->lookup($plugin_config->{type});
