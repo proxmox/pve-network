@@ -1,3 +1,69 @@
+libpve-network-perl (1.6.8) trixie; urgency=medium
+
+  * fix #7738: zones: determine the physical ports of bridges once per run,
+    instead of querying them again for every VNet of VLAN and QinQ zones.
+
+  * ipam: pve: fix looking up the addresses of a MAC in dual-stack zones,
+    where the IPv4 address could randomly be missing depending on the order
+    of the subnets.
+
+  * zones: vxlan:
+    - limit the UDP port to 65535, as larger values made ifupdown2 fail to
+      create the VXLAN interface.
+    - set the local tunnel address of VXLAN interfaces explicitly. Otherwise,
+      ifupdown2 used the address of another zone, for example of an EVPN zone
+      on a separate underlay, which moved the zone's traffic onto that
+      underlay.
+
+  * zones: vxlan, evpn: keep generating the configuration of a VNet if the
+    route lookup for one of its peers fails, and log a warning instead.
+    Previously, the generation was aborted and applying the configuration
+    removed the existing bridge and VXLAN interface of the VNet.
+
+  * fix #7520: remove the ACLs of deleted zones, VNets, controllers, fabrics,
+    route maps and prefix lists when applying the configuration, and move the
+    ACLs of a VNet along when it was moved to another zone. If the VNet
+    already has ACLs in its new zone, applying fails until those are removed.
+
+  * api: fix several permission checks and information leaks:
+    - ipam: check the permissions for changing IP mappings against the zone
+      of the VNet, instead of the user-supplied zone parameter, which allowed
+      changing IPAM entries of inaccessible VNets. The zone parameter is now
+      ignored and deprecated.
+    - subnets: check that a subnet belongs to the VNet given in the API path,
+      which allowed changing or deleting subnets of inaccessible VNets.
+    - vnets: require permissions on the target zone when moving a VNet into
+      another zone.
+    - check the permissions against the running or pending configuration
+      when showing those, instead of always against the current one, and
+      show pending changes that move an entity out of reach as deletion.
+    - return the same error for inaccessible and non-existing zones, VNets
+      and subnets, so that their existence is not revealed.
+    - require the SDN.Use or SDN.Allocate privilege on DNS and IPAM plugins,
+      controllers, fabrics, route maps and prefix lists for referencing them
+      in zones, controllers, fabrics and route maps. Users who manage zones
+      may need this privilege added, for example on '/sdn/ipams/pve' for the
+      default IPAM.
+
+  * validate configuration values more strictly, so they can no longer break
+    or inject statements into the generated network and FRR configuration:
+    - reject values with a trailing newline, which the validation patterns
+      accepted.
+    - controllers: bgp: require a valid interface name for the loopback.
+    - controllers: is-is: restrict the domain to letters, digits, '.', '-'
+      and '_'. Existing domains with other characters have to be renamed.
+    - controllers: limit the eBGP multihop value to 1-255.
+    - evpn: reject route targets with both the ASN and the number above
+      65535, as they do not fit into a BGP extended community.
+    - route maps, powerdns, phpipam: reject whitespace in match and set
+      values, URLs, keys and tokens.
+    - fabrics: validate WireGuard keys, OSPF areas, the interface and node
+      names of peers, and endpoints.
+    - zones: qinq: limit the service VLAN tag and the MTU to valid ranges.
+    - zones: vlan: require a valid interface name for the bridge.
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 02 Nov 2026 23:44:24 +0100
+
 libpve-network-perl (1.6.7) trixie; urgency=medium
 
   * api: fix querying the EVPN IP-VRF and MAC-VRF status of zones that have
