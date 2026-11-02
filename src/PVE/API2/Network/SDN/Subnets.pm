@@ -22,6 +22,27 @@ use PVE::RESTHandler;
 
 use base qw(PVE::RESTHandler);
 
+# Returns the subnet and vnet configuration of the state requested via the pending and running
+# parameters, so that permissions are checked on the vnets of the returned configuration.
+my $get_subnet_and_vnet_config = sub {
+    my ($param) = @_;
+
+    if ($param->{pending}) {
+        my $running_cfg = PVE::Network::SDN::running_config();
+        my $subnet_cfg = PVE::Network::SDN::Subnets::config();
+        my $vnet_cfg = PVE::Network::SDN::Vnets::config();
+        return (
+            PVE::Network::SDN::pending_config($running_cfg, $subnet_cfg, 'subnets'),
+            PVE::Network::SDN::pending_config($running_cfg, $vnet_cfg, 'vnets'),
+        );
+    } elsif ($param->{running}) {
+        my $running_cfg = PVE::Network::SDN::running_config();
+        return ($running_cfg->{subnets}, $running_cfg->{vnets});
+    }
+
+    return (PVE::Network::SDN::Subnets::config(), PVE::Network::SDN::Vnets::config());
+};
+
 __PACKAGE__->register_method({
     name => 'index',
     path => '',
@@ -61,26 +82,16 @@ __PACKAGE__->register_method({
 
         my $vnetid = $param->{vnet};
         my $privs = ['SDN.Audit', 'SDN.Allocate'];
-        my $_vnet = PVE::Network::SDN::Vnets::api_get_vnet_checked($vnetid, $privs);
 
-        my $cfg = {};
-        if ($param->{pending}) {
-            my $running_cfg = PVE::Network::SDN::running_config();
-            my $config = PVE::Network::SDN::Subnets::config();
-            $cfg = PVE::Network::SDN::pending_config($running_cfg, $config, 'subnets');
-        } elsif ($param->{running}) {
-            my $running_cfg = PVE::Network::SDN::running_config();
-            $cfg = $running_cfg->{subnets};
-        } else {
-            $cfg = PVE::Network::SDN::Subnets::config();
-        }
+        my ($cfg, $vnet_cfg) = $get_subnet_and_vnet_config->($param);
+        my $_vnet = PVE::Network::SDN::Vnets::api_get_vnet_checked($vnetid, $privs, $vnet_cfg);
 
         my @sids = PVE::Network::SDN::Subnets::sdn_subnets_ids($cfg);
         my $res = [];
         foreach my $id (@sids) {
             my $scfg = eval {
                 PVE::Network::SDN::Subnets::api_get_subnet_in_vnet_checked(
-                    $vnetid, $id, $privs, $cfg,
+                    $vnetid, $id, $privs, $cfg, $vnet_cfg,
                 );
             };
             next if $@;
@@ -130,22 +141,12 @@ __PACKAGE__->register_method({
 
         my $vnet = extract_param($param, 'vnet');
         my $privs = ['SDN.Audit', 'SDN.Allocate'];
-        my $_vnet = PVE::Network::SDN::Vnets::api_get_vnet_checked($vnet, $privs);
 
-        my $cfg = {};
-        if ($param->{pending}) {
-            my $running_cfg = PVE::Network::SDN::running_config();
-            my $config = PVE::Network::SDN::Subnets::config();
-            $cfg = PVE::Network::SDN::pending_config($running_cfg, $config, 'subnets');
-        } elsif ($param->{running}) {
-            my $running_cfg = PVE::Network::SDN::running_config();
-            $cfg = $running_cfg->{subnets};
-        } else {
-            $cfg = PVE::Network::SDN::Subnets::config();
-        }
+        my ($cfg, $vnet_cfg) = $get_subnet_and_vnet_config->($param);
+        my $_vnet = PVE::Network::SDN::Vnets::api_get_vnet_checked($vnet, $privs, $vnet_cfg);
 
         return PVE::Network::SDN::Subnets::api_get_subnet_in_vnet_checked(
-            $vnet, $param->{subnet}, $privs, $cfg,
+            $vnet, $param->{subnet}, $privs, $cfg, $vnet_cfg,
         );
     },
 });
