@@ -33,7 +33,8 @@ sub config {
 
     if ($running) {
         my $cfg = PVE::Network::SDN::running_config();
-        return $cfg->{vnets};
+        # Before the first apply there is no section, which equals one without any entries.
+        return $cfg->{vnets} // { ids => {} };
     }
 
     return cfs_read_file("sdn/vnets.cfg");

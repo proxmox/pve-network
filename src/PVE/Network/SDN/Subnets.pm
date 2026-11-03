@@ -66,7 +66,8 @@ sub config {
 
     if ($running) {
         my $cfg = PVE::Network::SDN::running_config();
-        return $cfg->{subnets};
+        # Before the first apply there is no section, which equals one without any entries.
+        return $cfg->{subnets} // { ids => {} };
     }
 
     return cfs_read_file("sdn/subnets.cfg");

@@ -1,6 +1,6 @@
 all: test
 
-test: test_zones test_ipams test_dns test_subnets test_vnets_blackbox
+test: test_zones test_ipams test_dns test_subnets test_vnets_blackbox test_running_config
 
 test_zones: run_test_zones.pl
 	./run_test_zones.pl
@@ -16,5 +16,8 @@ test_subnets: run_test_subnets.pl
 
 test_vnets_blackbox: run_test_vnets_blackbox.pl
 	./run_test_vnets_blackbox.pl
+
+test_running_config: run_test_running_config.pl
+	./run_test_running_config.pl
 
 clean:

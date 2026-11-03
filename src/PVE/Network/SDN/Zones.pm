@@ -52,7 +52,8 @@ sub config {
 
     if ($running) {
         my $cfg = PVE::Network::SDN::running_config();
-        return $cfg->{zones};
+        # Before the first apply there is no section, which equals one without any entries.
+        return $cfg->{zones} // { ids => {} };
     }
 
     return cfs_read_file("sdn/zones.cfg");
