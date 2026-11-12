@@ -73,7 +73,7 @@ sub properties {
         alias => {
             type => 'string',
             description => "Alias name of the VNet.",
-            pattern => qr/[\(\)-_.\w\d\s]{0,256}/i,
+            pattern => qr/[\w ()*+,\-.\/:;<=>?@\[\]^]{0,256}/i,
             maxLength => 256,
             optional => 1,
         },
