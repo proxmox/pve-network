@@ -1,3 +1,17 @@
+libpve-network-perl (1.6.9) trixie; urgency=medium
+
+  * api: only look up applied VNets for the VNet firewall and the MAC-VRF
+    node endpoint, also before the SDN configuration was applied for the
+    first time. Previously, VNets that were not applied yet could be found
+    until the first apply.
+
+  * vnets: reject backslashes and whitespace other than spaces in the alias.
+    The alias is written to the generated interface configuration and set as
+    kernel interface alias, where such characters could break parsing, for
+    example in proxmox-firewall.
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 13 Nov 2026 00:26:13 +0100
+
 libpve-network-perl (1.6.8) trixie; urgency=medium
 
   * fix #7738: zones: determine the physical ports of bridges once per run,
