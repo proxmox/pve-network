@@ -20,7 +20,7 @@ Homepage: https://www.proxmox.com
 
 Package: libpve-network-perl
 Architecture: all
-Depends: libpve-common-perl (>= 9.2.4),
+Depends: libpve-common-perl (>= 9.2.10),
          pve-cluster (>= 8.0.10),
          libio-socket-ssl-perl,
          ifupdown2,
