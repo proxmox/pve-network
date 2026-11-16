@@ -1,3 +1,10 @@
+libpve-network-perl (1.6.10) trixie; urgency=medium
+
+  * sdn: ipam, dns: mark API tokens as sensitive to redact them automatically
+    in the system report for easier and safer handling of them.
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 16 Nov 2026 02:20:37 +0100
+
 libpve-network-perl (1.6.9) trixie; urgency=medium
 
   * api: only look up applied VNets for the VNet firewall and the MAC-VRF
