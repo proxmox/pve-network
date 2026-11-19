@@ -16,6 +16,10 @@ use PVE::RESTEnvironment qw(log_warn);
 my $DNSMASQ_CONFIG_ROOT = '/etc/dnsmasq.d';
 my $DNSMASQ_DEFAULT_ROOT = '/etc/default';
 my $DNSMASQ_LEASE_ROOT = '/var/lib/misc';
+my $SYSTEMD_UNIT_ROOT = '/etc/systemd/system';
+my $VRF_DROPIN_NAME = '00-pve-sdn-vrf.conf';
+
+my $need_daemon_reload = 0;
 
 sub type {
     return 'dnsmasq';
@@ -193,6 +197,52 @@ sub systemctl_service {
     PVE::Tools::run_command(['systemctl', $action, $service]);
 }
 
+my sub daemon_reload_if_needed {
+    return if !$need_daemon_reload;
+    PVE::Tools::run_command(['systemctl', 'daemon-reload']);
+    $need_daemon_reload = 0;
+}
+
+my sub vrf_dropin_dir {
+    my ($dhcpid) = @_;
+    return "$SYSTEMD_UNIT_ROOT/dnsmasq\@$dhcpid.service.d";
+}
+
+# dnsmasq's DHCP and DNS sockets are not bound to a device, so they don't see
+# traffic from VRF slaves. Starting it via 'ip vrf exec' binds every socket it
+# creates to the zone VRF.
+my sub write_vrf_dropin {
+    my ($dhcpid) = @_;
+
+    my $dir = vrf_dropin_dir($dhcpid);
+    mkdir($dir, 0755) if !-d $dir;
+
+    my $dropin = <<EOF;
+[Service]
+ExecStart=
+ExecStart=/usr/bin/ip vrf exec vrf_$dhcpid /usr/share/dnsmasq/systemd-helper exec "%i"
+EOF
+
+    PVE::Tools::file_set_contents("$dir/$VRF_DROPIN_NAME", $dropin);
+    $need_daemon_reload = 1;
+}
+
+my sub remove_vrf_dropins {
+    PVE::Tools::dir_glob_foreach(
+        $SYSTEMD_UNIT_ROOT,
+        'dnsmasq@.+\.service\.d',
+        sub {
+            my ($dir) = @_;
+            my $file = "$SYSTEMD_UNIT_ROOT/$dir/$VRF_DROPIN_NAME";
+            return if !-e $file;
+
+            unlink($file) or die "failed to remove $file - $!\n";
+            rmdir("$SYSTEMD_UNIT_ROOT/$dir"); # fails if other drop-ins are left
+            $need_daemon_reload = 1;
+        },
+    );
+}
+
 sub before_configure {
     my ($class, $dhcpid, $zone_cfg) = @_;
 
@@ -219,6 +269,8 @@ DBUSCFG
     PVE::Tools::file_set_contents(
         "/etc/dbus-1/system.d/dnsmasq.$dhcpid.conf", $dbus_config,
     );
+
+    write_vrf_dropin($dhcpid) if $zone_cfg->{'dedicated-vrf'};
 
     my $config_directory = "$DNSMASQ_CONFIG_ROOT/$dhcpid";
 
@@ -286,6 +338,7 @@ sub after_configure {
 
     my $service_name = "dnsmasq\@$dhcpid";
 
+    daemon_reload_if_needed();
     systemctl_service('reload', 'dbus');
     systemctl_service('enable', $service_name);
     systemctl_service('restart', $service_name);
@@ -294,15 +347,21 @@ sub after_configure {
 sub before_regenerate {
     my ($class, $noerr) = @_;
 
-    return if !assert_dnsmasq_installed($noerr);
+    if (assert_dnsmasq_installed($noerr)) {
+        systemctl_service('stop', "dnsmasq@*");
+        systemctl_service('disable', 'dnsmasq@');
+    }
 
-    systemctl_service('stop', "dnsmasq@*");
-    systemctl_service('disable', 'dnsmasq@');
+    # stop and disable the units before removing their drop-ins, so systemctl still sees the
+    # loaded configuration
+    remove_vrf_dropins();
 }
 
 sub after_regenerate {
     my ($class) = @_;
-    # noop
+
+    # a drop-in may have been removed without any DHCP zone left to reload
+    daemon_reload_if_needed();
 }
 
 1;
