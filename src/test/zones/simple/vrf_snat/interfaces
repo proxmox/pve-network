@@ -1,0 +1,29 @@
+auto vmbr0
+iface vmbr0 inet static
+	address 192.168.0.1/24
+	gateway 192.168.0.254
+        bridge-ports eth0
+        bridge-stp off
+        bridge-fd 0
+
+auto eth1
+iface eth1 inet static
+	address 203.0.113.10/24
+	vrf vrf_zonea
+
+iface eth1 inet6 auto
+	vrf vrf_zonea
+
+auto eth2
+iface eth2 inet dhcp
+	vrf vrf_zoneb
+
+auto eth3
+iface eth3 inet static
+	address 198.51.100.10/29
+	vrf vrf_zoned
+
+auto eth4
+iface eth4 inet static
+	address 198.51.100.18/29
+	vrf vrf_zoned

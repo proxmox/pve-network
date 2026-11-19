@@ -419,6 +419,15 @@ sub get_local_route_ip {
     return ($ip, $interface);
 }
 
+# Returns the interfaces of the host network configuration that are members of $vrf, sorted by
+# name.
+sub get_vrf_member_interfaces {
+    my ($vrf, $interfaces_config) = @_;
+
+    my $ifaces = $interfaces_config->{ifaces} // {};
+    return sort grep { ($ifaces->{$_}->{vrf} // '') eq $vrf } keys %$ifaces;
+}
+
 sub find_local_ip_interface_peers {
     my ($peers, $iface) = @_;
 

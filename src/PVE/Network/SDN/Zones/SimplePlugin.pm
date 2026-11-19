@@ -139,7 +139,25 @@ sub generate_sdn_config {
             my $vrf = $plugin_config->{'dedicated-vrf'} ? " vrf vrf_$zone_id" : '';
             push @iface_config, "up ip route add $cidr dev $vnetid$vrf";
         }
-        if ($subnet->{snat}) {
+        if ($subnet->{snat} && $plugin_config->{'dedicated-vrf'}) {
+            my @uplinks = PVE::Network::SDN::Zones::Plugin::get_vrf_member_interfaces(
+                "vrf_$zone_id", $interfaces_config,
+            );
+            if (!@uplinks) {
+                log_warn("no uplink in vrf_$zone_id, not adding SNAT for subnet $cidr");
+                next;
+            }
+            # the routing table picks the uplink per connection (e.g. with ECMP), and its
+            # address may be dynamic, so let each uplink masquerade with its own address
+            for my $uplink (@uplinks) {
+                push @iface_config,
+                    "post-up $iptables -t nat -A POSTROUTING -s '$cidr' -o $uplink -j MASQUERADE";
+                push @iface_config,
+                    "post-down $iptables -t nat -D POSTROUTING -s '$cidr' -o $uplink -j MASQUERADE";
+            }
+            push @iface_config, "post-up $iptables -t raw -I PREROUTING -i fwbr+ -j CT --zone 1";
+            push @iface_config, "post-down $iptables -t raw -D PREROUTING -i fwbr+ -j CT --zone 1";
+        } elsif ($subnet->{snat}) {
             #find outgoing interface
             my ($outip, $outiface);
             eval {

@@ -1,0 +1,53 @@
+{
+  version => 1,
+  vnets   => {
+               ids => {
+                        vneta => { type => "vnet", zone => "zonea" },
+                        vnetb => { type => "vnet", zone => "zoneb" },
+                        vnetc => { type => "vnet", zone => "zonec" },
+                        vnetd => { type => "vnet", zone => "zoned" },
+                      },
+             },
+  zones   => {
+               ids => {
+                        zonea => { ipam => "pve", type => "simple", "dedicated-vrf" => 1 },
+                        zoneb => { ipam => "pve", type => "simple", "dedicated-vrf" => 1 },
+                        zonec => { ipam => "pve", type => "simple", "dedicated-vrf" => 1 },
+                        zoned => { ipam => "pve", type => "simple", "dedicated-vrf" => 1 },
+                      },
+             },
+  subnets => {
+               ids => {
+                        'zonea-10.0.0.0-24' => {
+                                                 type => 'subnet',
+                                                 vnet => 'vneta',
+                                                 gateway => '10.0.0.1',
+                                                 snat => 1,
+                                               },
+                        'zonea-2001:db8:a::-64' => {
+                                                     type => 'subnet',
+                                                     vnet => 'vneta',
+                                                     gateway => '2001:db8:a::1',
+                                                     snat => 1,
+                                                   },
+                        'zoneb-10.0.0.0-24' => {
+                                                 type => 'subnet',
+                                                 vnet => 'vnetb',
+                                                 gateway => '10.0.0.1',
+                                                 snat => 1,
+                                               },
+                        'zonec-10.0.0.0-24' => {
+                                                 type => 'subnet',
+                                                 vnet => 'vnetc',
+                                                 gateway => '10.0.0.1',
+                                                 snat => 1,
+                                               },
+                        'zoned-10.0.0.0-24' => {
+                                                 type => 'subnet',
+                                                 vnet => 'vnetd',
+                                                 gateway => '10.0.0.1',
+                                                 snat => 1,
+                                               },
+                      },
+             },
+}

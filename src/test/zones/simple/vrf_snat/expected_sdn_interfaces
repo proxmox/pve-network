@@ -1,0 +1,81 @@
+#version:1
+
+auto vneta
+iface vneta
+	address 10.0.0.1/24
+	post-up iptables -t nat -A POSTROUTING -s '10.0.0.0/24' -o eth1 -j MASQUERADE
+	post-down iptables -t nat -D POSTROUTING -s '10.0.0.0/24' -o eth1 -j MASQUERADE
+	post-up iptables -t raw -I PREROUTING -i fwbr+ -j CT --zone 1
+	post-down iptables -t raw -D PREROUTING -i fwbr+ -j CT --zone 1
+	address 2001:db8:a::1/64
+	post-up ip6tables -t nat -A POSTROUTING -s '2001:db8:a::/64' -o eth1 -j MASQUERADE
+	post-down ip6tables -t nat -D POSTROUTING -s '2001:db8:a::/64' -o eth1 -j MASQUERADE
+	post-up ip6tables -t raw -I PREROUTING -i fwbr+ -j CT --zone 1
+	post-down ip6tables -t raw -D PREROUTING -i fwbr+ -j CT --zone 1
+	bridge_ports none
+	bridge_stp off
+	bridge_fd 0
+	ip-forward on
+	ip6-forward on
+	vrf vrf_zonea
+
+auto vnetb
+iface vnetb
+	address 10.0.0.1/24
+	post-up iptables -t nat -A POSTROUTING -s '10.0.0.0/24' -o eth2 -j MASQUERADE
+	post-down iptables -t nat -D POSTROUTING -s '10.0.0.0/24' -o eth2 -j MASQUERADE
+	post-up iptables -t raw -I PREROUTING -i fwbr+ -j CT --zone 1
+	post-down iptables -t raw -D PREROUTING -i fwbr+ -j CT --zone 1
+	bridge_ports none
+	bridge_stp off
+	bridge_fd 0
+	ip-forward on
+	vrf vrf_zoneb
+
+auto vnetc
+iface vnetc
+	address 10.0.0.1/24
+	bridge_ports none
+	bridge_stp off
+	bridge_fd 0
+	ip-forward on
+	vrf vrf_zonec
+
+auto vnetd
+iface vnetd
+	address 10.0.0.1/24
+	post-up iptables -t nat -A POSTROUTING -s '10.0.0.0/24' -o eth3 -j MASQUERADE
+	post-down iptables -t nat -D POSTROUTING -s '10.0.0.0/24' -o eth3 -j MASQUERADE
+	post-up iptables -t nat -A POSTROUTING -s '10.0.0.0/24' -o eth4 -j MASQUERADE
+	post-down iptables -t nat -D POSTROUTING -s '10.0.0.0/24' -o eth4 -j MASQUERADE
+	post-up iptables -t raw -I PREROUTING -i fwbr+ -j CT --zone 1
+	post-down iptables -t raw -D PREROUTING -i fwbr+ -j CT --zone 1
+	bridge_ports none
+	bridge_stp off
+	bridge_fd 0
+	ip-forward on
+	vrf vrf_zoned
+
+auto vrf_zonea
+iface vrf_zonea
+	vrf-table auto
+	post-up ip route add vrf vrf_zonea unreachable default metric 4278198272
+	post-up ip -6 route add vrf vrf_zonea unreachable default metric 4278198272 || true
+
+auto vrf_zoneb
+iface vrf_zoneb
+	vrf-table auto
+	post-up ip route add vrf vrf_zoneb unreachable default metric 4278198272
+	post-up ip -6 route add vrf vrf_zoneb unreachable default metric 4278198272 || true
+
+auto vrf_zonec
+iface vrf_zonec
+	vrf-table auto
+	post-up ip route add vrf vrf_zonec unreachable default metric 4278198272
+	post-up ip -6 route add vrf vrf_zonec unreachable default metric 4278198272 || true
+
+auto vrf_zoned
+iface vrf_zoned
+	vrf-table auto
+	post-up ip route add vrf vrf_zoned unreachable default metric 4278198272
+	post-up ip -6 route add vrf vrf_zoned unreachable default metric 4278198272 || true
