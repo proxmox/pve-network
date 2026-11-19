@@ -1039,4 +1039,51 @@ sub test_update_vnet_without_zone {
 }
 run_test(\&test_update_vnet_without_zone);
 
+sub test_dhcp_dns_server_family {
+    my $zoneid = 'TESTZONE';
+    my $vnetid = 'testvnet';
+
+    create_zone({ type => 'simple', zone => $zoneid });
+    create_vnet({ type => 'vnet', zone => $zoneid, vnet => $vnetid });
+
+    for my $case (
+        ['192.0.2.0/24', '198.51.100.53', '2001:db8::53', '192.0.2.128/25'],
+        ['2001:db8::/64', '2001:db8:1::53', '198.51.100.53', '2001:db8:2::/64'],
+    ) {
+        my ($subnet, $dns, $wrong_dns, $other_subnet) = @$case;
+        my $id = "$zoneid-" . ($subnet =~ s!/!-!r);
+
+        create_subnet({
+            type => 'subnet',
+            vnet => $vnetid,
+            subnet => $subnet,
+            'dhcp-dns-server' => $dns,
+        });
+        my $config = PVE::API2::Network::SDN::Subnets->read({ subnet => $id, vnet => $vnetid });
+        is($config->{'dhcp-dns-server'}, $dns, "$subnet accepts a DNS server of its own family");
+
+        my $updated = eval {
+            PVE::API2::Network::SDN::Subnets->update({
+                subnet => $id,
+                vnet => $vnetid,
+                'dhcp-dns-server' => $wrong_dns,
+            });
+            1;
+        };
+        ok(!$updated, "$subnet rejects a DNS server of the other family on update");
+
+        my $created = eval {
+            create_subnet({
+                type => 'subnet',
+                vnet => $vnetid,
+                subnet => $other_subnet,
+                'dhcp-dns-server' => $wrong_dns,
+            });
+            1;
+        };
+        ok(!$created, "$other_subnet rejects a DNS server of the other family on create");
+    }
+}
+run_test(\&test_dhcp_dns_server_family);
+
 done_testing();

@@ -180,7 +180,8 @@ sub properties {
         'dhcp-dns-server' => {
             type => 'string',
             format => 'ip',
-            description => 'IP address for the DNS server',
+            description =>
+                'DNS server IP address. Must use the same address family as the subnet.',
             optional => 1,
         },
     };
@@ -228,6 +229,12 @@ sub on_update_hook {
     #for /32 pointopoint, we allow gateway outside the subnet
     raise_param_exc({ gateway => "$gateway is not in subnet $cidr" })
         if $gateway && !$subnet_matcher->($gateway) && !$pointopoint;
+
+    if (my $dns_server = $subnet->{'dhcp-dns-server'}) {
+        my ($network) = split('/', $cidr, 2);
+        raise_param_exc({ 'dhcp-dns-server' => 'must use the same address family as the subnet' })
+            if Net::IP::ip_get_version($dns_server) != Net::IP::ip_get_version($network);
+    }
 
     validate_dhcp_ranges($subnet);
 

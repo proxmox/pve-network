@@ -161,13 +161,10 @@ sub configure_subnet {
 
     push @{$config}, "dhcp-range=set:$tag,$network,static,$mask,infinite";
 
-    my $option_string;
-    if (ip_is_ipv6($subnet_config->{network})) {
-        $option_string = 'option6';
-    } elsif ($subnet_config->{gateway}) {
-        $option_string = 'option';
-        push @{$config}, "dhcp-option=tag:$tag,$option_string:router,$subnet_config->{gateway}";
-    }
+    my $option_string = $is_ipv4 ? 'option' : 'option6';
+
+    push @{$config}, "dhcp-option=tag:$tag,$option_string:router,$subnet_config->{gateway}"
+        if $is_ipv4 && $subnet_config->{gateway};
 
     push @{$config},
         "dhcp-option=tag:$tag,$option_string:dns-server,$subnet_config->{'dhcp-dns-server'}"
