@@ -254,6 +254,15 @@ sub assert_fabric_nodes_in_zone {
     }
 }
 
+sub assert_underlay_fabric {
+    my ($fabric_id) = @_;
+
+    my $fabric = eval { config()->get_fabric($fabric_id) };
+    die "fabric '$fabric_id' does not exist\n" if !$fabric;
+    die "fabric '$fabric_id' is in a zone VRF, underlay fabrics must use the default VRF\n"
+        if $fabric->{zone};
+}
+
 sub get_frr_daemon_status {
     my ($fabric_config) = @_;
 

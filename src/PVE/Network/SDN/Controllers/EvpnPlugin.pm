@@ -688,6 +688,8 @@ sub on_update_hook {
         die "must have exactly one of peers / fabric defined"
             if ($controller->{peers} && $controller->{fabric})
             || !($controller->{peers} || $controller->{fabric});
+        PVE::Network::SDN::Fabrics::assert_underlay_fabric($controller->{fabric})
+            if $controller->{fabric};
         if ($controller->{peers}) {
             my @peers = PVE::Tools::split_list($controller->{peers});
             my $family;

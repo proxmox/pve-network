@@ -167,6 +167,11 @@ sub on_update_hook {
             fabric => "must have exactly one of peers / fabric defined",
         });
     }
+
+    if ($zone->{fabric}) {
+        eval { PVE::Network::SDN::Fabrics::assert_underlay_fabric($zone->{fabric}) };
+        raise_param_exc({ fabric => "$@" }) if $@;
+    }
 }
 
 sub vnet_update_hook {
