@@ -51,6 +51,10 @@ PVE::JSONSchema::register_standard_option(
     },
 );
 
+# conntrack zones reserved for the VRFs of zones, see also VrfCtZone in proxmox-ve-config
+our $VRF_CT_ZONE_FIRST = 16384;
+our $VRF_CT_ZONE_LAST = 17407;
+
 my $static_route_fmt = {
     prefix => {
         type => 'string',

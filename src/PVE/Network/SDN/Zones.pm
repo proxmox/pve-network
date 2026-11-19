@@ -59,6 +59,48 @@ sub config {
     return cfs_read_file("sdn/zones.cfg");
 }
 
+# Assigns a conntrack zone to a simple zone with a dedicated VRF and removes it from other zones.
+#
+# A new conntrack zone follows the highest one in use, also in the running config, so that the
+# conntrack zone of a zone that is still active or was just deleted is not reused right away.
+sub update_ct_zone {
+    my ($zone_cfg, $id) = @_;
+
+    my $zone = $zone_cfg->{ids}->{$id};
+
+    if ($zone->{type} ne 'simple' || !$zone->{'dedicated-vrf'}) {
+        delete $zone->{'ct-zone'};
+        return;
+    }
+
+    return if defined($zone->{'ct-zone'});
+
+    my $first = $PVE::Network::SDN::Zones::Plugin::VRF_CT_ZONE_FIRST;
+    my $last = $PVE::Network::SDN::Zones::Plugin::VRF_CT_ZONE_LAST;
+
+    my $running_zones = PVE::Network::SDN::Zones::config(1)->{ids};
+    my $used = {};
+    for my $zones ($zone_cfg->{ids}, $running_zones) {
+        for my $ct_zone (map { $_->{'ct-zone'} } values $zones->%*) {
+            $used->{$ct_zone} = 1 if defined($ct_zone) && $ct_zone >= $first && $ct_zone <= $last;
+        }
+    }
+
+    my $count = $last - $first + 1;
+    die "no conntrack zone left for the VRF of zone '$id'\n" if scalar(keys $used->%*) >= $count;
+
+    my ($highest) = sort { $b <=> $a } keys $used->%*;
+    $highest //= $last;
+
+    for my $offset (1 .. $count) {
+        my $ct_zone = $first + ($highest - $first + $offset) % $count;
+        if (!$used->{$ct_zone}) {
+            $zone->{'ct-zone'} = $ct_zone;
+            return;
+        }
+    }
+}
+
 sub get_plugin_config {
     my ($vnet) = @_;
     my $zoneid = $vnet->{zone};

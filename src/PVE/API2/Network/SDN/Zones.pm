@@ -70,6 +70,11 @@ my $ZONE_PROPERTIES = {
         optional => 1,
         description => 'Create a dedicated VRF for a simple zone.',
     },
+    'ct-zone' => {
+        type => 'integer',
+        optional => 1,
+        description => 'Conntrack zone of the dedicated VRF, assigned automatically.',
+    },
     route => {
         type => 'array',
         optional => 1,
@@ -419,6 +424,9 @@ __PACKAGE__->register_method({
         my $id = extract_param($param, 'zone');
         my $lock_token = extract_param($param, 'lock-token');
 
+        raise_param_exc({ 'ct-zone' => 'is assigned automatically' })
+            if defined($param->{'ct-zone'});
+
         my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($type);
         my $opts = $plugin->check_config($id, $param, 1, 1);
         PVE::Network::SDN::canonicalize_property_strings($opts, 'route',
@@ -449,6 +457,7 @@ __PACKAGE__->register_method({
                     if $dnszone && !$dnsserver;
 
                 $zone_cfg->{ids}->{$id} = $opts;
+                PVE::Network::SDN::Zones::update_ct_zone($zone_cfg, $id);
                 $plugin->on_update_hook($id, $zone_cfg, $controller_cfg);
 
                 PVE::Network::SDN::Zones::write_config($zone_cfg);
@@ -492,6 +501,9 @@ __PACKAGE__->register_method({
         if ($delete) {
             $delete = [PVE::Tools::split_list($delete)];
         }
+
+        raise_param_exc({ 'ct-zone' => 'is assigned automatically' })
+            if defined($param->{'ct-zone'}) || grep { $_ eq 'ct-zone' } ($delete // [])->@*;
 
         PVE::Network::SDN::lock_sdn_config(
             sub {
@@ -561,6 +573,7 @@ __PACKAGE__->register_method({
                 my $dnszone = $opts->{dnszone};
                 raise_param_exc({ dnszone => "missing dns server" }) if $dnszone && !$dnsserver;
 
+                PVE::Network::SDN::Zones::update_ct_zone($zone_cfg, $id);
                 $plugin->on_update_hook($id, $zone_cfg, $controller_cfg);
 
                 PVE::Network::SDN::Zones::write_config($zone_cfg);

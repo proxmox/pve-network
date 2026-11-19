@@ -40,6 +40,12 @@ sub properties {
             type => 'boolean',
             default => 0,
         },
+        'ct-zone' => {
+            description => 'Conntrack zone of the dedicated VRF, assigned automatically.',
+            type => 'integer',
+            minimum => $PVE::Network::SDN::Zones::Plugin::VRF_CT_ZONE_FIRST,
+            maximum => $PVE::Network::SDN::Zones::Plugin::VRF_CT_ZONE_LAST,
+        },
     };
 }
 
@@ -53,6 +59,7 @@ sub options {
         ipam => { optional => 1 },
         dhcp => { optional => 1 },
         'dedicated-vrf' => { optional => 1 },
+        'ct-zone' => { optional => 1 },
         route => { optional => 1 },
     };
 }
