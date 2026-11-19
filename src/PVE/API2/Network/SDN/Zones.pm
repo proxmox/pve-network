@@ -3,6 +3,8 @@ package PVE::API2::Network::SDN::Zones;
 use strict;
 use warnings;
 
+use Storable qw(dclone);
+
 use PVE::Cluster qw(cfs_read_file cfs_write_file);
 use PVE::Exception qw(raise raise_param_exc);
 use PVE::JSONSchema qw(get_standard_option);
@@ -67,6 +69,16 @@ my $ZONE_PROPERTIES = {
         default => 0,
         optional => 1,
         description => 'Create a dedicated VRF for a simple zone.',
+    },
+    route => {
+        type => 'array',
+        optional => 1,
+        description => 'Static routes of a simple zone, installed in its dedicated VRF, which'
+            . ' they require.',
+        items => {
+            type => 'string',
+            format => 'pve-sdn-static-route',
+        },
     },
     'rt-import' => {
         type => 'string',
@@ -360,6 +372,17 @@ __PACKAGE__->register_method({
     },
 });
 
+# Static routes are only installed in the dedicated VRF of a zone, without one they would end up in
+# the routing table of the host.
+my sub assert_routes_in_vrf {
+    my ($zone, $setting_routes) = @_;
+
+    return if !$zone->{route} || !$zone->{route}->@* || $zone->{'dedicated-vrf'};
+
+    raise_param_exc({ route => 'static routes require a dedicated VRF' }) if $setting_routes;
+    raise_param_exc({ 'dedicated-vrf' => 'zone still has static routes' });
+}
+
 sub create_etc_interfaces_sdn_dir {
     mkdir("/etc/pve/sdn");
 }
@@ -379,6 +402,8 @@ __PACKAGE__->register_method({
     description => "Create a new sdn zone object.",
     permissions => {
         check => ['perm', '/sdn/zones', ['SDN.Allocate']],
+        description => "Static routes additionally require 'Sys.Modify' on '/nodes/<node>' for"
+            . " all nodes of the zone.",
     },
     parameters => PVE::Network::SDN::Zones::Plugin->createSchema(
         undef,
@@ -413,6 +438,8 @@ __PACKAGE__->register_method({
 
                 my $privs = ['SDN.Use', 'SDN.Allocate'];
                 PVE::Network::SDN::Zones::api_validate_property_references($opts, $privs);
+                assert_routes_in_vrf($opts, 1);
+                PVE::Network::SDN::Zones::api_check_route_privs($opts, undef);
 
                 my $dnsserver = $opts->{dns};
                 my $dnszone = $opts->{dnszone};
@@ -441,6 +468,9 @@ __PACKAGE__->register_method({
     description => "Update sdn zone object configuration.",
     permissions => {
         check => ['perm', '/sdn/zones/{zone}', ['SDN.Allocate']],
+        description =>
+            "Changing static routes, or the nodes of a zone with static routes, additionally"
+            . " requires 'Sys.Modify' on '/nodes/<node>' for all nodes of the zone.",
     },
     parameters => PVE::Network::SDN::Zones::Plugin->updateSchema(
         undef,
@@ -474,6 +504,7 @@ __PACKAGE__->register_method({
                 my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($scfg->{type});
                 my $opts = $plugin->check_config($id, $param, 0, 1);
 
+                my $old_scfg = dclone($scfg);
                 my $old_ipam = $scfg->{ipam};
 
                 if ($delete) {
@@ -492,6 +523,8 @@ __PACKAGE__->register_method({
                             "zone is still used as VRF by fabric '$fabric_ids[0]'",
                     });
                 }
+
+                assert_routes_in_vrf($scfg, defined($opts->{route}));
 
                 for my $fabric_id (@fabric_ids) {
                     PVE::Network::SDN::Fabrics::assert_fabric_nodes_in_zone(
@@ -517,6 +550,7 @@ __PACKAGE__->register_method({
 
                 my $privs = ['SDN.Use', 'SDN.Allocate'];
                 PVE::Network::SDN::Zones::api_validate_property_references($opts, $privs);
+                PVE::Network::SDN::Zones::api_check_route_privs($scfg, $old_scfg);
 
                 my $dnsserver = $opts->{dns};
                 my $dnszone = $opts->{dnszone};
@@ -543,6 +577,9 @@ __PACKAGE__->register_method({
     description => "Delete sdn zone object configuration.",
     permissions => {
         check => ['perm', '/sdn/zones/{zone}', ['SDN.Allocate']],
+        description =>
+            "Deleting a zone with static routes additionally requires 'Sys.Modify' on"
+            . " '/nodes/<node>' for all nodes of the zone.",
     },
     parameters => {
         additionalProperties => 0,
@@ -570,6 +607,8 @@ __PACKAGE__->register_method({
 
                 my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($scfg->{type});
                 my $vnet_cfg = PVE::Network::SDN::Vnets::config();
+
+                PVE::Network::SDN::Zones::api_check_route_privs(undef, $scfg);
 
                 my $fabric_config = PVE::Network::SDN::Fabrics::config();
                 my @fabric_ids = fabrics_using_zone($id, $fabric_config);

@@ -18,6 +18,7 @@ use PVE::RESTEnvironment qw(log_warn);
 use PVE::RPCEnvironment;
 use PVE::Tools qw(file_get_contents file_set_contents extract_param dir_glob_regex run_command);
 
+use PVE::RS::SDN;
 use PVE::RS::SDN::Fabrics;
 
 use PVE::Network::SDN::Vnets;
@@ -131,10 +132,20 @@ sub running_config_has_frr {
     my $fabrics = $running_config->{fabrics}->{ids} // {};
     my $route_maps = $running_config->{'route-maps'}->{ids} // {};
     my $prefix_lists = $running_config->{'prefix-lists'}->{ids} // {};
+    my $zones = $running_config->{zones}->{ids} // {};
+    my $zone_routes = grep {
+        $_->{type} eq 'simple' && $_->{'dedicated-vrf'} && scalar(@{ $_->{route} // [] })
+    } values %$zones;
 
     my $local_frr_config = PVE::Network::SDN::Frr::local_frr_config_exists();
 
-    return %$controllers || %$fabrics || %$route_maps || %$prefix_lists || $local_frr_config;
+    return
+        %$controllers
+        || %$fabrics
+        || %$route_maps
+        || %$prefix_lists
+        || $zone_routes
+        || $local_frr_config;
 }
 
 sub pending_config {
@@ -570,10 +581,13 @@ sub generate_frr_raw_config {
 
     my $frr_config = {};
 
-    PVE::Network::SDN::Controllers::generate_frr_config($frr_config, $running_config);
-    PVE::Network::SDN::Frr::append_local_config($frr_config);
-
     my $nodename = PVE::INotify::nodename();
+
+    PVE::Network::SDN::Controllers::generate_frr_config($frr_config, $running_config);
+    my $routes =
+        PVE::RS::SDN::get_zone_routes($running_config->{zones} // { ids => {} }, $nodename);
+    push @{ $frr_config->{frr}->{ip_routes} }, @$routes;
+    PVE::Network::SDN::Frr::append_local_config($frr_config);
 
     return PVE::RS::SDN::get_frr_raw_config(
         $frr_config->{'frr'},
@@ -649,6 +663,9 @@ sub canonicalize_property_strings {
 
 sub encode_value {
     my ($type, $key, $value) = @_;
+
+    # Route strings contain commas themselves, so preserve array element boundaries.
+    return join("\n", sort @$value) if $key eq 'route' && ref($value) eq 'ARRAY';
 
     if (
         $key eq 'nodes'

@@ -472,6 +472,51 @@ sub api_get_zone_checked {
     return api_get_zone($cfg, $zoneid);
 }
 
+=head3 api_check_route_privs($zone, $old_zone, $rpcenv, $authuser)
+
+Static routes are installed on the zone nodes and can affect the host, e.g. via a host interface
+in the VRF, so require C<Sys.Modify> on these nodes to change them.
+
+C<$old_zone> and C<$zone> are the zone configs before and after the change, either may be undef
+on create or delete. If the routes, or the nodes or VRF they are installed on, change, the
+permission is checked for all nodes that have the routes before or after the change. Zones
+without nodes, or with an empty node list, use all cluster nodes.
+
+=cut
+
+sub api_check_route_privs {
+    my ($zone, $old_zone, $rpcenv, $authuser) = @_;
+
+    my @nodes;
+    for my $z ($zone, $old_zone) {
+        next if !$z || !$z->{route} || !$z->{route}->@*;
+        my @zone_nodes = $z->{nodes} ? keys $z->{nodes}->%* : ();
+        # an empty node list is not stored, so the zone applies to all nodes
+        @zone_nodes = PVE::Cluster::get_nodelist()->@* if !@zone_nodes;
+        push @nodes, @zone_nodes;
+    }
+    return if !@nodes;
+
+    if ($zone && $old_zone) {
+        my $changed = 0;
+        for my $key ('route', 'nodes', 'dedicated-vrf') {
+            my $new = PVE::Network::SDN::encode_value(undef, $key, $zone->{$key}) // '';
+            my $old = PVE::Network::SDN::encode_value(undef, $key, $old_zone->{$key}) // '';
+            $changed = 1 if $new ne $old;
+        }
+        return if !$changed;
+    }
+
+    $rpcenv = PVE::RPCEnvironment::get() if !defined($rpcenv);
+    $authuser = $rpcenv->get_user() if !defined($authuser);
+
+    my %seen;
+    for my $node (sort grep { !$seen{$_}++ } @nodes) {
+        next if $rpcenv->check_any($authuser, "/nodes/$node", ['Sys.Modify'], 1);
+        raise_param_exc({ route => "permission check failed: missing 'Sys.Modify' on node $node" });
+    }
+}
+
 =head3 api_validate_property_references($zone, $privs, $rpcenv, $authuser)
 
 For properties that reference another SDN entity in C<$zone> this function

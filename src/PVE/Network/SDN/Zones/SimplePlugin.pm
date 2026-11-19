@@ -53,6 +53,7 @@ sub options {
         ipam => { optional => 1 },
         dhcp => { optional => 1 },
         'dedicated-vrf' => { optional => 1 },
+        route => { optional => 1 },
     };
 }
 

@@ -1,9 +1,12 @@
 all: test
 
-test: test_zones test_fabric_host_vrf test_ipams test_dns test_subnets test_vnets_blackbox test_running_config test_api_index
+test: test_zones test_static_routes test_fabric_host_vrf test_ipams test_dns test_subnets test_vnets_blackbox test_running_config test_api_index
 
 test_zones: run_test_zones.pl
 	./run_test_zones.pl
+
+test_static_routes: run_test_static_routes.pl
+	./run_test_static_routes.pl
 
 test_fabric_host_vrf: run_test_fabric_host_vrf.pl
 	./run_test_fabric_host_vrf.pl

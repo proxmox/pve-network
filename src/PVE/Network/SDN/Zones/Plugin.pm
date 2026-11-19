@@ -8,6 +8,8 @@ use Net::IP qw(ip_get_version);
 use PVE::JSONSchema;
 use PVE::Cluster;
 use PVE::Network;
+use PVE::Network::SDN::Formats;
+use PVE::RS::SDN;
 
 use PVE::JSONSchema qw(get_standard_option);
 use base qw(PVE::SectionConfig);
@@ -49,6 +51,47 @@ PVE::JSONSchema::register_standard_option(
     },
 );
 
+my $static_route_fmt = {
+    prefix => {
+        type => 'string',
+        format => 'FullRangeCIDR',
+        description => 'Destination prefix in CIDR notation, including default routes.',
+    },
+    via => {
+        type => 'string',
+        format => 'ip',
+        optional => 1,
+        description => 'Next-hop IP address. IPv6 link-local addresses require an interface.',
+    },
+    iface => {
+        type => 'string',
+        format => 'pve-iface',
+        optional => 1,
+        description => 'Outgoing interface. At least one of via or iface is required.',
+    },
+    distance => {
+        type => 'integer',
+        minimum => 1,
+        maximum => 255,
+        optional => 1,
+        description => 'Administrative distance.',
+    },
+};
+
+PVE::JSONSchema::register_format(
+    'pve-sdn-static-route',
+    $static_route_fmt,
+    sub {
+        my ($route) = @_;
+
+        PVE::RS::SDN::validate_static_route(
+            PVE::JSONSchema::print_property_string($route, $static_route_fmt),
+        );
+
+        return $route;
+    },
+);
+
 my $defaultData = {
 
     propertyList => {
@@ -59,6 +102,17 @@ my $defaultData = {
             type => 'string',
         },
         nodes => get_standard_option('pve-node-list', { optional => 1 }),
+        route => {
+            type => 'array',
+            optional => 1,
+            description =>
+                'Static routes of a simple zone, installed in its dedicated VRF, which'
+                . ' they require.',
+            items => {
+                type => 'string',
+                format => 'pve-sdn-static-route',
+            },
+        },
         zone => get_standard_option(
             'pve-sdn-zone-id',
             {
