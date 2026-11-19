@@ -197,6 +197,9 @@ __PACKAGE__->register_method({
                 $id = "$zoneid-$id";
 
                 my $opts = PVE::Network::SDN::SubnetPlugin->check_config($id, $param, 1, 1);
+                PVE::Network::SDN::canonicalize_property_strings(
+                    $opts, 'dhcp-range', 'pve-sdn-dhcp-range',
+                );
 
                 my $scfg = undef;
                 if ($scfg = PVE::Network::SDN::Subnets::sdn_subnets_config($cfg, $id, 1)) {
@@ -266,6 +269,9 @@ __PACKAGE__->register_method({
                 PVE::SectionConfig::assert_if_modified($cfg, $digest);
 
                 my $opts = PVE::Network::SDN::SubnetPlugin->check_config($id, $param, 0, 1);
+                PVE::Network::SDN::canonicalize_property_strings(
+                    $opts, 'dhcp-range', 'pve-sdn-dhcp-range',
+                );
 
                 my $data = $cfg->{ids}->{$id};
                 if ($delete) {

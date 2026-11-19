@@ -399,6 +399,54 @@ sub test_create_vnet_with_gateway {
 }
 run_test(\&test_create_vnet_with_gateway);
 
+sub test_dhcp_range_canonical {
+    my $test_name = (split(/::/, (caller(0))[3]))[-1];
+
+    my $zoneid = "TESTZONE";
+    my $vnetid = "testvnet";
+
+    create_zone({ type => "simple", dhcp => "dnsmasq", ipam => "pve", zone => $zoneid });
+    create_vnet({ type => "vnet", zone => $zoneid, vnet => $vnetid });
+
+    # the Rust parser rejects empty parts, which the Perl parser ignores
+    create_subnet({
+        type => "subnet",
+        vnet => $vnetid,
+        subnet => "10.0.0.0/24",
+        'dhcp-range' => [",start-address=10.0.0.100,,end-address=10.0.0.200"],
+    });
+
+    my $subnet = PVE::Network::SDN::Subnets::config()->{ids}->{"$zoneid-10.0.0.0-24"};
+    is_deeply(
+        $subnet->{'dhcp-range'},
+        ["end-address=10.0.0.200,start-address=10.0.0.100"],
+        "$test_name: DHCP range is stored in canonical form",
+    );
+}
+run_test(\&test_dhcp_range_canonical);
+
+sub test_dhcp_range_invalid_ip {
+    my $test_name = (split(/::/, (caller(0))[3]))[-1];
+
+    my $zoneid = "TESTZONE";
+    my $vnetid = "testvnet";
+
+    create_zone({ type => "simple", dhcp => "dnsmasq", ipam => "pve", zone => $zoneid });
+    create_vnet({ type => "vnet", zone => $zoneid, vnet => $vnetid });
+
+    # Net::IP accepts leading zeros, but the Rust parser rejects them
+    eval {
+        create_subnet({
+            type => "subnet",
+            vnet => $vnetid,
+            subnet => "10.0.0.0/24",
+            'dhcp-range' => ["start-address=10.0.0.05,end-address=10.0.0.200"],
+        });
+    };
+    like($@, qr/not a valid IP/, "$test_name: DHCP range with leading zeros is rejected");
+}
+run_test(\&test_dhcp_range_invalid_ip);
+
 sub test_without_subnet {
     my $test_name = (split(/::/, (caller(0))[3]))[-1];
 

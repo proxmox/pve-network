@@ -98,6 +98,12 @@ sub validate_dhcp_ranges {
         my $dhcp_start = $dhcp_range->{'start-address'};
         my $dhcp_end = $dhcp_range->{'end-address'};
 
+        # Net::IP also accepts values that the Rust parser rejects, e.g. with leading zeros
+        raise_param_exc({ 'dhcp-range' => "start-address is not a valid IP $dhcp_start" })
+            if !PVE::JSONSchema::pve_verify_ip($dhcp_start, 1);
+        raise_param_exc({ 'dhcp-range' => "end-address is not a valid IP $dhcp_end" })
+            if !PVE::JSONSchema::pve_verify_ip($dhcp_end, 1);
+
         my $start_ip = Net::IP->new($dhcp_start);
         raise_param_exc({ 'dhcp-range' => "start-address is not a valid IP $dhcp_start" })
             if !$start_ip;

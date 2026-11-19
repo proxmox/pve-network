@@ -13,6 +13,7 @@ use UUID;
 use PVE::AccessControl;
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 use PVE::INotify;
+use PVE::JSONSchema;
 use PVE::RESTEnvironment qw(log_warn);
 use PVE::RPCEnvironment;
 use PVE::Tools qw(file_get_contents file_set_contents extract_param dir_glob_regex run_command);
@@ -614,6 +615,30 @@ sub generate_dhcp_config {
     my ($reload) = @_;
 
     PVE::Network::SDN::Dhcp::regenerate_config($reload);
+}
+
+=head3 canonicalize_property_strings($config, $key, $format)
+
+Replaces each property string in the array C<< $config->{$key} >> by the string printed for it
+by C<print_property_string> with C<$format>.
+
+The Perl parser ignores empty parts, e.g. in C<a=1,,b=2>, but the Rust parser rejects them.
+Storing the printed form removes such parts, the values themselves need to be checked separately.
+
+=cut
+
+sub canonicalize_property_strings {
+    my ($config, $key, $format) = @_;
+
+    return if ref($config->{$key}) ne 'ARRAY';
+
+    $config->{$key} = [
+        map {
+            PVE::JSONSchema::print_property_string(
+                PVE::JSONSchema::parse_property_string($format, $_), $format,
+            )
+        } $config->{$key}->@*
+    ];
 }
 
 sub encode_value {
