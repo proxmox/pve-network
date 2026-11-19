@@ -331,6 +331,31 @@ subtest 'static routes require Sys.Modify on the zone nodes' => sub {
         'allowed with Sys.Modify',
     );
     is_deeply($zone_cfg->{ids}->{new}->{route}, [$route], 'route stored');
+
+    is(
+        $call->('update', { zone => 'new', route => [",via=192.0.2.1,,prefix=0.0.0.0/0"] }),
+        '',
+        'update with non-canonical route',
+    );
+    is_deeply($zone_cfg->{ids}->{new}->{route}, [$route], 'update stores canonical route');
+    is(
+        $call->(
+            'create',
+            {
+                zone => 'other',
+                type => 'simple',
+                'dedicated-vrf' => 1,
+                route => ["$route,,distance=5"],
+            },
+        ),
+        '',
+        'create with non-canonical route',
+    );
+    is_deeply(
+        $zone_cfg->{ids}->{other}->{route},
+        ['prefix=0.0.0.0/0,distance=5,via=192.0.2.1'],
+        'create stores canonical route',
+    );
     is($call->('delete', { zone => 'routed' }), '', 'delete allowed with Sys.Modify');
 };
 

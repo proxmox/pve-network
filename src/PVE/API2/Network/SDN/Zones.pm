@@ -421,6 +421,8 @@ __PACKAGE__->register_method({
 
         my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($type);
         my $opts = $plugin->check_config($id, $param, 1, 1);
+        PVE::Network::SDN::canonicalize_property_strings($opts, 'route',
+            'pve-sdn-static-route');
 
         PVE::Cluster::check_cfs_quorum();
         create_etc_interfaces_sdn_dir();
@@ -503,6 +505,9 @@ __PACKAGE__->register_method({
 
                 my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($scfg->{type});
                 my $opts = $plugin->check_config($id, $param, 0, 1);
+                PVE::Network::SDN::canonicalize_property_strings(
+                    $opts, 'route', 'pve-sdn-static-route',
+                );
 
                 my $old_scfg = dclone($scfg);
                 my $old_ipam = $scfg->{ipam};
