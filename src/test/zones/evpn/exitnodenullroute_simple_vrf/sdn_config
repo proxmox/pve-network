@@ -1,0 +1,47 @@
+{
+  version => 1,
+  vnets   => {
+               ids => {
+                        myvnet => { tag => "100", type => "vnet", zone => "myzone" },
+                        simplevnet => { type => "vnet", zone => "simple" },
+                        vrfvnet => { type => "vnet", zone => "vrfzone" },
+                      },
+             },
+
+  zones   => {
+		ids => {
+			myzone => { ipam => "pve", type => "evpn", controller => "evpnctl", 'vrf-vxlan' => 1000, exitnodes => { 'localhost' => 1 } },
+			simple => { ipam => "pve", type => "simple" },
+			vrfzone => { ipam => "pve", type => "simple", 'dedicated-vrf' => 1 },
+		}
+             },
+  controllers  => {
+               ids => { evpnctl => { type => "evpn", 'peers' => '192.168.0.1,192.168.0.2,192.168.0.3', asn => "65000" } },
+             },
+
+  subnets => {
+		ids => {
+			'myzone-10.0.0.0-24' => {
+			    'type' => 'subnet',
+			    'vnet' => 'myvnet',
+			    'gateway' => '10.0.0.1',
+			},
+			'simple-172.16.0.0-24' => {
+			    'type' => 'subnet',
+			    'vnet' => 'simplevnet',
+			    'gateway' => '172.16.0.1',
+			},
+			'vrfzone-172.16.1.0-24' => {
+			    'type' => 'subnet',
+			    'vnet' => 'vrfvnet',
+			    'gateway' => '172.16.1.1',
+			},
+			'vrfzone-2b0f:1480::-64' => {
+			    'type' => 'subnet',
+			    'vnet' => 'vrfvnet',
+			    'gateway' => '2b0f:1480::1',
+			},
+		}
+  }
+
+}

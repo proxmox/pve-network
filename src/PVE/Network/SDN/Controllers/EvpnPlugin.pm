@@ -431,13 +431,21 @@ sub generate_zone_frr_config {
     # Add null routes for other zones to avoid routing between nodes through exit nodes
     if ($is_gateway) {
         my $subnets = PVE::Network::SDN::Vnets::get_subnets();
+        my $zones = PVE::Network::SDN::Zones::config(1);
         my $cidrs = {};
         foreach my $subnetid (sort keys %{$subnets}) {
             my $subnet = $subnets->{$subnetid};
             my $cidr = $subnet->{cidr};
             my $zone = $subnet->{zone};
+            next if $zone eq $id;
+
+            # Subnets of simple zones with a dedicated VRF are not routed in the default
+            # VRF, so traffic falling through from this VRF cannot reach them anyway.
+            my $zone_cfg = $zones->{ids}->{$zone};
+            next if $zone_cfg && $zone_cfg->{type} eq 'simple' && $zone_cfg->{'dedicated-vrf'};
+
             my ($ip, $mask) = split(/\//, $cidr);
-            $cidrs->{$ip} = $mask if $zone ne $id;
+            $cidrs->{$ip} = $mask;
         }
 
         my @sorted_ip =
