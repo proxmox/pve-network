@@ -124,6 +124,9 @@ sub generate_etc_network_config {
     my $controller_cfg = $cfg->{controllers};
     return if !$vnet_cfg && !$zone_cfg;
 
+    my $vnet_ids = $vnet_cfg ? ($vnet_cfg->{ids} // {}) : {};
+    my $zone_ids = $zone_cfg ? ($zone_cfg->{ids} // {}) : {};
+
     my $interfaces_config = PVE::INotify::read_file('interfaces');
     my $bridge_ports = PVE::IPRoute2::get_bridge_port_mapping();
 
@@ -131,8 +134,16 @@ sub generate_etc_network_config {
     my $config = {};
     my $nodename = PVE::INotify::nodename();
 
-    for my $id (sort keys %{ $vnet_cfg->{ids} }) {
-        my $vnet = $vnet_cfg->{ids}->{$id};
+    for my $zone_id (sort keys %$zone_ids) {
+        my $plugin_config = $zone_ids->{$zone_id};
+        next if defined($plugin_config->{nodes}) && !$plugin_config->{nodes}->{$nodename};
+
+        my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($plugin_config->{type});
+        $plugin->generate_zone_config($plugin_config, $zone_id, $config);
+    }
+
+    for my $id (sort keys %$vnet_ids) {
+        my $vnet = $vnet_ids->{$id};
         my $zone = $vnet->{zone};
 
         if (!$zone) {
@@ -140,7 +151,7 @@ sub generate_etc_network_config {
             next;
         }
 
-        my $plugin_config = $zone_cfg->{ids}->{$zone};
+        my $plugin_config = $zone_ids->{$zone};
 
         if (!defined($plugin_config)) {
             warn "can't generate vnet '$id': zone $zone don't exist\n";

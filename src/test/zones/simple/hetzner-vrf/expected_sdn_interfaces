@@ -1,0 +1,27 @@
+#version:1
+
+auto myvnet
+iface myvnet
+	address 144.76.100.65/29
+	bridge_ports none
+	bridge_stp off
+	bridge_fd 0
+	ip-forward on
+	vrf vrf_myzone
+
+auto myvnet2
+iface myvnet2
+	address 144.76.0.1/32
+	up ip route add 144.76.200.65/32 dev myvnet2 vrf vrf_myzone
+	up ip route add 144.76.200.66/32 dev myvnet2 vrf vrf_myzone
+	bridge_ports none
+	bridge_stp off
+	bridge_fd 0
+	ip-forward on
+	vrf vrf_myzone
+
+auto vrf_myzone
+iface vrf_myzone
+	vrf-table auto
+	post-up ip route add vrf vrf_myzone unreachable default metric 4278198272
+	post-up ip -6 route add vrf vrf_myzone unreachable default metric 4278198272 || true

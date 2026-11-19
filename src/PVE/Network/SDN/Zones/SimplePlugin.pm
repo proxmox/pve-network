@@ -35,6 +35,11 @@ sub properties {
             type => 'string',
             enum => PVE::Network::SDN::Dhcp->plugin_types(),
         },
+        'dedicated-vrf' => {
+            description => 'Create a dedicated VRF for the zone.',
+            type => 'boolean',
+            default => 0,
+        },
     };
 }
 
@@ -47,7 +52,26 @@ sub options {
         dnszone => { optional => 1 },
         ipam => { optional => 1 },
         dhcp => { optional => 1 },
+        'dedicated-vrf' => { optional => 1 },
     };
+}
+
+sub generate_zone_config {
+    my ($class, $plugin_config, $zone_id, $config) = @_;
+
+    if ($plugin_config->{'dedicated-vrf'}) {
+        my $vrf_iface = "vrf_$zone_id";
+        if (!defined($config->{$vrf_iface})) {
+            $config->{$vrf_iface} = [
+                'vrf-table auto',
+                PVE::Network::SDN::Zones::Plugin::vrf_unreachable_default_cmds(
+                    $vrf_iface, 'add',
+                ),
+            ];
+        }
+    }
+
+    return $config;
 }
 
 # Plugin implementation
@@ -55,7 +79,7 @@ sub generate_sdn_config {
     my (
         $class,
         $plugin_config,
-        $zoneid,
+        $zone_id,
         $vnetid,
         $vnet,
         $controller,
@@ -110,7 +134,10 @@ sub generate_sdn_config {
         }
 
         #add route for /32 pointtopoint
-        push @iface_config, "up ip route add $cidr dev $vnetid" if $mask == 32 && $ipversion == 4;
+        if ($mask == 32 && $ipversion == 4) {
+            my $vrf = $plugin_config->{'dedicated-vrf'} ? " vrf vrf_$zone_id" : '';
+            push @iface_config, "up ip route add $cidr dev $vnetid$vrf";
+        }
         if ($subnet->{snat}) {
             #find outgoing interface
             my ($outip, $outiface);
@@ -150,6 +177,7 @@ sub generate_sdn_config {
     push @iface_config, "alias $alias" if $alias;
     push @iface_config, "ip-forward on" if $enable_forward_v4;
     push @iface_config, "ip6-forward on" if $enable_forward_v6;
+    push @iface_config, "vrf vrf_$zone_id" if $plugin_config->{'dedicated-vrf'};
 
     push @{ $config->{$vnetid} }, @iface_config;
 

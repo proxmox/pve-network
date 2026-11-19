@@ -1,0 +1,12 @@
+{
+  version => 1,
+  vnets   => { ids => {} },
+  zones   => {
+               ids => {
+                        myzone => {
+                                    type => "simple",
+                                    "dedicated-vrf" => 1,
+                                  },
+                      },
+             },
+}

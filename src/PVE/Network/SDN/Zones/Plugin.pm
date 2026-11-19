@@ -119,6 +119,25 @@ sub encode_value {
     return $value;
 }
 
+# Unreachable IPv4 and IPv6 default routes with the highest metric, so that
+# lookups without a matching route in the VRF table do not fall through to the
+# main table. $action is 'add' or 'del'.
+sub vrf_unreachable_default_cmds {
+    my ($vrf_iface, $action) = @_;
+
+    # IPv6 can be disabled on the kernel command line, so a failing IPv6 command is ignored.
+    return (
+        "post-up ip route $action vrf $vrf_iface unreachable default metric 4278198272",
+        "post-up ip -6 route $action vrf $vrf_iface unreachable default metric 4278198272 || true",
+    );
+}
+
+sub generate_zone_config {
+    my ($class, $plugin_config, $zone_id, $config) = @_;
+
+    return $config;
+}
+
 sub generate_sdn_config {
     my (
         $class,

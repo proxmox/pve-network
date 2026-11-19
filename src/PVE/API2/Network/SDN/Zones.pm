@@ -61,6 +61,12 @@ my $ZONE_PROPERTIES = {
         optional => 1,
         description => 'Name of DHCP server backend for this zone.',
     },
+    'dedicated-vrf' => {
+        type => 'boolean',
+        default => 0,
+        optional => 1,
+        description => 'Create a dedicated VRF for a simple zone.',
+    },
     'rt-import' => {
         type => 'string',
         optional => 1,
