@@ -209,7 +209,7 @@ sub on_update_hook {
     for my $id (keys %$fabrics) {
         die "cannot configure a BGP controller while BGP fabric '$id' exists:"
             . " both target the default-VRF BGP router\n"
-            if $fabrics->{$id}->{protocol} eq 'bgp';
+            if $fabrics->{$id}->{protocol} eq 'bgp' && !$fabrics->{$id}->{zone};
     }
 
     my $controller = $controller_cfg->{ids}->{$controllerid};

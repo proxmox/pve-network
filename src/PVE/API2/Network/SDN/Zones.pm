@@ -11,6 +11,7 @@ use PVE::SafeSyslog;
 use PVE::Tools qw(extract_param);
 
 use PVE::Network::SDN::Dns;
+use PVE::Network::SDN::Fabrics;
 use PVE::Network::SDN::Subnets;
 use PVE::Network::SDN::Vnets;
 use PVE::Network::SDN;
@@ -363,6 +364,13 @@ sub create_etc_interfaces_sdn_dir {
     mkdir("/etc/pve/sdn");
 }
 
+sub fabrics_using_zone {
+    my ($zone_id, $fabric_config) = @_;
+
+    my $fabrics = $fabric_config->list_fabrics();
+    return grep { ($fabrics->{$_}->{zone} // '') eq $zone_id } sort keys $fabrics->%*;
+}
+
 __PACKAGE__->register_method({
     name => 'create',
     protected => 1,
@@ -475,6 +483,22 @@ __PACKAGE__->register_method({
 
                 $scfg->{$_} = $opts->{$_} for keys $opts->%*;
 
+                my $fabric_config = PVE::Network::SDN::Fabrics::config();
+                my @fabric_ids = fabrics_using_zone($id, $fabric_config);
+
+                if (@fabric_ids && $scfg->{type} eq 'simple' && !$scfg->{'dedicated-vrf'}) {
+                    raise_param_exc({
+                        'dedicated-vrf' =>
+                            "zone is still used as VRF by fabric '$fabric_ids[0]'",
+                    });
+                }
+
+                for my $fabric_id (@fabric_ids) {
+                    PVE::Network::SDN::Fabrics::assert_fabric_nodes_in_zone(
+                        $fabric_config, $fabric_id, $id, $scfg,
+                    );
+                }
+
                 my $new_ipam = $scfg->{ipam};
                 if (!$new_ipam != !$old_ipam || (($new_ipam // '') ne ($old_ipam // ''))) {
                     # don't allow ipam change if subnet are defined for now, need to implement resync ipam content
@@ -546,6 +570,10 @@ __PACKAGE__->register_method({
 
                 my $plugin = PVE::Network::SDN::Zones::Plugin->lookup($scfg->{type});
                 my $vnet_cfg = PVE::Network::SDN::Vnets::config();
+
+                my $fabric_config = PVE::Network::SDN::Fabrics::config();
+                my @fabric_ids = fabrics_using_zone($id, $fabric_config);
+                die "zone is still used as VRF by fabric '$fabric_ids[0]'\n" if @fabric_ids;
 
                 $plugin->on_delete_hook($id, $vnet_cfg);
 

@@ -6,12 +6,50 @@ use warnings;
 use PVE::Network::SDN;
 use PVE::Network::SDN::Controllers;
 use PVE::Network::SDN::Fabrics;
+use PVE::Network::SDN::Zones;
 
+use PVE::Exception qw(raise_param_exc);
 use PVE::JSONSchema qw(get_standard_option);
 use PVE::Tools qw(extract_param);
 
 use PVE::RESTHandler;
 use base qw(PVE::RESTHandler);
+
+sub validate_fabric_zone {
+    my ($fabric, $config) = @_;
+
+    my $protocol = $fabric->{protocol} // '';
+    if ($protocol eq 'bgp' && !$fabric->{zone}) {
+        my $controller_cfg = PVE::Network::SDN::Controllers::config();
+        for my $controller_id (keys %{ $controller_cfg->{ids} // {} }) {
+            my $controller = $controller_cfg->{ids}->{$controller_id};
+            if ($controller->{type} eq 'bgp') {
+                die "cannot configure a BGP fabric while BGP controller '$controller_id' exists:"
+                    . " both target the default-VRF BGP router\n";
+            }
+        }
+    }
+
+    my $zone_id = $fabric->{zone};
+    return if !$zone_id;
+
+    raise_param_exc({ zone => 'VRF zones are only supported for BGP and OSPF fabrics' })
+        if $protocol !~ /^(?:bgp|ospf)$/;
+
+    my $zone = PVE::Network::SDN::Zones::get_zone($zone_id);
+
+    raise_param_exc({ zone => "zone '$zone_id' does not exist" }) if !$zone;
+    raise_param_exc({ zone => "zone '$zone_id' is not a simple zone" })
+        if $zone->{type} ne 'simple';
+    raise_param_exc({ zone => "zone '$zone_id' is configured to use the default VRF" })
+        if !$zone->{'dedicated-vrf'};
+
+    if ($config) {
+        PVE::Network::SDN::Fabrics::assert_fabric_nodes_in_zone(
+            $config, $fabric->{id}, $zone_id, $zone,
+        );
+    }
+}
 
 __PACKAGE__->register_method({
     name => 'index',
@@ -129,6 +167,8 @@ __PACKAGE__->register_method({
     protected => 1,
     permissions => {
         check => ['perm', '/sdn/fabrics', ['SDN.Allocate']],
+        description => "Assigning a VRF zone additionally requires 'SDN.Use' or 'SDN.Allocate'"
+            . " on '/sdn/zones/<zone>'.",
     },
     parameters => {
         properties => PVE::Network::SDN::Fabrics::fabric_properties(0),
@@ -148,17 +188,10 @@ __PACKAGE__->register_method({
                 my $digest = extract_param($param, 'digest');
                 PVE::Tools::assert_if_modified($config->digest(), $digest) if $digest;
 
-                if (($param->{protocol} // '') eq 'bgp') {
-                    my $controller_cfg = PVE::Network::SDN::Controllers::config();
-                    for my $id (keys %{ $controller_cfg->{ids} // {} }) {
-                        die "cannot add a BGP fabric while BGP controller '$id' exists:"
-                            . " both target the default-VRF BGP router\n"
-                            if $controller_cfg->{ids}->{$id}->{type} eq 'bgp';
-                    }
-                }
-
                 my $privs = ['SDN.Use', 'SDN.Allocate'];
                 PVE::Network::SDN::Fabrics::api_validate_property_references($param, $privs);
+
+                validate_fabric_zone($param);
 
                 $config->add_fabric($param);
                 PVE::Network::SDN::Fabrics::write_config($config);
@@ -200,7 +233,12 @@ __PACKAGE__->register_method({
                 my $privs = ['SDN.Use', 'SDN.Allocate'];
                 PVE::Network::SDN::Fabrics::api_validate_property_references($param, $privs);
 
+                my $old_zone = $config->get_fabric($id)->{zone} // '';
+                raise_param_exc({ zone => "cannot change the VRF zone of an existing fabric" })
+                    if defined($param->{zone}) && $param->{zone} ne $old_zone;
+
                 $config->update_fabric($id, $param);
+                validate_fabric_zone($config->get_fabric($id), $config);
                 PVE::Network::SDN::Fabrics::write_config($config);
             },
             "updating fabric failed",

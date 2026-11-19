@@ -9,6 +9,7 @@ use PVE::Tools qw(extract_param run_command);
 use PVE::Network::SDN;
 use PVE::Network::SDN::Fabrics;
 use PVE::Network::SDN::WireGuard;
+use PVE::Network::SDN::Zones;
 use PVE::RS::SDN::Fabrics;
 
 use PVE::RESTHandler;
@@ -138,6 +139,21 @@ my sub is_internal_wireguard_node {
     return $node->{protocol} eq 'wireguard' && $node->{role} eq 'internal';
 }
 
+my sub validate_node_fabric_zone {
+    my ($config, $fabric_id, $node_id) = @_;
+
+    my $fabric = $config->get_fabric($fabric_id);
+    my $zone_id = $fabric->{zone};
+    return if !$zone_id;
+
+    PVE::Network::SDN::Zones::api_get_zone_checked($zone_id, ['SDN.Use', 'SDN.Allocate']);
+    my $zone = PVE::Network::SDN::Zones::get_zone($zone_id);
+
+    PVE::Network::SDN::Fabrics::assert_fabric_node_in_zone(
+        $fabric_id, $node_id, $zone_id, $zone,
+    );
+}
+
 __PACKAGE__->register_method({
     name => 'add_node',
     path => '',
@@ -150,6 +166,8 @@ __PACKAGE__->register_method({
             ['perm', '/sdn/fabrics/{fabric_id}', ['SDN.Allocate']],
             ['perm', '/nodes/{node_id}', ['Sys.Modify']],
         ],
+        description => "If the fabric uses a VRF zone, also requires 'SDN.Use' or"
+            . " 'SDN.Allocate' on '/sdn/zones/<zone>'.",
     },
     parameters => {
         properties => PVE::Network::SDN::Fabrics::node_properties(0),
@@ -168,6 +186,8 @@ __PACKAGE__->register_method({
 
                 my $digest = extract_param($param, 'digest');
                 PVE::Tools::assert_if_modified($config->digest(), $digest) if $digest;
+
+                validate_node_fabric_zone($config, $param->{fabric_id}, $param->{node_id});
 
                 if (is_internal_wireguard_node($param) && $param->{interfaces}) {
                     my $private_keys = PVE::Network::SDN::WireGuard::private_keys();

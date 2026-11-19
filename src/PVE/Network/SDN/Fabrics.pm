@@ -13,6 +13,7 @@ use PVE::ParseUtils qw($IPV4RE);
 
 use PVE::Network::SDN::PrefixLists;
 use PVE::Network::SDN::RouteMaps;
+use PVE::Network::SDN::Zones;
 
 use PVE::RS::SDN;
 use PVE::RS::SDN::Fabrics;
@@ -236,6 +237,23 @@ sub write_config {
     cfs_write_file("sdn/fabrics.cfg", $config->to_raw(), 1);
 }
 
+sub assert_fabric_node_in_zone {
+    my ($fabric_id, $node_id, $zone_id, $zone) = @_;
+
+    return if !defined($zone->{nodes}) || $zone->{nodes}->{$node_id};
+
+    die "fabric '$fabric_id' contains node '$node_id', which is not enabled for zone '$zone_id'\n";
+}
+
+sub assert_fabric_nodes_in_zone {
+    my ($config, $fabric_id, $zone_id, $zone) = @_;
+
+    my $nodes = $config->list_nodes_fabric($fabric_id);
+    for my $node_id (sort keys $nodes->%*) {
+        assert_fabric_node_in_zone($fabric_id, $node_id, $zone_id, $zone);
+    }
+}
+
 sub get_frr_daemon_status {
     my ($fabric_config) = @_;
 
@@ -260,6 +278,14 @@ sub generate_etc_network_config {
     # default to an empty hash
     my $fabrics_config = $running_cfg->{fabrics}->{ids} // {};
     my $fabric_object = PVE::RS::SDN::Fabrics->running_config($fabrics_config);
+
+    my $ifaces = PVE::INotify::read_file('interfaces')->{ifaces};
+    for my $iface (sort keys %$ifaces) {
+        next if !$ifaces->{$iface}->{vrf};
+        die "interface '$iface' - cannot set VRF '$ifaces->{$iface}->{vrf}' on an interface that"
+            . " is part of a fabric, remove the VRF from the host interface\n"
+            if $fabric_object->is_fabric_interface($nodename, $iface);
+    }
 
     return $fabric_object->get_interfaces_etc_network_config($nodename);
 }
@@ -519,6 +545,15 @@ sub fabric_properties {
         protocol => get_standard_option('pve-sdn-fabric-protocol'),
         digest => get_standard_option('pve-config-digest'),
         'lock-token' => get_standard_option('pve-sdn-lock-token'),
+        zone => get_standard_option(
+            'pve-sdn-zone-id',
+            {
+                description => 'Simple zone whose VRF contains this fabric.',
+                'type-property' => 'protocol',
+                'instance-types' => ['bgp', 'ospf'],
+                optional => 1,
+            },
+        ),
         ip_prefix => {
             type => 'string',
             format => 'CIDR',
@@ -722,6 +757,10 @@ sub api_validate_property_references {
 
     my $prefix_list_config = PVE::Network::SDN::PrefixLists::config();
     my $route_map_config = PVE::Network::SDN::RouteMaps::config();
+
+    if (my $zone = $fabric->{zone}) {
+        PVE::Network::SDN::Zones::api_get_zone_checked($zone, $privs);
+    }
 
     if (my $route_filter = $fabric->{'route_filter'}) {
         raise_param_exc({ route_filter => "could not find prefix list $route_filter" })
