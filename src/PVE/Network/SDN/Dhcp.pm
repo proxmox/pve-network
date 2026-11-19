@@ -69,7 +69,16 @@ sub regenerate_config {
 
     my $plugins = PVE::Network::SDN::Dhcp::Plugin->lookup_types();
 
-    my $any_zone_needs_dhcp = grep { $_->{dhcp} } values $zone_cfg->{ids}->%*;
+    my @dhcp_zone_ids;
+    for my $zoneid (sort keys $zone_cfg->{ids}->%*) {
+        my $zone = $zone_cfg->{ids}->{$zoneid};
+        next if !$zone->{dhcp};
+        # the zone's VRF and bridges only exist on its nodes
+        next if defined($zone->{nodes}) && !$zone->{nodes}->{$nodename};
+        push @dhcp_zone_ids, $zoneid;
+    }
+
+    my $any_zone_needs_dhcp = scalar(@dhcp_zone_ids);
 
     foreach my $plugin_name (@$plugins) {
         my $plugin = PVE::Network::SDN::Dhcp::Plugin->lookup($plugin_name);
@@ -77,9 +86,8 @@ sub regenerate_config {
         die "Could not run before_regenerate for DHCP plugin $plugin_name $@\n" if $@;
     }
 
-    foreach my $zoneid (sort keys %{ $zone_cfg->{ids} }) {
+    foreach my $zoneid (@dhcp_zone_ids) {
         my $zone = $zone_cfg->{ids}->{$zoneid};
-        next if !$zone->{dhcp};
 
         my $dhcp_plugin_name = $zone->{dhcp};
         my $dhcp_plugin = PVE::Network::SDN::Dhcp::Plugin->lookup($dhcp_plugin_name);
