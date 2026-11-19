@@ -9,6 +9,7 @@ SOURCES=Vnets.pm\
 		Dhcp.pm\
 		Fabrics.pm\
 		Frr.pm\
+		Formats.pm\
 		PrefixLists.pm\
 		RouteMaps.pm\
 		WireGuard.pm

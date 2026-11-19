@@ -11,6 +11,7 @@ use PVE::JSONSchema qw(get_standard_option);
 use PVE::INotify;
 use PVE::ParseUtils qw($IPV4RE);
 
+use PVE::Network::SDN::Formats;
 use PVE::Network::SDN::PrefixLists;
 use PVE::Network::SDN::RouteMaps;
 use PVE::Network::SDN::Zones;
