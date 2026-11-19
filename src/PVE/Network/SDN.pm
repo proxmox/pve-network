@@ -257,11 +257,17 @@ sub cleanup_access_control {
 
     if (@$vnet_move_paths) {
         PVE::AccessControl::migrate_sdn_resource_access($vnet_move_paths);
+        PVE::AccessControl::migrate_vnet_zone_in_pool($vnet_move_paths);
     }
 
     my @paths_to_delete = (@$vnet_delete_paths, @$route_map_paths, @$generic_paths);
+
     if (@paths_to_delete) {
         PVE::AccessControl::remove_sdn_resource_access(\@paths_to_delete);
+    }
+
+    if (@$vnet_delete_paths) {
+        PVE::AccessControl::remove_vnets_from_pool($vnet_delete_paths);
     }
 }
 
