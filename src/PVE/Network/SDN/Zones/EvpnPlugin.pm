@@ -317,13 +317,10 @@ sub generate_sdn_config {
         #vrf interface
         @iface_config = ();
         push @iface_config, "vrf-table auto";
-        if (!$is_evpn_gateway) {
-            push @iface_config,
-                "post-up ip route add vrf $vrf_iface unreachable default metric 4278198272";
-        } else {
-            push @iface_config,
-                "post-up ip route del vrf $vrf_iface unreachable default metric 4278198272";
-        }
+        my $route_action = $is_evpn_gateway ? 'del' : 'add';
+        push @iface_config,
+            "post-up ip route $route_action vrf $vrf_iface unreachable default metric 4278198272",
+            "post-up ip -6 route $route_action vrf $vrf_iface unreachable default metric 4278198272 || true";
 
         push(@{ $config->{$vrf_iface} }, @iface_config) if !$config->{$vrf_iface};
 

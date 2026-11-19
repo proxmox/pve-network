@@ -14,6 +14,7 @@ auto vrf_myzone
 iface vrf_myzone
 	vrf-table auto
 	post-up ip route add vrf vrf_myzone unreachable default metric 4278198272
+	post-up ip -6 route add vrf vrf_myzone unreachable default metric 4278198272 || true
 
 auto vrfbr_myzone
 iface vrfbr_myzone

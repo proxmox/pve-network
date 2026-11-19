@@ -16,6 +16,7 @@ auto vrf_evpn
 iface vrf_evpn
 	vrf-table auto
 	post-up ip route add vrf vrf_evpn unreachable default metric 4278198272
+	post-up ip -6 route add vrf vrf_evpn unreachable default metric 4278198272 || true
 
 auto vrfbr_evpn
 iface vrfbr_evpn
