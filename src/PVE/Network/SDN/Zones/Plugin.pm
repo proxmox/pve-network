@@ -18,14 +18,34 @@ PVE::Cluster::cfs_register_file(
     sub { __PACKAGE__->write_config(@_); },
 );
 
+my $sdn_zone_id_pattern = '[a-zA-Z][a-zA-Z0-9]*[a-zA-Z0-9]';
+my $zone_min_length = 2;
+my $zone_max_length = 8;
+
+sub pve_verify_sdn_zone_id {
+    my ($zone, $noerr) = @_;
+
+    my $len = length($zone);
+
+    if ($zone !~ m/^$sdn_zone_id_pattern\z/ || $len < $zone_min_length || $len > $zone_max_length) {
+        return undef if $noerr;
+        die "invalid SDN zone '$zone', must be $zone_min_length-$zone_max_length characters long,"
+            . " start with a letter, and contain only alphanumeric characters\n";
+    }
+    return $zone;
+}
+
+PVE::JSONSchema::register_format('pve-sdn-zone-id', \&pve_verify_sdn_zone_id);
+
 PVE::JSONSchema::register_standard_option(
     'pve-sdn-zone-id',
     {
         description => "The SDN zone object identifier.",
         type => 'string',
-        pattern => '[a-zA-Z][a-zA-Z0-9]*[a-zA-Z0-9]',
-        minLength => 2,
-        maxLength => 8,
+        format => 'pve-sdn-zone-id',
+        pattern => $sdn_zone_id_pattern,
+        minLength => $zone_min_length,
+        maxLength => $zone_max_length,
     },
 );
 

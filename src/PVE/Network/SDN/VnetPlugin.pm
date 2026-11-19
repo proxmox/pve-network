@@ -16,14 +16,34 @@ PVE::Cluster::cfs_register_file(
     sub { __PACKAGE__->write_config(@_); },
 );
 
+my $sdn_vnet_id_pattern = '[a-zA-Z][a-zA-Z0-9]*[a-zA-Z0-9]';
+my $vnet_min_length = 2;
+my $vnet_max_length = 8;
+
+sub pve_verify_sdn_vnet_id {
+    my ($vnet, $noerr) = @_;
+
+    my $len = length($vnet);
+
+    if ($vnet !~ m/^$sdn_vnet_id_pattern\z/ || $len < $vnet_min_length || $len > $vnet_max_length) {
+        return undef if $noerr;
+        die "invalid SDN VNet '$vnet', must be $vnet_min_length-$vnet_max_length characters"
+            . " long, start with a letter, and contain only alphanumeric characters\n";
+    }
+    return $vnet;
+}
+
+PVE::JSONSchema::register_format('pve-sdn-vnet-id', \&pve_verify_sdn_vnet_id);
+
 PVE::JSONSchema::register_standard_option(
     'pve-sdn-vnet-id',
     {
         description => "The SDN vnet object identifier.",
         type => 'string',
-        pattern => '[a-zA-Z][a-zA-Z0-9]*[a-zA-Z0-9]',
-        minLength => 2,
-        maxLength => 8,
+        format => 'pve-sdn-vnet-id',
+        pattern => $sdn_vnet_id_pattern,
+        minLength => $vnet_min_length,
+        maxLength => $vnet_max_length,
     },
 );
 
