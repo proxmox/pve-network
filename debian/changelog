@@ -1,3 +1,55 @@
+libpve-network-perl (1.6.11) trixie; urgency=medium
+
+  * api: ipams, dns: only include credentials, such as the phpIPAM and NetBox
+    tokens or the PowerDNS API key, in the index for users with SDN.Allocate.
+    Previously, users with SDN.Audit, as granted by the PVEAuditor role, could
+    read them.
+
+  * subnets: store DHCP ranges in canonical form and check their addresses
+    when saving. Ranges with empty parts or addresses with leading zeros were
+    accepted, but rejected when the firewall read the running configuration,
+    which made it drop the SDN IP sets. Existing ranges are not rewritten,
+    correct or remove such a range and apply the SDN configuration.
+
+  * simple zones: add an optional dedicated VRF, which separates the routing
+    of the zone from the host and from other zones, for example to use
+    overlapping subnets in different zones. Unreachable default routes keep
+    lookups from falling through to the main routing table. For such zones:
+    - DHCP: run dnsmasq in the zone VRF.
+    - SNAT: masquerade via the host interfaces in the zone VRF.
+    - conntrack: assign each zone a conntrack zone, so that connections in
+      different VRFs do not share conntrack entries.
+    - static routes: support them in the zone VRF, managed by FRR. Changing
+      them requires Sys.Modify on the nodes of the zone.
+    - EVPN exit nodes no longer add null routes for subnets of these zones.
+
+  * fabrics: allow OSPF and BGP fabrics to use the VRF of a simple zone.
+    Underlay fabrics of EVPN controllers and VXLAN zones must stay in the
+    default VRF. Generating the network configuration fails if a fabric
+    interface also has a VRF set in /etc/network/interfaces.
+
+  * fabrics: wireguard: add an MTU option for interfaces, with a minimum of
+    1280. Interfaces without an MTU keep the default of 1500 that ifupdown2
+    sets, not the 1420 of WireGuard.
+
+  * fabrics: describe the WireGuard status properties in the API schema.
+
+  * dhcp: only configure DHCP for zones on the local node, so that nodes
+    outside of zones with DHCP no longer need dnsmasq installed.
+
+  * dhcp: fix the DNS server option for IPv4 subnets without a gateway, which
+    produced an invalid line in the dnsmasq configuration.
+
+  * evpn: also add the IPv6 unreachable default route to zone VRFs, so that
+    IPv6 lookups no longer fall through to the main routing table on non-exit
+    nodes.
+
+  * fix #7294: vnets: update the members of resource pools when a VNet moves
+    to another zone, and remove deleted VNets from them, so that a stale entry
+    cannot grant access to a later VNet with the same zone and name.
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 20 Nov 2026 05:45:49 +0100
+
 libpve-network-perl (1.6.10) trixie; urgency=medium
 
   * sdn: ipam, dns: mark API tokens as sensitive to redact them automatically
