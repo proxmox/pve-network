@@ -147,7 +147,7 @@ PVE::JSONSchema::register_format(
             type => 'integer',
             description => 'The MTU to use for this interface.',
             optional => 1,
-            minimum => 576,
+            minimum => 1280,
             maximum => 65535,
         },
     },
