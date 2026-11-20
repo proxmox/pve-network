@@ -96,7 +96,7 @@ __PACKAGE__->register_method({
     name => 'neighbors',
     path => 'neighbors',
     method => 'GET',
-    description => "Get all neighbors for a fabric.",
+    description => "Get all neighbors for a fabric, empty if this node is not part of it.",
     permissions => {
         check => ['perm', '/sdn/fabrics/{fabric}', ['SDN.Audit']],
     },
@@ -208,7 +208,7 @@ __PACKAGE__->register_method({
     name => 'interfaces',
     path => 'interfaces',
     method => 'GET',
-    description => "Get all interfaces for a fabric.",
+    description => "Get all interfaces for a fabric, empty if this node is not part of it.",
     protected => 1,
     permissions => {
         check => ['perm', '/sdn/fabrics/{fabric}', ['SDN.Audit']],
@@ -232,21 +232,26 @@ __PACKAGE__->register_method({
                 },
                 type => {
                     description =>
-                        "The type of this interface in the fabric (e.g. Point-to-Point, Broadcast, ..).",
+                        "The type of this interface in the fabric (e.g. Point-to-Point, Broadcast, ..)."
+                        . " Omitted for WireGuard if the interface is missing or is not a WireGuard"
+                        . " interface.",
                     type => 'string',
+                    optional => 1,
                 },
                 state => {
                     description => "The current state of the interface.",
                     type => 'string',
                 },
                 'public-key' => {
-                    description => "The public key of the interface (WireGuard only).",
+                    description => "The public key of the interface, omitted if WireGuard does"
+                        . " not report one (WireGuard only).",
                     format_description => 'Base64-encoded Curve 25519 public key.',
                     type => 'string',
                     optional => 1,
                 },
                 'listen-port' => {
-                    description => "The listen port of the interface (WireGuard only).",
+                    description => "The listen port of the interface, omitted if WireGuard does"
+                        . " not report the interface (WireGuard only).",
                     type => 'number',
                     optional => 1,
                 },
