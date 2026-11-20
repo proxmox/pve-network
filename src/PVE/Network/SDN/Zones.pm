@@ -11,6 +11,7 @@ use PVE::Tools qw(extract_param dir_glob_regex run_command);
 use PVE::Cluster qw(cfs_read_file cfs_write_file cfs_lock_file);
 use PVE::IPRoute2;
 use PVE::Network;
+use PVE::RESTEnvironment qw(log_warn);
 
 use PVE::Network::SDN::Controllers;
 use PVE::Network::SDN::Dns;
@@ -226,6 +227,26 @@ sub generate_etc_network_config {
             warn "zone $zone : vnet $id : $err\n";
             next;
         }
+    }
+
+    # Warn about host interfaces in a zone VRF that is no longer generated, e.g. after the zone
+    # was deleted. Sourced files are not checked. Only stanzas that set a VRF table define a VRF,
+    # e.g. a host stanza that just adds an address to the VRF of a zone does not.
+    my $sets_vrf_table = sub {
+        my ($options) = @_;
+        return grep { m/^vrf[-_]table\s/ } $options->@*;
+    };
+    my $host_ifaces = $interfaces_config->{ifaces};
+    for my $iface (sort keys $host_ifaces->%*) {
+        my $vrf = $host_ifaces->{$iface}->{vrf};
+        next if !$vrf || $vrf !~ m/^vrf_/;
+        next if $sets_vrf_table->($config->{$vrf} // []);
+
+        my $host_vrf = $host_ifaces->{$vrf} // {};
+        next if $sets_vrf_table->([map { ($_ // [])->@* } $host_vrf->@{qw(options options6)}]);
+
+        log_warn("host interface '$iface' is configured to use VRF '$vrf', which is not defined"
+            . " in /etc/network/interfaces or the SDN configuration of this node");
     }
 
     my $raw_network_config = "\#version:$version\n";
