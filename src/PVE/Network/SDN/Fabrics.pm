@@ -10,6 +10,7 @@ use PVE::Exception qw(raise_param_exc);
 use PVE::JSONSchema qw(get_standard_option);
 use PVE::INotify;
 use PVE::ParseUtils qw($IPV4RE);
+use PVE::RESTEnvironment qw(log_warn);
 
 use PVE::Network::SDN::Formats;
 use PVE::Network::SDN::PrefixLists;
@@ -291,9 +292,10 @@ sub generate_etc_network_config {
 
     my $ifaces = PVE::INotify::read_file('interfaces')->{ifaces};
     for my $iface (sort keys %$ifaces) {
-        next if !$ifaces->{$iface}->{vrf};
-        die "interface '$iface' - cannot set VRF '$ifaces->{$iface}->{vrf}' on an interface that"
-            . " is part of a fabric, remove the VRF from the host interface\n"
+        my $vrf = $ifaces->{$iface}->{vrf};
+        next if !defined($vrf) || $vrf eq '';
+        log_warn("interface '$iface' has host VRF '$vrf'; remove the host VRF setting so the"
+                . " fabric can manage this interface")
             if $fabric_object->is_fabric_interface($nodename, $iface);
     }
 

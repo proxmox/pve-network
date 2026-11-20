@@ -40,17 +40,26 @@ $inotify->mock(
     },
 );
 
-$interfaces = { ens19 => { vrf => 'vrf_blue' } };
-eval { PVE::Network::SDN::Fabrics::generate_etc_network_config($running_cfg) };
-like(
-    $@,
-    qr/^interface 'ens19' - cannot set VRF 'vrf_blue' on an interface that is part of a fabric/,
-    'VRF on a fabric interface fails',
-);
+my @warnings;
+my $fabrics = Test::MockModule->new('PVE::Network::SDN::Fabrics');
+$fabrics->mock(log_warn => sub { push @warnings, $_[0] });
 
-$interfaces = { ens20 => { vrf => 'vrf_blue' }, ens19 => {} };
+$interfaces = { ens19 => { vrf => 'vrf_blue' } };
 my $config = eval { PVE::Network::SDN::Fabrics::generate_etc_network_config($running_cfg) };
+is($@, '', 'VRF on a fabric interface does not fail');
+is(scalar(@warnings), 1, 'VRF on a fabric interface warns once');
+like(
+    $warnings[0],
+    qr/^interface 'ens19' has host VRF 'vrf_blue'/,
+    'warning names the interface and VRF',
+);
+like($config, qr/^iface ens19 inet static$/m, 'fabric interface config is still generated');
+
+@warnings = ();
+$interfaces = { ens20 => { vrf => 'vrf_blue' }, ens19 => {} };
+$config = eval { PVE::Network::SDN::Fabrics::generate_etc_network_config($running_cfg) };
 is($@, '', 'VRF on another interface is allowed');
+is(scalar(@warnings), 0, 'VRF on another interface does not warn');
 like($config, qr/^iface ens19 inet static$/m, 'fabric interface config is generated');
 
 my $zone_cfg = {
@@ -73,6 +82,7 @@ my $zone_cfg = {
     },
 };
 
+@warnings = ();
 $interfaces = { ens19 => {} };
 $config = eval { PVE::Network::SDN::Fabrics::generate_etc_network_config($zone_cfg) };
 is($@, '', 'OSPF fabric in a zone VRF is allowed');
@@ -82,12 +92,22 @@ like(
     'fabric interface is put into the zone VRF',
 );
 
+is(scalar(@warnings), 0, 'zone fabric without host VRF does not warn');
+my $zone_config = $config;
+
+$interfaces = { ens19 => { vrf => 'vrf_blue' } };
+$config = eval { PVE::Network::SDN::Fabrics::generate_etc_network_config($zone_cfg) };
+is($@, '', 'other host VRF on a zone fabric interface does not fail');
+is(scalar(@warnings), 1, 'other host VRF on a zone fabric interface warns once');
+like($warnings[0], qr/^interface 'ens19' has host VRF 'vrf_blue';/, 'warning names the host VRF');
+is($config, $zone_config, 'zone fabric config is the same as without host VRF');
+
+@warnings = ();
 $interfaces = { ens19 => { vrf => 'vrf_red' } };
-eval { PVE::Network::SDN::Fabrics::generate_etc_network_config($zone_cfg) };
-like(
-    $@,
-    qr/^interface 'ens19' - cannot set VRF 'vrf_red'/,
-    'host VRF on a zone fabric interface fails',
-);
+$config = eval { PVE::Network::SDN::Fabrics::generate_etc_network_config($zone_cfg) };
+is($@, '', 'host VRF on a zone fabric interface does not fail');
+is(scalar(@warnings), 1, 'host VRF on a zone fabric interface warns once');
+like($warnings[0], qr/^interface 'ens19' has host VRF 'vrf_red';/, 'zone warning names the VRF');
+like($config, qr/^iface ens19 inet static$/m, 'zone fabric interface config is still generated');
 
 done_testing();
