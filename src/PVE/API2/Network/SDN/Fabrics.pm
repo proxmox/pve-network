@@ -156,9 +156,10 @@ __PACKAGE__->register_method({
         }
 
         my @res_nodes;
-        for my $node_id (keys %$nodes) {
-            my $node = $nodes->{$node_id};
+        for my $id (keys %$nodes) {
+            my $node = $nodes->{$id};
             my $fabric_id = $node->{fabric_id} // $node->{pending}->{fabric_id};
+            my $node_id = $node->{node_id} // $node->{pending}->{node_id};
 
             next if !$rpcenv->check_any($authuser, "/sdn/fabrics/$fabric_id", $fabric_privs, 1);
             next if !$rpcenv->check_any($authuser, "/nodes/$node_id", $node_privs, 1);
