@@ -40,7 +40,7 @@ __PACKAGE__->register_method({
     code => sub {
         my ($param) = @_;
         my $res = [
-            { subdir => 'neighbors' }, { subdir => 'routes' },
+            { subdir => 'interfaces' }, { subdir => 'neighbors' }, { subdir => 'routes' },
         ];
 
         return $res;
