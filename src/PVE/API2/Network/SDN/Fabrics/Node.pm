@@ -88,18 +88,11 @@ __PACKAGE__->register_method({
 
         my $rpcenv = PVE::RPCEnvironment::get();
         my $authuser = $rpcenv->get_user();
-        my $fabric_privs = ['SDN.Audit', 'SDN.Allocate'];
-        my $node_privs = ['Sys.Audit', 'Sys.Modify'];
 
         my @res;
 
-        for my $id (keys %$nodes) {
-            my $node = $nodes->{$id};
-            my $fabric_id = $node->{fabric_id} // $node->{pending}->{fabric_id};
-            my $node_id = $node->{node_id} // $node->{pending}->{node_id};
-
-            next if !$rpcenv->check_any($authuser, "/sdn/fabrics/$fabric_id", $fabric_privs, 1);
-            next if !$rpcenv->check_any($authuser, "/nodes/$node_id", $node_privs, 1);
+        for my $node (values %$nodes) {
+            next if !PVE::Network::SDN::Fabrics::api_can_list_node($rpcenv, $authuser, $node);
 
             $node->{digest} = $digest if $digest;
 

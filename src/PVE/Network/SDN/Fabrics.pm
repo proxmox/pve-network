@@ -827,4 +827,26 @@ sub api_validate_property_references {
     }
 }
 
+=head3 api_can_list_node($rpcenv, $authuser, $node)
+
+Returns whether C<$authuser> may see the fabric node C<$node>, as listed by the
+fabric node indexes. This needs access to both the fabric and the node.
+
+New nodes in a pending config have their IDs only below C<pending>.
+
+=cut
+
+sub api_can_list_node {
+    my ($rpcenv, $authuser, $node) = @_;
+
+    my $fabric_id = $node->{fabric_id} // $node->{pending}->{fabric_id};
+    my $node_id = $node->{node_id} // $node->{pending}->{node_id};
+
+    my $fabric_privs = ['SDN.Audit', 'SDN.Allocate'];
+    my $node_privs = ['Sys.Audit', 'Sys.Modify'];
+
+    return $rpcenv->check_any($authuser, "/sdn/fabrics/$fabric_id", $fabric_privs, 1)
+        && $rpcenv->check_any($authuser, "/nodes/$node_id", $node_privs, 1);
+}
+
 1;
