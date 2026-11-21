@@ -206,6 +206,9 @@ __PACKAGE__->register_method({
 
                     $param->{interfaces} = \@interfaces;
                     $config->add_node($param);
+                    PVE::Network::SDN::Fabrics::assert_no_wireguard_interfaces_in_zone_fabrics(
+                        $config, $param->{node_id},
+                    );
 
                     eval { PVE::Network::SDN::WireGuard::write_private_keys($private_keys); };
                     die "could not save private key config: $@\n" if $@;
@@ -223,6 +226,9 @@ __PACKAGE__->register_method({
                     }
                 } else {
                     $config->add_node($param);
+                    PVE::Network::SDN::Fabrics::assert_no_wireguard_interfaces_in_zone_fabrics(
+                        $config, $param->{node_id},
+                    );
                     PVE::Network::SDN::Fabrics::write_config($config);
                 }
             },
@@ -306,6 +312,9 @@ __PACKAGE__->register_method({
                     $param->{interfaces} = \@interfaces;
 
                     $config->update_node($fabric_id, $node_id, $param);
+                    PVE::Network::SDN::Fabrics::assert_no_wireguard_interfaces_in_zone_fabrics(
+                        $config, $node_id,
+                    );
 
                     eval { PVE::Network::SDN::WireGuard::write_private_keys($private_keys); };
                     die "could not save private key config: $@\n" if $@;
@@ -328,6 +337,9 @@ __PACKAGE__->register_method({
                     # restore a deleted interface without losing its private key
                 } else {
                     $config->update_node($fabric_id, $node_id, $param);
+                    PVE::Network::SDN::Fabrics::assert_no_wireguard_interfaces_in_zone_fabrics(
+                        $config, $node_id,
+                    );
                     PVE::Network::SDN::Fabrics::write_config($config);
                 }
             },

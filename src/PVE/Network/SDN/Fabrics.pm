@@ -256,6 +256,54 @@ sub assert_fabric_nodes_in_zone {
     }
 }
 
+=head3 assert_no_wireguard_interfaces_in_zone_fabrics($config, $node_id)
+
+Dies if an OSPF or BGP fabric in a zone uses an interface that a WireGuard fabric
+defines on the node C<$node_id>. The WireGuard fabric keeps the addresses and
+routes of its interfaces in the default routing table, so they do not work in the
+VRF of a zone.
+
+This is only checked when writing a node, so that an existing configuration with
+such an interface can still be loaded and fixed.
+
+=cut
+
+sub assert_no_wireguard_interfaces_in_zone_fabrics {
+    my ($config, $node_id) = @_;
+
+    my ($fabrics, $nodes) = $config->list_all();
+
+    my $interface_names = sub {
+        my ($node) = @_;
+        return map { m/(?:^|,)name=([^,]+)/ ? $1 : () } ($node->{interfaces} // [])->@*;
+    };
+
+    my $wireguard_interfaces = {};
+    my @zone_fabric_nodes;
+    for my $node (values $nodes->%*) {
+        next if $node->{node_id} ne $node_id;
+
+        if ($node->{protocol} eq 'wireguard') {
+            $wireguard_interfaces->{$_} = $node->{fabric_id} for $interface_names->($node);
+        } elsif ($fabrics->{ $node->{fabric_id} }->{zone}) {
+            push @zone_fabric_nodes, $node;
+        }
+    }
+
+    for my $node (sort { $a->{fabric_id} cmp $b->{fabric_id} } @zone_fabric_nodes) {
+        for my $iface (sort $interface_names->($node)) {
+            my $wireguard_fabric = $wireguard_interfaces->{$iface};
+            next if !defined($wireguard_fabric);
+
+            my $zone = $fabrics->{ $node->{fabric_id} }->{zone};
+            raise_param_exc({
+                interfaces => "fabric '$node->{fabric_id}' in zone '$zone' cannot use the"
+                    . " interface '$iface' of WireGuard fabric '$wireguard_fabric'",
+            });
+        }
+    }
+}
+
 sub assert_underlay_fabric {
     my ($fabric_id) = @_;
 
