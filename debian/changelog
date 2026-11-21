@@ -1,3 +1,32 @@
+libpve-network-perl (1.6.12) trixie; urgency=medium
+
+  * api: fabrics: list the node of each fabric a host is part of, and check
+    the node permissions with the node name. Before, users with privileges
+    only on single nodes did not see any fabric node in the index of all
+    fabrics.
+
+  * sdn: fabrics: only warn about a VRF that the network configuration of the
+    host sets for a fabric interface. Before, it made generating the SDN
+    network configuration of the node fail, so zones and other fabrics were
+    not updated either.
+
+  * sdn: zones: warn about host interfaces that use the VRF of a zone that
+    no longer exists on the node, for example after deleting the zone or
+    disabling its dedicated VRF.
+
+  * api: fabrics: reject WireGuard interfaces for OSPF and BGP fabrics in a
+    zone, as the WireGuard fabric keeps their addresses and routes in the
+    default routing table. Only changes to nodes are checked, so an existing
+    configuration with such an interface still loads and can be fixed.
+
+  * api: fabrics: describe the pending changes in the schemas of the fabric
+    and node lists, and return the digest in the fabric index.
+
+  * api: fabric status: list the interfaces in the index and document the
+    values that the WireGuard status omits.
+
+ -- Proxmox Support Team <support@proxmox.com>  Sat, 21 Nov 2026 18:52:33 +0100
+
 libpve-network-perl (1.6.11) trixie; urgency=medium
 
   * api: ipams, dns: only include credentials, such as the phpIPAM and NetBox
