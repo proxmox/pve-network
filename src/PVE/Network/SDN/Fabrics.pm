@@ -798,6 +798,40 @@ sub fabric_properties {
     return $properties;
 }
 
+# Adapts the properties of a fabric or node to the entries of the indexes. With the pending
+# configuration, changed values are below 'pending', and a new entry has all its values there,
+# including its IDs, which are then missing at the top level.
+my sub list_properties {
+    my ($properties, $pending_properties, @ids) = @_;
+
+    delete $properties->{'lock-token'};
+    $properties->{$_}->{optional} = 1 for @ids;
+
+    delete $pending_properties->@{qw(digest lock-token)};
+    $_->{optional} = 1 for values $pending_properties->%*;
+
+    $properties->{state} = get_standard_option('pve-sdn-config-state');
+    $properties->{pending} = {
+        type => 'object',
+        description => "Changes that are not applied yet, 'deleted' for removed values. A new"
+            . " entry has all its values here.",
+        optional => 1,
+        properties => $pending_properties,
+    };
+
+    return $properties;
+}
+
+sub fabric_list_properties {
+    return list_properties(fabric_properties(0), fabric_properties(0), 'id', 'protocol');
+}
+
+sub node_list_properties {
+    return list_properties(
+        node_properties(0), node_properties(0), 'fabric_id', 'node_id', 'protocol',
+    );
+}
+
 =head3 api_validate_property_references($fabric, $privs, $rpcenv, $authuser)
 
 For properties that reference another SDN entity in C<$fabric> this function

@@ -88,14 +88,14 @@ __PACKAGE__->register_method({
                 type => 'array',
                 items => {
                     type => "object",
-                    properties => PVE::Network::SDN::Fabrics::fabric_properties(0),
+                    properties => PVE::Network::SDN::Fabrics::fabric_list_properties(),
                 },
             },
             nodes => {
                 type => 'array',
                 items => {
                     type => "object",
-                    properties => PVE::Network::SDN::Fabrics::node_properties(0),
+                    properties => PVE::Network::SDN::Fabrics::node_list_properties(),
                 },
             },
         },

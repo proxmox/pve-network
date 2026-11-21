@@ -48,7 +48,7 @@ __PACKAGE__->register_method({
         type => 'array',
         items => {
             type => "object",
-            properties => PVE::Network::SDN::Fabrics::node_properties(0),
+            properties => PVE::Network::SDN::Fabrics::node_list_properties(),
         },
         links => [{ rel => 'child', href => "{fabric_id}" }],
     },
