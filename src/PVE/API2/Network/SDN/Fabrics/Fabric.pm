@@ -109,7 +109,7 @@ __PACKAGE__->register_method({
         } else {
             my $current_config = PVE::Network::SDN::Fabrics::config();
 
-            $digest = $current_config->{digest};
+            $digest = $current_config->digest();
             $fabrics = $current_config->list_fabrics();
         }
 
