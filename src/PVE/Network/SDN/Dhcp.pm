@@ -97,6 +97,8 @@ sub regenerate_config {
         eval { $dhcp_plugin->before_configure($zoneid, $zone) };
         die "Could not run before_configure for DHCP server $zoneid $@\n" if $@;
 
+        my $has_dhcp_vnet = 0;
+
         for my $vnetid (sort keys %{ $vnet_cfg->{ids} }) {
             my $vnet = $vnet_cfg->{ids}->{$vnetid};
             next if $vnet->{zone} ne $zoneid;
@@ -126,7 +128,12 @@ sub regenerate_config {
 
             eval { $dhcp_plugin->configure_vnet($config, $zoneid, $vnetid, $vnet) };
             warn "Could not configure vnet $vnetid: $@\n" if $@;
+            $has_dhcp_vnet = 1 if !$@ && @$config;
         }
+
+        # Without a vnet to serve, the DHCP server isn't restricted to any interface and binds to
+        # every address on the host, including those on vnets of other zones.
+        next if !$has_dhcp_vnet;
 
         eval { $dhcp_plugin->after_configure($zoneid, !$any_zone_needs_dhcp) };
         warn "Could not run after_configure for DHCP server $zoneid $@\n" if $@;
