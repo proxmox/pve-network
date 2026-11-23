@@ -104,7 +104,7 @@ sub regenerate_config {
             next if $vnet->{zone} ne $zoneid;
 
             my $config = [];
-            my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid);
+            my $subnets = PVE::Network::SDN::Vnets::get_subnets($vnetid, 1);
 
             foreach my $subnet_id (sort keys %{$subnets}) {
                 my $subnet_config = $subnets->{$subnet_id};
