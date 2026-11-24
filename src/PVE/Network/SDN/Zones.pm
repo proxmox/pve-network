@@ -62,8 +62,11 @@ sub config {
 
 # Assigns a conntrack zone to a simple zone with a dedicated VRF and removes it from other zones.
 #
-# A new conntrack zone follows the highest one in use, also in the running config, so that the
-# conntrack zone of a zone that is still active or was just deleted is not reused right away.
+# A zone that has a conntrack zone in the running config gets that one back if no other zone uses
+# it, so that applying keeps the existing connections of the zone, including their NAT bindings,
+# in the same conntrack zone. Otherwise, a new conntrack zone follows the highest one in use, also
+# in the running config, so that the conntrack zone of another zone that is still active or was
+# just deleted is not reused right away.
 sub update_ct_zone {
     my ($zone_cfg, $id) = @_;
 
@@ -82,9 +85,22 @@ sub update_ct_zone {
     my $running_zones = PVE::Network::SDN::Zones::config(1)->{ids};
     my $used = {};
     for my $zones ($zone_cfg->{ids}, $running_zones) {
-        for my $ct_zone (map { $_->{'ct-zone'} } values $zones->%*) {
+        for my $zone_id (keys $zones->%*) {
+            next if $zone_id eq $id;
+            my $ct_zone = $zones->{$zone_id}->{'ct-zone'};
             $used->{$ct_zone} = 1 if defined($ct_zone) && $ct_zone >= $first && $ct_zone <= $last;
         }
+    }
+
+    my $running_ct_zone = $running_zones->{$id} ? $running_zones->{$id}->{'ct-zone'} : undef;
+    if (
+        defined($running_ct_zone)
+        && $running_ct_zone >= $first
+        && $running_ct_zone <= $last
+        && !$used->{$running_ct_zone}
+    ) {
+        $zone->{'ct-zone'} = $running_ct_zone;
+        return;
     }
 
     my $count = $last - $first + 1;

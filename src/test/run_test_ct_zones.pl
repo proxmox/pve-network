@@ -64,6 +64,20 @@ is(
     16396,
     'conntrack zone of a zone that is only in the running config is not reused',
 );
+ok(!exists($running_zones->{new}), 'running config is not mutated for a new zone');
+
+$running_zones = { a => vrf_zone(16384), old => vrf_zone(16395) };
+is(
+    ct_zone_of({ a => vrf_zone(), b => vrf_zone(16390) }, 'a'),
+    16384,
+    'zone gets its conntrack zone from the running config back',
+);
+
+is(
+    ct_zone_of({ a => vrf_zone(), b => vrf_zone(16384) }, 'a'),
+    16396,
+    'conntrack zone from the running config is not reused if another zone uses it',
+);
 $running_zones = {};
 
 is(
@@ -84,10 +98,25 @@ is(
     'conntrack zones out of range are ignored',
 );
 
+$running_zones = { a => vrf_zone(5) };
+is(
+    ct_zone_of({ a => vrf_zone() }, 'a'),
+    16384,
+    'out of range conntrack zone from the running config is not reused',
+);
+$running_zones = {};
+
 my $all = { map { ("z$_" => vrf_zone($_)) } 16384 .. 17407 };
-$all->{new} = vrf_zone();
-eval { ct_zone_of($all, 'new') };
+eval { ct_zone_of({ %$all, new => vrf_zone() }, 'new') };
 like($@, qr/no conntrack zone left/, 'allocation fails if all conntrack zones are in use');
+
+$running_zones = $all;
+is(
+    ct_zone_of({ %$all, z16384 => vrf_zone() }, 'z16384'),
+    16384,
+    'zone gets its conntrack zone back when all conntrack zones are in use',
+);
+$running_zones = {};
 
 for my $method ('create', 'update') {
     my $param = { zone => 'zone0', 'ct-zone' => 16384 };
