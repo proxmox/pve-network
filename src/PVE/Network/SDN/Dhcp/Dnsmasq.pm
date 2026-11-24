@@ -135,10 +135,9 @@ sub add_ip_mapping {
         return;
     }
 
-    # Regenerating the configuration only enables and starts the instances of the zones it
-    # configures. An instance that is not enabled is not running, and reads the ethers file once it
+    # A zone without a vnet to serve has no running instance. dnsmasq reads the ethers file when it
     # starts.
-    return if !instance_enabled($dhcpid);
+    return if !zone_serves_vnets($dhcpid);
 
     my $service_name = "dnsmasq\@$dhcpid";
     systemctl_service('reload', $service_name) if $reload;
@@ -193,12 +192,18 @@ sub configure_vnet {
     );
 }
 
-# Whether the dnsmasq instance of the zone is enabled, by the link that enabling it creates for the
-# 'WantedBy=multi-user.target' of the dnsmasq@ unit.
-sub instance_enabled {
+# Whether the dnsmasq instance of the zone serves a vnet. Only a vnet with a subnet gets a
+# '10-<vnet>.conf' in the directory of the zone.
+sub zone_serves_vnets {
     my ($dhcpid) = @_;
 
-    return -l "$SYSTEMD_UNIT_ROOT/multi-user.target.wants/dnsmasq\@$dhcpid.service";
+    my $serves_vnets = 0;
+    PVE::Tools::dir_glob_foreach(
+        "$DNSMASQ_CONFIG_ROOT/$dhcpid",
+        '10-.*\.conf',
+        sub { $serves_vnets = 1 },
+    );
+    return $serves_vnets;
 }
 
 sub systemctl_service {

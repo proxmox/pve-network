@@ -223,6 +223,7 @@ $mocked_sdn_dhcp_dnsmasq->mock(
     ethers_file => sub { return "/tmp/ethers"; },
     systemctl_service => sub { },
     update_lease => sub { },
+    zone_serves_vnets => sub { return 1; },
 );
 
 my $mocked_sdn_fabrics;
