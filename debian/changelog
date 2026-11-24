@@ -1,3 +1,12 @@
+libpve-network-perl (1.6.15) trixie; urgency=medium
+
+  * sdn: zones: keep the applied conntrack zone of a zone whose dedicated VRF
+    was disabled and enabled again, or which was deleted and re-created,
+    before applying. Before, the VRF switched to a new conntrack zone on
+    apply, which broke the existing connections of the zone, including SNAT.
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 24 Nov 2026 22:05:53 +0100
+
 libpve-network-perl (1.6.14) trixie; urgency=medium
 
   * sdn: dhcp: only skip reloading dnsmasq and updating the lease when a
