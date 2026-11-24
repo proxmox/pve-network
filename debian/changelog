@@ -1,3 +1,13 @@
+libpve-network-perl (1.6.14) trixie; urgency=medium
+
+  * sdn: dhcp: only skip reloading dnsmasq and updating the lease when a
+    guest starts for a zone without a vnet with subnets. Since 1.6.13, both
+    were also skipped for a zone with vnets whose dnsmasq instance was not
+    enabled, for example while the DHCP configuration was regenerated. Such
+    a guest then started, but did not get its DHCP lease.
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 24 Nov 2026 10:31:17 +0100
+
 libpve-network-perl (1.6.13) trixie; urgency=medium
 
   * sdn: dhcp: do not start dnsmasq for a zone without a vnet with subnets.
