@@ -1,3 +1,19 @@
+libpve-network-perl (1.6.13) trixie; urgency=medium
+
+  * sdn: dhcp: do not start dnsmasq for a zone without a vnet with subnets.
+    Such an instance listened on port 53 on all addresses of the host, also
+    for a zone with a dedicated VRF, and answered DNS queries there. The DHCP
+    zones after it in alphabetical order then failed to start. A running
+    instance of such a zone stops once the SDN configuration is applied or
+    the network configuration of the node is reloaded.
+
+  * sdn: dhcp: configure dnsmasq with the applied subnets instead of the
+    pending ones. Reloading the network configuration of a node could
+    otherwise put subnet changes that were not applied yet into the dnsmasq
+    configuration.
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 24 Nov 2026 08:16:16 +0100
+
 libpve-network-perl (1.6.12) trixie; urgency=medium
 
   * api: fabrics: list the node of each fabric a host is part of, and check
