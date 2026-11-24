@@ -135,6 +135,11 @@ sub add_ip_mapping {
         return;
     }
 
+    # Regenerating the configuration only enables and starts the instances of the zones it
+    # configures. An instance that is not enabled is not running, and reads the ethers file once it
+    # starts.
+    return if !instance_enabled($dhcpid);
+
     my $service_name = "dnsmasq\@$dhcpid";
     systemctl_service('reload', $service_name) if $reload;
     update_lease($dhcpid, $ip4, $mac);
@@ -186,6 +191,14 @@ sub configure_vnet {
         "$DNSMASQ_CONFIG_ROOT/$dhcpid/10-$vnetid.conf",
         join("\n", @{$config}) . "\n",
     );
+}
+
+# Whether the dnsmasq instance of the zone is enabled, by the link that enabling it creates for the
+# 'WantedBy=multi-user.target' of the dnsmasq@ unit.
+sub instance_enabled {
+    my ($dhcpid) = @_;
+
+    return -l "$SYSTEMD_UNIT_ROOT/multi-user.target.wants/dnsmasq\@$dhcpid.service";
 }
 
 sub systemctl_service {
